@@ -1,3 +1,75 @@
+Project arrows_church_management_system {
+  database_type: 'PostgreSQL'
+  Note: 'Generated from docs/ERD.md version 1.0.'
+}
+
+Enum account_status {
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+  SUSPENDED
+  ARCHIVED
+}
+
+Enum membership_status {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  ARCHIVED
+}
+
+Enum event_status {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+Enum attendance_status {
+  EARLY
+  ON_TIME
+  LATE
+  ABSENT
+  EXCUSED
+  MANUAL
+  PENDING_REVIEW
+  INVALID
+}
+
+Enum attendance_method {
+  GEOLOCATION
+  MANUAL
+  SYSTEM
+}
+
+Enum absence_request_status {
+  PENDING
+  APPROVED
+  REJECTED
+  NEEDS_CLARIFICATION
+  CANCELLED
+}
+
+Enum review_decision {
+  APPROVED
+  REJECTED
+  SUSPENDED
+  REACTIVATED
+}
+
+Enum leaderboard_subject_type {
+  MEMBER
+  DEPARTMENT
+}
+
+Enum leaderboard_period {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
 Table churches {
   id uuid [pk]
   name varchar(150) [not null]
@@ -12,15 +84,17 @@ Table churches {
   is_active boolean [not null, default: true]
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
+
+  Note: 'Version 1 contains one Arrows Church record.'
 }
 
 Table users {
   id uuid [pk]
-  church_id uuid [not null]
-  email varchar(255) [not null, unique]
-  phone varchar(30) [unique]
+  church_id uuid [not null, ref: > churches.id]
+  email varchar(255) [not null, note: 'Normalize to lowercase. Uniqueness is enforced by the lower(email) expression index.']
+  phone varchar(30) [note: 'Store in normalized international format. The PostgreSQL migration should make this a partial unique index where phone IS NOT NULL.']
   password_hash text [not null]
-  account_status varchar [not null, default: 'PENDING_APPROVAL']
+  account_status account_status [not null, default: 'PENDING_APPROVAL']
   email_verified_at timestamptz
   last_login_at timestamptz
   failed_login_attempts integer [not null, default: 0]
@@ -28,6 +102,268 @@ Table users {
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
   archived_at timestamptz
+
+  indexes {
+    `lower(email)` [unique, name: 'users_email_unique']
+    phone [unique, name: 'users_phone_unique', note: 'Partial in PostgreSQL: WHERE phone IS NOT NULL.']
+    account_status [name: 'users_account_status_idx']
+    church_id [name: 'users_church_id_idx']
+  }
 }
 
-Ref: users.church_id > churches.id
+Table member_profiles {
+  id uuid [pk]
+  user_id uuid [not null, unique, ref: > users.id]
+  membership_number varchar(50) [unique]
+  first_name varchar(100) [not null]
+  last_name varchar(100) [not null]
+  other_names varchar(150)
+  profile_photo_url text
+  requested_department_id uuid [ref: > departments.id, note: 'Registration preference; does not grant membership automatically.']
+  primary_department_id uuid [ref: > departments.id]
+  membership_status membership_status [not null, default: 'ACTIVE']
+  joined_at date
+  approved_at timestamptz
+  approved_by uuid [ref: > users.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table roles {
+  id uuid [pk]
+  name varchar(80) [not null, unique, note: 'Initial values: SUPER_ADMIN, ADMIN, DEPARTMENT_LEADER, ATTENDANCE_OFFICER, MEMBER.']
+  description text
+  is_system_role boolean [not null, default: true]
+  created_at timestamptz [not null]
+}
+
+Table user_roles {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  role_id uuid [not null, ref: > roles.id]
+  assigned_by uuid [ref: > users.id]
+  assigned_at timestamptz [not null]
+
+  indexes {
+    (user_id, role_id) [unique, name: 'user_roles_user_role_unique']
+  }
+
+  Note: 'Trusted roles must never be assigned during public registration.'
+}
+
+Table account_reviews {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  reviewed_by uuid [not null, ref: > users.id]
+  previous_status account_status [not null]
+  new_status account_status [not null]
+  decision review_decision [not null]
+  reason text
+  created_at timestamptz [not null]
+}
+
+Table departments {
+  id uuid [pk]
+  church_id uuid [not null, ref: > churches.id]
+  name varchar(120) [not null]
+  slug varchar(120) [not null]
+  description text
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (church_id, slug) [unique, name: 'departments_church_slug_unique']
+  }
+}
+
+Table department_members {
+  id uuid [pk]
+  department_id uuid [not null, ref: > departments.id]
+  member_id uuid [not null, ref: > member_profiles.id]
+  is_primary boolean [not null, default: false]
+  joined_at date [not null]
+  left_at date
+  assigned_by uuid [ref: > users.id]
+  created_at timestamptz [not null]
+
+  indexes {
+    (department_id, member_id) [unique, name: 'department_members_unique']
+    member_id [name: 'department_members_member_idx']
+  }
+
+  Note: 'Application and database logic must enforce at most one active primary department per member.'
+}
+
+Table department_leaders {
+  id uuid [pk]
+  department_id uuid [not null, ref: > departments.id]
+  member_id uuid [not null, ref: > member_profiles.id]
+  title varchar(100)
+  starts_at date [not null]
+  ends_at date
+  assigned_by uuid [ref: > users.id]
+  created_at timestamptz [not null]
+
+  indexes {
+    (department_id, member_id, starts_at) [unique, name: 'department_leaders_assignment_unique']
+  }
+}
+
+Table events {
+  id uuid [pk]
+  church_id uuid [not null, ref: > churches.id]
+  name varchar(180) [not null]
+  event_type varchar(80) [not null]
+  description text
+  starts_at timestamptz [not null]
+  ends_at timestamptz [not null]
+  attendance_opens_at timestamptz [not null]
+  attendance_closes_at timestamptz [not null]
+  early_until timestamptz
+  late_after timestamptz [not null]
+  location_name varchar(180)
+  latitude decimal(9,6) [not null]
+  longitude decimal(9,6) [not null]
+  geofence_radius_meters integer [not null]
+  maximum_accuracy_meters integer [not null, default: 50]
+  status event_status [not null, default: 'DRAFT']
+  created_by uuid [not null, ref: > users.id]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (status, starts_at) [name: 'events_status_start_idx']
+    (attendance_opens_at, attendance_closes_at) [name: 'events_attendance_window_idx']
+  }
+
+  checks {
+    `ends_at > starts_at` [name: 'events_valid_time_range']
+    `attendance_closes_at > attendance_opens_at` [name: 'events_valid_attendance_window']
+    `geofence_radius_meters > 0` [name: 'events_positive_geofence_radius']
+    `latitude BETWEEN -90 AND 90` [name: 'events_valid_latitude']
+    `longitude BETWEEN -180 AND 180` [name: 'events_valid_longitude']
+  }
+}
+
+Table event_departments {
+  id uuid [pk]
+  event_id uuid [not null, ref: > events.id]
+  department_id uuid [not null, ref: > departments.id]
+  is_required boolean [not null, default: true]
+  created_at timestamptz [not null]
+
+  indexes {
+    (event_id, department_id) [unique, name: 'event_departments_unique']
+  }
+}
+
+Table attendance_records {
+  id uuid [pk]
+  event_id uuid [not null, ref: > events.id]
+  member_id uuid [not null, ref: > member_profiles.id]
+  status attendance_status [not null]
+  method attendance_method [not null]
+  checked_in_at timestamptz
+  latitude decimal(9,6)
+  longitude decimal(9,6)
+  accuracy_meters decimal(8,2)
+  distance_meters decimal(8,2)
+  within_geofence boolean
+  points_awarded integer [not null, default: 0]
+  marked_by uuid [ref: > users.id]
+  manual_reason text
+  review_note text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (event_id, member_id) [unique, name: 'attendance_event_member_unique']
+    (member_id, checked_in_at) [name: 'attendance_member_checked_in_idx', note: 'checked_in_at is descending in PostgreSQL.']
+    (event_id, status) [name: 'attendance_event_status_idx']
+  }
+
+  Note: 'Geolocation records require coordinates, accuracy, and distance. Manual records require marked_by and manual_reason. The server timestamp determines punctuality.'
+}
+
+Table absence_requests {
+  id uuid [pk]
+  member_id uuid [not null, ref: > member_profiles.id]
+  event_id uuid [ref: > events.id]
+  starts_on date
+  ends_on date
+  reason varchar(150) [not null]
+  details text
+  status absence_request_status [not null, default: 'PENDING']
+  reviewed_by uuid [ref: > users.id]
+  review_note text
+  reviewed_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (member_id, status) [name: 'absence_requests_member_status_idx']
+    event_id [name: 'absence_requests_event_idx']
+  }
+
+  checks {
+    `event_id IS NOT NULL OR (starts_on IS NOT NULL AND ends_on IS NOT NULL AND ends_on >= starts_on)` [name: 'absence_requests_event_or_date_range']
+  }
+}
+
+Table leaderboard_entries {
+  id uuid [pk]
+  subject_type leaderboard_subject_type [not null]
+  member_id uuid [ref: > member_profiles.id]
+  department_id uuid [ref: > departments.id]
+  event_id uuid [ref: > events.id]
+  points integer [not null]
+  reason varchar(180) [not null]
+  period_type leaderboard_period [not null]
+  period_start date [not null]
+  period_end date [not null]
+  created_at timestamptz [not null]
+
+  checks {
+    `(subject_type = 'MEMBER' AND member_id IS NOT NULL AND department_id IS NULL) OR (subject_type = 'DEPARTMENT' AND department_id IS NOT NULL AND member_id IS NULL)` [name: 'leaderboard_entries_valid_subject']
+    `period_end >= period_start` [name: 'leaderboard_entries_valid_period']
+  }
+
+  Note: 'Auditable points ledger; totals are calculated from entries or cached separately.'
+}
+
+Table refresh_tokens {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  token_hash text [not null, unique]
+  device_name varchar(180)
+  ip_address inet
+  user_agent text
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+  created_at timestamptz [not null]
+
+  Note: 'Only hashed refresh tokens may be stored.'
+}
+
+Table audit_logs {
+  id uuid [pk]
+  church_id uuid [not null, ref: > churches.id]
+  actor_user_id uuid [ref: > users.id]
+  action varchar(120) [not null]
+  entity_type varchar(100) [not null]
+  entity_id uuid
+  previous_data jsonb
+  new_data jsonb
+  metadata jsonb
+  ip_address inet
+  user_agent text
+  created_at timestamptz [not null]
+
+  indexes {
+    (actor_user_id, created_at) [name: 'audit_logs_actor_created_idx', note: 'created_at is descending in PostgreSQL.']
+    (entity_type, entity_id) [name: 'audit_logs_entity_idx']
+  }
+
+  Note: 'Never write password hashes, tokens, secrets, or other sensitive values to audit logs.'
+}
