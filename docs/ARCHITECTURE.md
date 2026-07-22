@@ -317,6 +317,8 @@ Responsible for:
 - Attendance windows
 - Event eligibility
 - Event departments
+- Transactional event cancellation
+- Attendance finalization orchestration
 
 ### Attendance Module
 
@@ -328,6 +330,7 @@ Responsible for:
 - Punctuality status
 - Manual attendance
 - Corrections
+- Idempotent absent and excused outcome materialization
 
 ### Absence Requests Module
 
@@ -335,7 +338,9 @@ Responsible for:
 
 - Request submission
 - Approval and rejection
-- Excused attendance handling
+- Event-specific and date-range validation
+- Conflict detection against valid attendance
+- Excused attendance handling and provenance
 
 ### Leaderboards Module
 
@@ -693,11 +698,69 @@ Geolocation check-ins shall derive `punctuality_status` from server time and the
 
 Manual attendance may record `EARLY`, `ON_TIME`, or `LATE` only when the authorized actor can verify the arrival category. Otherwise, manual attendance remains valid for the attendance rate and is neutral in the punctuality-rate calculation.
 
+## 11.5 Event Attendance Finalization
+
+Attendance records are the authoritative event outcomes. After an attendance window closes, an idempotent finalization service shall:
+
+```text
+Resolve members eligible on the event date
+        ↓
+Preserve valid geolocation and manual attendance
+        ↓
+Match approved event-specific and date-range absences
+        ↓
+Create or update EXCUSED records with absence-request provenance
+        ↓
+Create ABSENT records for remaining missing eligible members
+        ↓
+Complete the event and record audit metadata
+```
+
+Eligibility must use department membership lifecycle dates and the event's required departments. An event with no department assignments is open to all eligible active members. Date-range absences and leaderboard/reporting periods use the church's configured IANA timezone, defaulting to `Africa/Accra`.
+
+Finalization may be invoked by an authenticated administrative endpoint and by a lightweight scheduled reconciliation process. Both entry points must call the same application service. Version 1 does not require Redis or a distributed job queue.
+
+The service processes only eligible scheduled or active events after their attendance windows close. Draft and cancelled events are excluded; already finalized events return idempotently without rewriting outcomes.
+
+The `(event_id, member_id)` unique constraint prevents duplicate outcomes. Conflict-aware upserts and row locking must ensure that finalization racing with a valid last-minute check-in preserves the valid attendance.
+
+Absence approval uses the same outcome service. It may convert `ABSENT`, `INVALID`, or `PENDING_REVIEW` to `EXCUSED`. Event-specific approval returns a conflict rather than overwriting protected attendance. Date-range approval preserves and skips attended events while excusing the other covered events.
+
+Approval reconciles only events whose attendance windows have closed. Open and future events retain absence-request state without an attendance row until finalization, allowing a later genuine check-in to take precedence.
+
+Authorized manual attendance may replace a system-generated `ABSENT` or `EXCUSED` outcome after finalization. It must clear absence provenance, update secondary points transactionally, and create an audit record. Existing geolocation or manual attendance requires the dedicated correction workflow.
+
+## 11.6 Event Cancellation
+
+Cancellation is a terminal, transactional lifecycle action for `DRAFT`, `SCHEDULED`, or `ACTIVE` events:
+
+```text
+Lock and validate the event
+        ↓
+Record immutable cancellation actor, time, and reason
+        ↓
+Preserve attendance evidence and zero attendance points
+        ↓
+Void related point-ledger entries
+        ↓
+Cancel event-specific absence requests
+        ↓
+Write one audit record and commit
+```
+
+Completed or finalized events cannot be cancelled. Correcting those events requires an explicit administrative correction workflow.
+
+The Events Module coordinates cancellation, while Attendance, Leaderboards, Absence Requests, and Audit Logs provide transaction-scoped operations. No module may independently perform a partial cancellation.
+
+Attendance and point rows are preserved for audit. Normal reports, attendance rates, streaks, and rankings filter out cancelled events. Administrative reporting may include them only through an explicit filter and must label all preserved attendance as non-scoring.
+
+Cancellation and finalization both lock the event and validate its current lifecycle state. A race between them must result in exactly one terminal transition. Retried cancellation returns the original immutable metadata without repeating downstream updates.
+
 ---
 
-## 11.5 Leaderboard Architecture
+## 11.7 Leaderboard Architecture
 
-### 11.5.1 Official Score
+### 11.7.1 Official Score
 
 The Leaderboards Module shall calculate official rankings from attendance source records:
 
@@ -718,7 +781,7 @@ Raw point totals and streaks are secondary values and shall not alter the offici
 
 Each valid attendance shall create a 10-point member ledger entry. All other outcomes create no positive points. Version 1 uses no negative points or streak bonuses.
 
-### 11.5.2 Eligibility and Qualification
+### 11.7.2 Eligibility and Qualification
 
 - Members require at least three expected events in the selected period for a numbered rank.
 - Departments require at least three applicable events in the selected period for a numbered rank.
@@ -726,11 +789,11 @@ Each valid attendance shall create a 10-point member ledger entry. All other out
 - Manual attendance with unknown punctuality is excluded only from the punctuality denominator.
 - Inactive and suspended members are excluded from current public rankings without deleting historical results.
 
-### 11.5.3 Department Calculation
+### 11.7.3 Department Calculation
 
 Department rates shall be calculated from expected member-event attendance slots. Raw department totals and averages of individual scores shall not determine rank.
 
-### 11.5.4 Streaks
+### 11.7.4 Streaks
 
 Streaks shall be derived from ordered eligible attendance history:
 
@@ -740,7 +803,7 @@ Streaks shall be derived from ordered eligible attendance history:
 - Actual absences break the applicable streak.
 - Streaks are displayed separately and do not award Version 1 score bonuses.
 
-### 11.5.5 Periods, Privacy, and History
+### 11.7.5 Periods, Privacy, and History
 
 - Monthly is the default period; weekly, quarterly, and yearly views are supported.
 - Period changes affect query boundaries only and never delete historical source records.
@@ -865,6 +928,9 @@ Log:
 - Password-reset completion and session revocation
 - Registration approvals
 - Attendance decisions
+- Event attendance finalization summaries
+- Event cancellation summaries and point-voiding counts
+- Absence approval conflicts
 - Manual attendance
 - Attendance corrections
 - Unexpected errors
@@ -872,8 +938,10 @@ Log:
 Do not log:
 
 - Passwords
+- Password hashes
 - Raw access tokens
 - Raw refresh tokens
+- Raw account-action tokens
 - Secret keys
 
 ## 15.2 Monitoring
@@ -950,9 +1018,12 @@ Test:
 - Email verification and token reuse prevention
 - Password reset, expiry, and session revocation
 - Event creation
+- Event cancellation, idempotency, and finalization race handling
 - Attendance check-in
 - Duplicate prevention
 - Manual attendance
+- Event finalization and retry idempotency
+- Absence approval outcome materialization
 - Report generation
 
 Use a dedicated test database.

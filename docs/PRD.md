@@ -100,8 +100,9 @@ Responsible for attendance verification.
 - Create departments  
 - Assign leaders  
 - Assign members  
-**Event Management**  
+**Event Management**
 - Create church services  
+- Cancel events without deleting historical records
 - Attendance window  
 - Geofence radius  
 - Required departments  
@@ -111,6 +112,7 @@ Responsible for attendance verification.
 - Early/on-time/late status  
 - Manual attendance  
 - Attendance history  
+- Automatic absent and excused outcomes after an event closes
 **Leaderboards**  
 - Individual rankings  
 - Department rankings  
@@ -140,6 +142,10 @@ The system shall:
 - Calculate attendance status.  
 
 The MVP will not use device locking, browser fingerprinting, or QR-code verification. Attendance is based on the authenticated account, the event attendance window, and server-side geofence validation.
+
+After an event closes, the system will finalize attendance for every eligible member. Members covered by an approved absence request will receive an `EXCUSED` outcome; other eligible members without attendance will receive an `ABSENT` outcome. A genuine check-in or valid manual attendance will never be overwritten by finalization.
+
+Cancelling an event will preserve any attendance already submitted for audit, exclude the event from attendance rates and leaderboards, void its secondary points, and stop attendance finalization.
 
 **Departments**  
 

@@ -256,6 +256,21 @@ The system shall allow administrators to create events with:
 
 The system shall support Sunday services, youth meetings, department meetings, rehearsals, training sessions, outreach events, and special programmes.
 
+### 5.4.1 Event Cancellation
+
+The system shall:
+
+- Allow `DRAFT`, `SCHEDULED`, or `ACTIVE` events to be cancelled by an administrator.
+- Require a cancellation reason and record the administrator and server timestamp.
+- Reject cancellation of a `COMPLETED` event; completed records require an explicit correction workflow.
+- Treat repeated cancellation requests idempotently without changing the original cancellation metadata.
+- Preserve existing attendance records for audit rather than deleting them.
+- Exclude cancelled events from attendance rates, streaks, leaderboards, and normal operational reports.
+- Set attendance points for the cancelled event to zero and void related secondary point-ledger entries.
+- Cancel pending and approved event-specific absence requests with a system note while preserving their history in audit logs.
+- Leave date-range absence requests unchanged.
+- Prevent check-in, manual attendance, attendance correction, and finalization for the cancelled event.
+
 ### 5.5 Active Event Detection
 
 The system shall:
@@ -331,6 +346,15 @@ Each attendance record shall include:
 
 The system shall enforce one attendance record per member per event.
 
+After an event attendance window closes, the system shall finalize outcomes for every eligible member:
+
+- Finalize only eligible scheduled or active events; never materialize attendance for draft or cancelled events.
+- Preserve existing valid geolocation and manual attendance.
+- Create an `EXCUSED` system record when an approved event-specific or date-range absence covers the event.
+- Create an `ABSENT` system record when no valid attendance or approved absence exists.
+- Store the source absence request on system-created `EXCUSED` records.
+- Make finalization idempotent so retries cannot create duplicates or overwrite protected outcomes.
+
 ### 5.10 Manual Attendance
 
 Authorized users shall be able to record manual attendance when a member has no compatible device, internet access fails, GPS fails, the member's device is unavailable, or an approved exception applies.
@@ -354,6 +378,18 @@ Members shall be able to submit absence requests containing:
 Department leaders or administrators shall be able to approve, reject, request clarification, and add an administrative note.
 
 Approved absences shall not unfairly reduce leaderboard scores.
+
+Absence approval shall follow these rules:
+
+- Event-specific approval creates or updates the outcome to `EXCUSED` only when the event attendance window has already closed and no valid attendance exists.
+- Date-range approval immediately reconciles only eligible covered events whose attendance windows have closed.
+- Open and future covered events retain the approved request without pre-creating attendance; they are handled during event finalization.
+- Date-range matching shall compare the event start date in the configured church timezone.
+- An existing `ABSENT`, `INVALID`, or unresolved review outcome may be changed to `EXCUSED` transactionally.
+- Existing `EARLY`, `ON_TIME`, `LATE`, or valid manual attendance shall not be overwritten by absence approval.
+- Event-specific approval that conflicts with valid attendance for that event shall return a conflict for administrative resolution.
+- Date-range approval shall preserve and skip covered events with valid attendance while excusing the other covered events.
+- Duplicate or overlapping approved requests must still result in only one attendance record per member and event.
 
 ### 5.12 Individual Leaderboard
 
@@ -431,6 +467,8 @@ The system shall provide:
 - Manual attendance reports.
 - Account approval reports.
 
+Cancelled events shall be excluded from normal attendance and leaderboard reports. Authorized administrative reports may include them through an explicit status filter, with preserved attendance clearly marked as non-scoring.
+
 The system shall support CSV export in the MVP. PDF and Excel export may be added later.
 
 ### 5.15 Dashboards
@@ -457,13 +495,18 @@ The system shall record audit logs for:
 - Role changes.
 - Department assignment changes.
 - Event creation and updates.
+- Event cancellation and point voiding.
 - Attendance corrections.
 - Manual attendance.
 - Configuration changes.
+- Absence-request decisions and affected attendance outcomes.
+- Event attendance finalization.
 - Email verification completion.
 - Password reset completion and session revocation.
 
 Audit logs shall include actor, action, target entity, previous value where appropriate, new value where appropriate, timestamp, and optional IP address and device information.
+
+Authentication audit records shall never contain raw account-action tokens, passwords, password hashes, access tokens, or refresh tokens.
 
 Authentication audit records shall never contain raw action tokens, password values, password hashes, or refresh tokens.
 
@@ -487,6 +530,9 @@ Authentication audit records shall never contain raw action tokens, password val
 - Location accuracy above the configured threshold may be rejected.
 - A user outside the geofence shall not be marked present automatically.
 - Manual attendance shall require authorization and a reason.
+- Event finalization shall materialize `ABSENT` and `EXCUSED` outcomes after the attendance window closes.
+- Finalization shall preserve valid check-ins and manual attendance.
+- Approved absences shall be neutral in leaderboard denominators and shall pause rather than break attendance streaks.
 
 ### 6.3 Department Rules
 
@@ -623,11 +669,16 @@ The MVP shall be considered ready for internal testing when:
 - Pending, rejected, and suspended users cannot access protected features.
 - Administrators can create departments.
 - Administrators can create events with geofence settings.
+- Administrators can cancel an eligible event with complete audit metadata.
+- Event cancellation preserves attendance, voids points, excludes metrics, and prevents finalization.
 - Active users can submit location-based check-ins.
 - Outside-geofence check-ins are rejected.
 - Duplicate check-ins are rejected.
 - Attendance statuses are calculated correctly.
 - Manual attendance is audited.
+- Closed-event finalization creates `EXCUSED` and `ABSENT` outcomes correctly.
+- Repeated finalization does not duplicate records or overwrite valid attendance.
+- An approved date-range absence preserves genuine attendance within the range.
 - Members can view attendance history.
 - Individual and department leaderboards calculate correctly.
 - Administrators can export attendance data as CSV.

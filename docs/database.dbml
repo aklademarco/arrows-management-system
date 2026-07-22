@@ -89,6 +89,7 @@ Table churches {
   email varchar(255)
   phone varchar(30)
   address text
+  timezone varchar(64) [not null, default: 'Africa/Accra', note: 'IANA timezone used for event dates and leaderboard/reporting periods.']
   latitude decimal(9,6)
   longitude decimal(9,6)
   geofence_radius_meters integer [not null, default: 100]
@@ -241,6 +242,11 @@ Table events {
   maximum_accuracy_meters integer [not null, default: 50]
   status event_status [not null, default: 'DRAFT']
   created_by uuid [not null, ref: > users.id]
+  cancelled_at timestamptz
+  cancelled_by uuid [ref: > users.id]
+  cancellation_reason text
+  attendance_finalized_at timestamptz
+  attendance_finalized_by uuid [ref: > users.id, note: 'Null when finalization is performed by the scheduled system process.']
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
 
@@ -255,6 +261,7 @@ Table events {
     `geofence_radius_meters > 0` [name: 'events_positive_geofence_radius']
     `latitude BETWEEN -90 AND 90` [name: 'events_valid_latitude']
     `longitude BETWEEN -180 AND 180` [name: 'events_valid_longitude']
+    `(status = 'CANCELLED' AND cancelled_at IS NOT NULL AND cancelled_by IS NOT NULL AND cancellation_reason IS NOT NULL AND char_length(btrim(cancellation_reason)) BETWEEN 1 AND 1000 AND attendance_finalized_at IS NULL AND attendance_finalized_by IS NULL) OR (status <> 'CANCELLED' AND cancelled_at IS NULL AND cancelled_by IS NULL AND cancellation_reason IS NULL)` [name: 'events_valid_cancellation_metadata']
   }
 }
 
@@ -284,6 +291,7 @@ Table attendance_records {
   distance_meters decimal(8,2)
   within_geofence boolean
   points_awarded integer [not null, default: 0]
+  absence_request_id uuid [ref: > absence_requests.id, note: 'Required for system-created EXCUSED outcomes and null for other outcomes.']
   marked_by uuid [ref: > users.id]
   manual_reason text
   review_note text
@@ -296,7 +304,11 @@ Table attendance_records {
     (event_id, status) [name: 'attendance_event_status_idx']
   }
 
-  Note: 'Geolocation records require coordinates, accuracy, and distance. Manual records require marked_by and manual_reason. Official rank uses 70% attendance rate and 30% punctuality rate; valid manual attendance is punctuality-neutral when punctuality_status is null.'
+  checks {
+    `absence_request_id IS NULL OR status = 'EXCUSED'` [name: 'attendance_absence_request_requires_excused_status']
+  }
+
+  Note: 'Geolocation records require coordinates, accuracy, and distance. Manual records require marked_by and manual_reason. System-created EXCUSED records reference an approved absence request. Official rank uses 70% attendance rate and 30% punctuality rate; valid manual attendance is punctuality-neutral when punctuality_status is null.'
 }
 
 Table absence_requests {
@@ -320,7 +332,7 @@ Table absence_requests {
   }
 
   checks {
-    `event_id IS NOT NULL OR (starts_on IS NOT NULL AND ends_on IS NOT NULL AND ends_on >= starts_on)` [name: 'absence_requests_event_or_date_range']
+    `(event_id IS NOT NULL AND starts_on IS NULL AND ends_on IS NULL) OR (event_id IS NULL AND starts_on IS NOT NULL AND ends_on IS NOT NULL AND ends_on >= starts_on)` [name: 'absence_requests_exactly_one_mode']
   }
 }
 
@@ -333,13 +345,17 @@ Table leaderboard_entries {
   points integer [not null]
   reason varchar(180) [not null]
   occurred_at timestamptz [not null]
+  voided_at timestamptz
+  voided_by uuid [ref: > users.id]
+  void_reason text
   created_at timestamptz [not null]
 
   checks {
     `(subject_type = 'MEMBER' AND member_id IS NOT NULL AND department_id IS NULL) OR (subject_type = 'DEPARTMENT' AND department_id IS NOT NULL AND member_id IS NULL)` [name: 'leaderboard_entries_valid_subject']
+    `(voided_at IS NULL AND voided_by IS NULL AND void_reason IS NULL) OR (voided_at IS NOT NULL AND voided_by IS NOT NULL AND void_reason IS NOT NULL AND char_length(btrim(void_reason)) > 0)` [name: 'leaderboard_entries_valid_void_metadata']
   }
 
-  Note: 'Auditable secondary points ledger. A valid attendance awards 10 member points; other outcomes award zero. Points do not determine official rank. Period views filter occurred_at instead of duplicating entries. Version 1 does not use negative attendance penalties or streak bonuses.'
+  Note: 'Auditable secondary points ledger. A valid attendance awards 10 member points; other outcomes award zero. Only unvoided entries count. Event cancellation voids entries instead of deleting them or creating negative offsets. Points do not determine official rank.'
 }
 
 Table refresh_tokens {

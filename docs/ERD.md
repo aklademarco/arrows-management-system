@@ -76,6 +76,7 @@ erDiagram
     MEMBER_PROFILES ||--o{ ABSENCE_REQUESTS : submits
     EVENTS ||--o{ ABSENCE_REQUESTS : concerns
     USERS ||--o{ ABSENCE_REQUESTS : reviewed_by
+    ABSENCE_REQUESTS ||--o{ ATTENDANCE_RECORDS : excuses
 
     MEMBER_PROFILES ||--o{ LEADERBOARD_ENTRIES : earns
     DEPARTMENTS ||--o{ LEADERBOARD_ENTRIES : earns
@@ -209,6 +210,7 @@ Stores the church organization.
 | `email` | VARCHAR(255) | Nullable | Church email |
 | `phone` | VARCHAR(30) | Nullable | Church phone |
 | `address` | TEXT | Nullable | Church address |
+| `timezone` | VARCHAR(64) | Not null, default Africa/Accra | IANA timezone for event dates and reporting periods |
 | `latitude` | DECIMAL(9,6) | Nullable | Default church latitude |
 | `longitude` | DECIMAL(9,6) | Nullable | Default church longitude |
 | `geofence_radius_meters` | INTEGER | Not null, default 100 | Default attendance radius |
@@ -438,6 +440,11 @@ Stores services, meetings, rehearsals, and special programmes.
 | `maximum_accuracy_meters` | INTEGER | Not null, default 50 | Accepted GPS accuracy |
 | `status` | event_status | Not null, default DRAFT | Event lifecycle |
 | `created_by` | UUID | FK → users.id, not null | Creator |
+| `cancelled_at` | TIMESTAMPTZ | Nullable | Cancellation server timestamp |
+| `cancelled_by` | UUID | Nullable FK → users.id | Cancelling administrator |
+| `cancellation_reason` | TEXT | Nullable | Required cancellation explanation |
+| `attendance_finalized_at` | TIMESTAMPTZ | Nullable | Successful attendance finalization time |
+| `attendance_finalized_by` | UUID | Nullable FK → users.id | Administrator actor; null for scheduled finalization |
 | `created_at` | TIMESTAMPTZ | Not null | Creation time |
 | `updated_at` | TIMESTAMPTZ | Not null | Last update |
 
@@ -447,6 +454,11 @@ Stores services, meetings, rehearsals, and special programmes.
 - `attendance_closes_at` must be after `attendance_opens_at`.
 - `geofence_radius_meters` must be greater than zero.
 - Coordinates must be valid geographic values.
+- `CANCELLED` events require `cancelled_at`, `cancelled_by`, and `cancellation_reason`.
+- `cancellation_reason` must contain 1 to 1,000 non-whitespace characters.
+- Non-cancelled events must keep cancellation metadata null.
+- A cancelled event must not have attendance-finalization metadata.
+- A finalized or `COMPLETED` event cannot be cancelled.
 
 ---
 
@@ -491,6 +503,7 @@ Stores attendance decisions and geolocation evidence.
 | `distance_meters` | DECIMAL(8,2) | Nullable | Server-calculated distance |
 | `within_geofence` | BOOLEAN | Nullable | Verification result |
 | `points_awarded` | INTEGER | Not null, default 0 | Leaderboard points |
+| `absence_request_id` | UUID | Nullable FK → absence_requests.id | Approved request that produced an excused outcome |
 | `marked_by` | UUID | Nullable FK → users.id | Manual actor |
 | `manual_reason` | TEXT | Nullable | Manual attendance reason |
 | `review_note` | TEXT | Nullable | Administrative note |
@@ -509,6 +522,8 @@ UNIQUE (event_id, member_id)
 - Manual attendance requires `marked_by` and `manual_reason`.
 - Geolocation attendance derives `punctuality_status` using server time.
 - Manual attendance may leave `punctuality_status` null when arrival time cannot be verified.
+- `EXCUSED` system records require an approved `absence_request_id`.
+- `absence_request_id` must be null for outcomes other than `EXCUSED`.
 - The server timestamp determines punctuality.
 - Duplicate attendance must be rejected at the database level.
 
@@ -534,7 +549,9 @@ Stores absence and leave requests.
 | `created_at` | TIMESTAMPTZ | Not null | Submission time |
 | `updated_at` | TIMESTAMPTZ | Not null | Last update |
 
-At least one of `event_id` or a valid date range must be provided.
+Exactly one request mode must be provided: either `event_id`, or both `starts_on` and `ends_on`. Event-specific and date-range fields must not be combined, and `ends_on` must not precede `starts_on`.
+
+Approval reconciles only covered events whose attendance windows have closed. Open and future events retain the approved request without an attendance record until finalization, so a genuine check-in can still take precedence. Date ranges compare against the event start date in `churches.timezone`.
 
 ---
 
@@ -552,6 +569,9 @@ Stores secondary motivational points as an auditable ledger. Official leaderboar
 | `points` | INTEGER | Not null | Points added or removed |
 | `reason` | VARCHAR(180) | Not null | Reason for points |
 | `occurred_at` | TIMESTAMPTZ | Not null | Time of the point-producing activity |
+| `voided_at` | TIMESTAMPTZ | Nullable | Time this entry stopped counting |
+| `voided_by` | UUID | Nullable FK → users.id | Administrator who voided the entry |
+| `void_reason` | TEXT | Nullable | Reason for voiding, such as event cancellation |
 | `created_at` | TIMESTAMPTZ | Not null | Entry time |
 
 ### Validation Rules
@@ -564,6 +584,9 @@ Stores secondary motivational points as an auditable ledger. Official leaderboar
 - A valid attendance awards 10 secondary points; all other outcomes award zero.
 - Negative attendance penalties and streak-bonus entries are not used in Version 1.
 - Weekly, monthly, quarterly, and yearly views filter `occurred_at`; separate point rows are not created for each period.
+- Point totals include only entries where `voided_at` is null.
+- Voiding preserves the original ledger row; cancellation never deletes it or creates a negative offset.
+- `void_reason` must contain meaningful non-whitespace text.
 
 ### Official Ranking Formula
 
@@ -856,6 +879,48 @@ Create audit metadata when required
 ```
 
 The unique attendance constraint protects against concurrent duplicate requests.
+
+## Absence Approval
+
+```text
+Lock the pending absence request
+Resolve covered events whose attendance windows have closed
+Preserve protected attendance outcomes
+Upsert EXCUSED outcomes for eligible missing or non-protected records
+Set absence_request_id and clear points
+Approve the request and create audit metadata
+```
+
+Open and future events are deferred to event finalization. Event-specific approval conflicts with protected attendance; date-range approval skips protected attendance and excuses other covered events.
+
+## Event Attendance Finalization
+
+```text
+Lock or claim the event finalization operation
+Resolve the event's eligible member set
+Preserve valid geolocation and manual attendance
+Match approved event-specific or date-range absence requests
+Upsert EXCUSED system records with absence_request_id
+Upsert ABSENT system records for remaining missing members
+Mark the event COMPLETED when appropriate
+Create audit metadata
+```
+
+Finalization must be idempotent. The unique attendance constraint prevents duplicate member-event outcomes, and conflict-aware updates prevent a concurrent valid check-in from being overwritten.
+
+## Event Cancellation
+
+```text
+Lock and validate a DRAFT, SCHEDULED, or ACTIVE event
+Set status, cancelled_at, cancelled_by, and cancellation_reason
+Preserve existing attendance records and set their points_awarded to zero
+Void related leaderboard entries with actor, timestamp, and reason
+Cancel event-specific absence requests with a system note
+Leave date-range absence requests unchanged
+Create an audit log
+```
+
+Cancellation is idempotent and cannot be applied to a finalized or `COMPLETED` event. Cancelled events are excluded from normal metrics and cannot accept attendance or be finalized.
 
 ## Manual Attendance Correction
 

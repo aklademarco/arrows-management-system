@@ -164,6 +164,8 @@ All primary identifiers shall use UUIDs.
 | `NOT_FOUND` | 404 | Resource does not exist |
 | `CONFLICT` | 409 | Request conflicts with existing data |
 | `DUPLICATE_ATTENDANCE` | 409 | Member already checked in |
+| `ATTENDANCE_CONFLICT` | 409 | Requested absence or correction conflicts with a protected attendance outcome |
+| `EVENT_NOT_CANCELLABLE` | 409 | Event is completed, finalized, or otherwise cannot be cancelled |
 | `ATTENDANCE_CLOSED` | 422 | Attendance window is not open |
 | `OUTSIDE_GEOFENCE` | 422 | User is outside the allowed radius |
 | `POOR_LOCATION_ACCURACY` | 422 | Reported location accuracy is unacceptable |
@@ -879,6 +881,8 @@ PATCH /events/:eventId
 
 **Roles:** `SUPER_ADMIN`, `ADMIN`
 
+This endpoint must not set `CANCELLED` or `COMPLETED` directly. Cancellation and attendance finalization use their dedicated transactional endpoints.
+
 ---
 
 ## 9.6 Cancel Event
@@ -894,6 +898,89 @@ POST /events/:eventId/cancel
 ```json
 {
   "reason": "Service rescheduled."
+}
+```
+
+The reason is required, must contain meaningful non-whitespace text, and must not exceed 1,000 characters.
+
+### Transaction
+
+The backend shall:
+
+1. Lock the event and authorize the administrator.
+2. Allow cancellation only from `DRAFT`, `SCHEDULED`, or `ACTIVE`.
+3. Reject a finalized or `COMPLETED` event with `EVENT_NOT_CANCELLABLE`.
+4. Set `status` to `CANCELLED` and record `cancelledAt`, `cancelledBy`, and `cancellationReason` using server values.
+5. Preserve existing attendance records but set their `pointsAwarded` to zero.
+6. Void related secondary point-ledger entries with actor, server timestamp, and reason.
+7. Change pending and approved event-specific absence requests to `CANCELLED`, recording the cancelling administrator, server timestamp, and a system review note.
+8. Leave date-range absence requests unchanged.
+9. Create an audit log containing affected-record counts but no sensitive absence details.
+
+Cancellation prevents subsequent check-in, manual attendance, correction, and finalization for the event. Cancelled-event attendance remains available only to authorized administrative audit/report views and never contributes to rates, streaks, points, or rankings.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Event cancelled successfully.",
+  "data": {
+    "eventId": "2fd92f13-e52b-4afa-9c60-5d477f59e685",
+    "status": "CANCELLED",
+    "cancelledAt": "2026-07-26T07:30:00.000Z",
+    "cancelledBy": "a65d7e4f-9dd6-40b5-8c83-431bd84f9f57",
+    "cancellationReason": "Service rescheduled.",
+    "preservedAttendanceRecords": 12,
+    "voidedPointEntries": 12,
+    "cancelledAbsenceRequests": 3,
+    "alreadyCancelled": false
+  }
+}
+```
+
+Repeating cancellation for an already cancelled event is idempotent: return the original metadata and `alreadyCancelled: true` without rewriting the reason or downstream records.
+
+---
+
+## 9.7 Finalize Event Attendance
+
+```http
+POST /events/:eventId/finalize-attendance
+```
+
+**Roles:** `SUPER_ADMIN`, `ADMIN`
+
+The same application service may be invoked automatically after the attendance window closes. The operation is idempotent, rejects events whose attendance window remains open, and never finalizes draft or cancelled events. Repeating it for an already finalized event returns the stored outcome summary without changing attendance.
+
+### Transaction
+
+The backend shall:
+
+1. Lock or claim the event finalization operation.
+2. Resolve every member eligible for the event.
+3. Preserve existing valid geolocation and manual attendance.
+4. Match approved event-specific or date-range absence requests.
+5. Create or update `EXCUSED` system records with `absenceRequestId`.
+6. Create `ABSENT` system records for remaining eligible members without outcomes.
+7. Set `attendanceFinalizedAt`, record the administrator in `attendanceFinalizedBy` or leave it null for scheduled finalization, and mark the event `COMPLETED` when appropriate.
+8. Record audit metadata.
+
+Concurrent finalization and check-in must never overwrite a valid check-in. The `(event_id, member_id)` unique constraint and conflict-aware upserts enforce one outcome per member.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Event attendance finalized successfully.",
+  "data": {
+    "eventId": "2fd92f13-e52b-4afa-9c60-5d477f59e685",
+    "preservedAttendances": 34,
+    "excusedRecords": 3,
+    "absentRecords": 5,
+    "alreadyFinalized": false
+  }
 }
 ```
 
@@ -948,7 +1035,7 @@ POST /attendance/check-in
     "status": "ON_TIME",
     "checkedInAt": "2026-07-26T07:54:22.000Z",
     "distanceMeters": 23.4,
-    "pointsAwarded": 8
+    "pointsAwarded": 10
   }
 }
 ```
@@ -1025,6 +1112,8 @@ POST /attendance/manual
 
 An audit log entry is required.
 
+If finalization already created a system `ABSENT` or `EXCUSED` outcome, authorized manual attendance may replace that generated outcome transactionally, clear `absenceRequestId`, award the standard attendance points, and create an audit log. It must not overwrite existing geolocation or manual attendance; those changes require the correction endpoint.
+
 ---
 
 ## 10.5 Correct Attendance
@@ -1080,6 +1169,10 @@ POST /absence-requests
 }
 ```
 
+The request must use exactly one mode: `eventId`, or a complete `startsOn` and `endsOn` range. Combining the modes, supplying a partial range, or using an end date before the start date returns `VALIDATION_ERROR`.
+
+Date ranges are matched against the event start date in the configured church IANA timezone.
+
 ---
 
 ## 11.2 List Own Requests
@@ -1108,6 +1201,21 @@ PATCH /absence-requests/:requestId/review
   "reviewNote": "Approved."
 }
 ```
+
+### Approval Transaction
+
+When `status` is `APPROVED`, the backend shall:
+
+1. Lock and validate the pending absence request.
+2. Resolve eligible covered events whose attendance windows have closed; defer open and future events to finalization.
+3. For an event-specific request, reject approval with `ATTENDANCE_CONFLICT` when that event already has protected `EARLY`, `ON_TIME`, `LATE`, or valid manual attendance.
+4. For a date-range request, preserve and skip covered events that already have protected attendance.
+5. Create an `EXCUSED` system record when no attendance record exists.
+6. Change existing `ABSENT`, `INVALID`, or `PENDING_REVIEW` outcomes to `EXCUSED`.
+7. Set `absenceRequestId`, clear attendance points, and preserve an audit trail.
+8. Mark the absence request approved with reviewer and server timestamps.
+
+Open and future eligible events covered by an approved request are materialized as `EXCUSED` only during event finalization. Approval must not pre-create an outcome that could block a later valid check-in. Overlapping approved requests must not create duplicate attendance records. The response should report affected, deferred, and skipped-attended event counts for date-range approvals.
 
 ---
 
@@ -1263,7 +1371,10 @@ from=2026-07-01
 to=2026-07-31
 departmentId=<uuid>
 eventType=YOUTH_SERVICE
+includeCancelled=false
 ```
+
+`includeCancelled` defaults to `false`. Only authorized administrative report views may set it to `true`; preserved attendance must then be marked non-scoring.
 
 ---
 
@@ -1372,6 +1483,7 @@ PATCH /church/settings
 {
   "name": "Arrows Church",
   "address": "Accra, Ghana",
+  "timezone": "Africa/Accra",
   "latitude": 5.6037,
   "longitude": -0.187,
   "geofenceRadiusMeters": 100,
@@ -1464,6 +1576,14 @@ Refresh token rotation must invalidate the previous token atomically.
 ## Account Action Tokens
 
 Email-verification and password-reset confirmation shall lock the matching token row during consumption. Concurrent submissions for the same token must result in at most one success.
+
+## Event Finalization
+
+Finalization shall be safely repeatable. Concurrent finalization requests, and a finalization racing with the final valid check-in, must result in one correct member-event outcome without lost attendance.
+
+## Event Cancellation
+
+Cancellation shall lock the event row and update the event, attendance points, point-ledger entries, event-specific absence requests, and audit log in one transaction. Concurrent cancellation requests must produce one cancellation result. Cancellation racing with finalization must allow only one valid terminal transition.
 
 ---
 
