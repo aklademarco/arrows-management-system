@@ -62,6 +62,8 @@ erDiagram
 
     MEMBER_PROFILES ||--o{ DEPARTMENT_MEMBERS : joins
     DEPARTMENTS ||--o{ DEPARTMENT_MEMBERS : contains
+    MEMBER_PROFILES ||--o{ PRIMARY_DEPARTMENT_ASSIGNMENTS : designates
+    DEPARTMENT_MEMBERS ||--o{ PRIMARY_DEPARTMENT_ASSIGNMENTS : supports
 
     DEPARTMENTS ||--o{ DEPARTMENT_LEADERS : has
     MEMBER_PROFILES ||--o{ DEPARTMENT_LEADERS : leads
@@ -266,7 +268,6 @@ Stores church-member information separately from authentication data.
 | `other_names` | VARCHAR(150) | Nullable | Other names |
 | `profile_photo_url` | TEXT | Nullable | Profile image |
 | `requested_department_id` | UUID | Nullable FK → departments.id | Registration preference |
-| `primary_department_id` | UUID | Nullable FK → departments.id | Confirmed primary department |
 | `membership_status` | membership_status | Not null, default ACTIVE | Member status |
 | `joined_at` | DATE | Nullable | Church joining date |
 | `approved_at` | TIMESTAMPTZ | Nullable | Account approval time |
@@ -375,7 +376,6 @@ Many-to-many relationship between members and departments.
 | `id` | UUID | Primary key | Membership identifier |
 | `department_id` | UUID | FK → departments.id, not null | Department |
 | `member_id` | UUID | FK → member_profiles.id, not null | Member |
-| `is_primary` | BOOLEAN | Not null, default false | Primary membership |
 | `joined_at` | DATE | Not null | First active membership date |
 | `left_at` | DATE | Nullable | First inactive membership date; null while open-ended |
 | `assigned_by` | UUID | Nullable FK → users.id | Assigning administrator |
@@ -394,9 +394,10 @@ EXCLUDE USING GIST (
   member_id WITH =,
   daterange(joined_at, left_at, '[)') WITH &&
 )
+
 ```
 
-The exclusion constraint requires PostgreSQL's `btree_gist` extension and prevents overlapping periods while allowing a member to leave and later rejoin the same department.
+The exclusion constraint requires PostgreSQL's `btree_gist` extension. It prevents overlapping periods in the same department while allowing a later rejoin.
 
 Lifecycle rules:
 
@@ -405,11 +406,52 @@ Lifecycle rules:
 - `end_reason` must contain meaningful non-whitespace text.
 - Membership periods are never hard-deleted through normal application workflows.
 - Event eligibility uses the period containing the event start date in `churches.timezone`, not the member's current membership.
-- Application and database logic should enforce at most one active primary department per member.
 
 ---
 
-## 5.9 `department_leaders`
+## 5.9 `primary_department_assignments`
+
+Stores the dated primary-department designation independently from department membership history.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Primary assignment identifier |
+| `member_id` | UUID | FK → member_profiles.id, not null | Assigned member |
+| `department_membership_id` | UUID | FK → department_members.id, not null | Supporting membership period |
+| `starts_at` | DATE | Not null | First date the department is primary |
+| `ends_at` | DATE | Nullable | First date it is no longer primary |
+| `assigned_by` | UUID | FK → users.id, not null | Assigning administrator |
+| `ended_by` | UUID | Nullable FK → users.id | Administrator ending the assignment |
+| `end_reason` | TEXT | Nullable | Required reason for ending the assignment |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last lifecycle update |
+
+### Primary Assignment Constraints
+
+```text
+CHECK (ends_at IS NULL OR ends_at >= starts_at)
+
+EXCLUDE USING GIST (
+  member_id WITH =,
+  daterange(starts_at, ends_at, '[)') WITH &&
+)
+```
+
+Rules:
+
+- The referenced membership period must belong to the same `member_id`.
+- The primary-assignment period must be fully contained by the referenced membership period.
+- A deferrable PostgreSQL constraint trigger shall enforce member identity and date containment when either table changes.
+- Primary periods for a member cannot overlap.
+- A zero-length period is permitted to preserve the audit history of an assignment cancelled on its start date.
+- `ends_at`, `ended_by`, and `end_reason` are either all null or all populated.
+- A member may temporarily have no primary department, in which case administrator-only fallbacks apply.
+- This table is the only persisted source of primary-department truth.
+- `member_profiles` and `department_members` do not duplicate the designation.
+
+---
+
+## 5.10 `department_leaders`
 
 Assigns leadership responsibility to a department.
 
@@ -448,7 +490,7 @@ A department may have multiple leaders.
 
 ---
 
-## 5.10 `events`
+## 5.11 `events`
 
 Stores services, meetings, rehearsals, and special programmes.
 
@@ -494,7 +536,7 @@ Stores services, meetings, rehearsals, and special programmes.
 
 ---
 
-## 5.11 `event_departments`
+## 5.12 `event_departments`
 
 Identifies departments expected at an event.
 
@@ -516,7 +558,7 @@ If an event has no department assignments, it may be treated as open to all acti
 
 ---
 
-## 5.12 `attendance_records`
+## 5.13 `attendance_records`
 
 Stores attendance decisions and geolocation evidence.
 
@@ -561,7 +603,7 @@ UNIQUE (event_id, member_id)
 
 ---
 
-## 5.13 `absence_requests`
+## 5.14 `absence_requests`
 
 Stores absence and leave requests.
 
@@ -587,7 +629,7 @@ Approval reconciles only covered events whose attendance windows have closed. Op
 
 ---
 
-## 5.14 `leaderboard_entries`
+## 5.15 `leaderboard_entries`
 
 Stores secondary motivational points as an auditable ledger. Official leaderboard rank is calculated from attendance and punctuality percentages, not from the sum of these points.
 
@@ -648,7 +690,7 @@ Rules:
 
 ---
 
-## 5.15 `refresh_tokens`
+## 5.16 `refresh_tokens`
 
 Stores hashed refresh-token sessions.
 
@@ -668,7 +710,7 @@ Raw refresh tokens must never be stored.
 
 ---
 
-## 5.16 `account_action_tokens`
+## 5.17 `account_action_tokens`
 
 Stores hashed, expiring, single-use tokens for account verification and recovery.
 
@@ -696,7 +738,7 @@ Stores hashed, expiring, single-use tokens for account verification and recovery
 
 ---
 
-## 5.17 `audit_logs`
+## 5.18 `audit_logs`
 
 Stores sensitive administrative and system actions.
 
@@ -803,6 +845,17 @@ ON department_members (department_id, member_id, joined_at, left_at)
 
 INDEX department_members_member_idx
 ON department_members (member_id)
+
+```
+
+## Primary Department Assignments
+
+```text
+INDEX primary_department_assignments_member_dates_idx
+ON primary_department_assignments (member_id, starts_at, ends_at)
+
+INDEX primary_department_assignments_membership_idx
+ON primary_department_assignments (department_membership_id)
 ```
 
 ## Department Leadership
@@ -984,11 +1037,23 @@ Immediate revocation records `revoked_at`, `revoked_by`, and `revocation_reason`
 Lock membership periods for the member and department
 Validate the proposed half-open date range does not overlap
 Create a new department_members period
-Update primary membership consistently when requested
+Create a primary_department_assignments period when requested
 Create an audit log
 ```
 
 Ending membership updates `left_at`, `ended_by`, `end_reason`, and `updated_at` without deleting the period. Historical event eligibility and reports continue to use the preserved dates.
+
+## Primary Department Change
+
+```text
+Lock the member's primary assignments and supporting memberships
+End the current primary assignment at the effective date
+Create the replacement assignment when requested
+Preserve department-membership periods unchanged
+Create an audit log
+```
+
+The exclusion constraint prevents overlapping primary periods. Assignment containment validation ensures a department cannot be primary outside its supporting membership period.
 
 ## Manual Attendance Correction
 

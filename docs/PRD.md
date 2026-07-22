@@ -153,6 +153,7 @@ Cancelling an event will preserve any attendance already submitted for audit, ex
 The system shall:
 
 - Allow multiple departments per member.
+- Store dated primary-department assignments as the single source of truth, independently from membership history.
 - Assign department leaders.  
 - Enforce leadership start and end dates for department access.
 - Preserve dated department-membership history when members leave and rejoin.

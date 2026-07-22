@@ -306,6 +306,7 @@ Responsible for:
 - Departments
 - Historical membership-period creation and ending
 - Membership overlap prevention
+- Primary-department assignment history
 - Department leaders
 - Department access restrictions
 
@@ -464,6 +465,7 @@ schema/
 ├── roles.ts
 ├── members.ts
 ├── departments.ts
+├── primary-departments.ts
 ├── events.ts
 ├── attendance.ts
 ├── absence-requests.ts
@@ -482,6 +484,7 @@ schema/
 - Migrations must be tested before deployment.
 - Database backups should exist before destructive changes.
 - The membership-period migration shall enable PostgreSQL's `btree_gist` extension and add the documented GiST exclusion constraint.
+- The same migration shall add the non-overlapping primary-assignment exclusion constraint and a deferrable constraint trigger validating that every primary assignment uses the same member and is contained by its supporting membership period.
 
 ---
 
@@ -644,7 +647,7 @@ A shared `DepartmentScopeService` shall:
 - Verify a requested department is in that set.
 - Apply department predicates directly to member, attendance, absence, leaderboard, and report queries.
 - Enforce same-church boundaries.
-- Use the member's primary department for date-range absences and open-to-all event absence reviews.
+- Resolve the member's primary department from `primary_department_assignments` for date-range absences and open-to-all event absence reviews.
 - Use scoped queries and return `NOT_FOUND` for missing or out-of-scope object identifiers; use `DEPARTMENT_SCOPE_FORBIDDEN` only when denying access to an explicitly known department context.
 
 Controllers and the frontend must not implement independent versions of this rule. Services must not fetch church-wide data and filter it in memory after authorization.
@@ -960,6 +963,7 @@ Log:
 - Registration approvals
 - Department-leader assignment and revocation
 - Department membership assignment and ending
+- Primary-department assignment changes
 - Attendance decisions
 - Event attendance finalization summaries
 - Event cancellation summaries and point-voiding counts
@@ -1041,6 +1045,7 @@ Test:
 - Role authorization helpers
 - Department-scope date and revocation evaluation
 - Half-open membership-period and event-eligibility calculations
+- Primary-assignment overlap and containment validation
 
 ## 17.2 Integration Tests
 
@@ -1055,6 +1060,8 @@ Test:
 - Membership overlap rejection under concurrent requests
 - Historical event eligibility before and after a membership boundary
 - Leader-scope removal when department membership ends
+- Primary-department reassignment without membership-history mutation
+- Primary-assignment overlap and out-of-membership rejection
 - Login
 - Token refresh
 - Email verification and token reuse prevention

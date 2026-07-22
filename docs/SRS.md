@@ -223,6 +223,7 @@ The system shall:
 - Store membership status.
 - Assign one or more departments.
 - Assign one primary department.
+- Derive the primary department exclusively from the active `primary_department_assignments` period.
 - Assign leadership responsibilities.
 - Allow administrators to activate, suspend, or archive members.
 - Preserve historical attendance when a member becomes inactive.
@@ -521,6 +522,7 @@ The system shall record audit logs for:
 - Role changes.
 - Department assignment changes.
 - Department membership period creation and ending.
+- Primary-department assignment, reassignment, and clearing.
 - Department-leader assignment and revocation.
 - Event creation and updates.
 - Event cancellation and point voiding.
@@ -566,6 +568,11 @@ Authentication audit records shall never contain raw action tokens, password val
 
 - A member may belong to multiple departments.
 - A member shall have at most one primary department.
+- `primary_department_assignments` shall be the only persisted primary-department source of truth; neither `member_profiles` nor `department_members` shall duplicate the designation.
+- Primary-assignment periods for the same member shall never overlap.
+- Every primary assignment shall reference a department-membership period that fully contains it.
+- Changing a primary department shall not split or rewrite continuous department-membership history.
+- Profile and API representations shall derive the primary department through the active primary-assignment relationship.
 - A membership period is active on date `D` when `joined_at <= D` and (`left_at` is null or `D < left_at`).
 - Membership periods for the same member and department shall not overlap.
 - Ending a membership shall preserve prior attendance, leadership, and reporting history.
@@ -710,6 +717,8 @@ The MVP shall be considered ready for internal testing when:
 - Cross-department member, attendance, absence, and report requests are rejected without leaking protected data.
 - Members can leave and rejoin a department without overwriting or duplicating historical periods.
 - Overlapping department membership periods are rejected.
+- Primary-department changes preserve membership history and never create overlapping primary periods.
+- A primary assignment outside its supporting membership period is rejected.
 - Department leaders cannot add or remove department members.
 - Administrators can create events with geofence settings.
 - Administrators can cancel an eligible event with complete audit metadata.

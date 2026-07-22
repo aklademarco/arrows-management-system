@@ -350,6 +350,8 @@ GET /auth/me
 }
 ```
 
+`primaryDepartment` is derived from the `primary_department_assignments` period active on the current church-local date. It is `null` when no assignment is active.
+
 ---
 
 ## 5.6 Request Password Reset
@@ -557,10 +559,11 @@ The backend should:
 2. Validate that `email_verified_at` is not null.
 3. Change account status to `ACTIVE`.
 4. Create or update the member profile.
-5. Assign confirmed departments.
-6. Assign approved roles.
-7. Create an account review record.
-8. Create an audit log.
+5. Create confirmed department-membership periods.
+6. Create the initial primary-department assignment referencing the confirmed primary membership.
+7. Assign approved roles.
+8. Create an account review record.
+9. Create an audit log.
 
 ---
 
@@ -699,6 +702,41 @@ Historical attendance must remain intact.
 
 ---
 
+## 7.6 Set or Clear Primary Department
+
+```http
+PUT /members/:memberId/primary-department
+```
+
+**Roles:** `SUPER_ADMIN`, `ADMIN`
+
+### Request
+
+```json
+{
+  "departmentMembershipId": "62296940-eed9-4cc9-9fd9-5709bd8e1e84",
+  "effectiveOn": "2026-08-01",
+  "reason": "Member transferred primary responsibility."
+}
+```
+
+Use `departmentMembershipId: null` to clear the primary designation. `effectiveOn` defaults to the current date in the church timezone and cannot be in the past in Version 1. The reason must contain meaningful non-whitespace text.
+
+### Transaction
+
+The backend shall:
+
+1. Lock the member's primary assignments and the proposed supporting membership.
+2. Validate that the membership belongs to the member and contains `effectiveOn`.
+3. End the existing primary assignment at `effectiveOn` when one exists.
+4. Create the replacement assignment when `departmentMembershipId` is not null.
+5. Preserve prior primary history without changing department-membership periods.
+6. Create an audit log.
+
+The operation must satisfy the non-overlapping primary-period exclusion constraint. A repeated request producing the same effective state is idempotent.
+
+---
+
 # 8. Department API
 
 ## 8.1 List Departments
@@ -763,14 +801,14 @@ POST /departments/:departmentId/members
 ```json
 {
   "memberId": "ce686f62-3e76-4f41-aef2-c9d376a52906",
-  "isPrimary": true,
+  "makePrimary": true,
   "joinedAt": "2026-07-22"
 }
 ```
 
 Each request creates a new open-ended membership period. `joinedAt` defaults to the current date in the church timezone. Immediate or scheduled endings must use the audited end-membership endpoint.
 
-The transaction shall lock relevant membership periods, reject any overlap for the same member and department, maintain the member's single-primary-department invariant, and create an audit log. A member who previously left the department rejoins through a new period rather than reopening or overwriting the old row.
+The transaction shall lock relevant membership periods, reject any overlap for the same member and department, and create an audit log. When `makePrimary` is true, it shall call the primary-department assignment service using the new membership period. A member who previously left the department rejoins through a new period rather than reopening or overwriting the old row.
 
 ---
 
@@ -788,7 +826,7 @@ POST /departments/:departmentId/memberships/:membershipId/end
 {
   "leftAt": "2026-08-01",
   "reason": "Member transferred to another department.",
-  "replacementPrimaryDepartmentId": null
+  "replacementPrimaryMembershipId": null
 }
 ```
 
@@ -796,7 +834,7 @@ POST /departments/:departmentId/memberships/:membershipId/end
 
 The backend shall lock the exact membership period, validate that it belongs to the route department, set `leftAt`, `endedBy`, `endReason`, and `updatedAt`, and create an audit log. The record must never be deleted.
 
-If the period is primary, the transaction must either set a valid active replacement supplied by the administrator or clear the member's primary department. Ending membership removes any department-leader scope derived from that membership on the next request, although historical leadership assignments remain stored.
+If an active or future primary assignment depends on this membership beyond `leftAt`, the transaction must end that assignment at `leftAt`. It may create a valid replacement supplied by the administrator with the same effective date; otherwise the member temporarily has no primary department. Ending membership removes any department-leader scope derived from that membership on the next request, although historical leadership assignments remain stored.
 
 Repeating the same end operation is idempotent. A conflicting attempt to rewrite an already ended period returns `CONFLICT`.
 

@@ -435,7 +435,7 @@ Allow administrators to review and manage registrations.
 - [ ] Search and filter registrations.
 - [ ] View registration details.
 - [ ] Approve user.
-- [ ] Confirm primary department.
+- [ ] Create the initial dated primary-department assignment.
 - [ ] Assign additional departments.
 - [ ] Assign roles.
 - [ ] Reject user with reason.
@@ -482,7 +482,7 @@ Implement core church workforce management.
 - [ ] Deactivate department.
 - [ ] Add member to department.
 - [ ] Remove active membership.
-- [ ] Set primary department.
+- [ ] Set or clear primary department through dated assignment periods.
 - [ ] Assign department leader.
 - [ ] End leadership assignment.
 - [ ] Restrict leader visibility by department.
@@ -495,7 +495,7 @@ Implement core church workforce management.
 
 ## Acceptance Criteria
 
-A member can belong to multiple departments but can have only one active primary department.
+A member can belong to multiple departments but can have only one active primary-department assignment. `primary_department_assignments` is the sole persisted source; profile and membership records do not duplicate the designation.
 
 ---
 
