@@ -107,9 +107,11 @@ arrows-church-management-system/
 ├── packages/
 │   └── shared/
 ├── docker/
+├── .github/
 ├── AGENTS.md
 ├── README.md
 ├── package.json
+├── pnpm-workspace.yaml
 └── docker-compose.yml
 ```
 

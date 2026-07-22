@@ -82,7 +82,7 @@ The long-term vision is to build a complete church management platform that can 
 * Tailwind CSS
 * shadcn/ui
 
-### Backend (Planned)
+### Backend
 
 * NestJS
 * PostgreSQL
@@ -96,16 +96,19 @@ The long-term vision is to build a complete church management platform that can 
 
 ```text
 .
+├── apps/
+│   ├── web/                 # Next.js application
+│   └── api/                 # NestJS REST API
+├── packages/
+│   └── shared/              # Shared TypeScript contracts
 ├── docs/
-│   ├── PRD.md
-│   ├── SRS.md
-│   ├── ERD.md
-│   └── API.md
-├── public/
-├── src/
+├── docker/
+├── .github/
 ├── AGENTS.md
 ├── README.md
-└── package.json
+├── package.json
+├── pnpm-workspace.yaml
+└── docker-compose.yml
 ```
 
 ---
@@ -114,38 +117,49 @@ The long-term vision is to build a complete church management platform that can 
 
 Project documentation is located in the `docs/` directory.
 
-Current documents include:
-
-* Product Requirements Document (PRD)
-
-Additional documentation will include:
-
-* Software Requirements Specification (SRS)
-* Database Design (ERD)
-* API Specification
-* System Architecture
-* Development Roadmap
+Current documents include the product requirements, software requirements,
+database design and DBML schema, API specification, architecture, security
+model, and development roadmap.
 
 ---
 
 ## Getting Started
 
-Install dependencies:
+Prerequisites:
+
+* Node.js 20.9 or newer
+* pnpm 11
+
+Install all workspace dependencies from the repository root:
 
 ```bash
-npm install
+pnpm install
 ```
 
-Start the development server:
+Start both applications:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-Open:
+Or start either application independently:
 
+```bash
+pnpm dev:web
+pnpm dev:api
 ```
-http://localhost:3000
+
+The web application runs at `http://localhost:3000`. The API runs at
+`http://localhost:4000`.
+
+Run repository checks:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+```
 ```
 
 ---
@@ -155,8 +169,8 @@ http://localhost:3000
 * [x] Project planning
 * [x] Product Requirements Document (PRD)
 * [x] Software Requirements Specification (SRS)
-* [ ] Database Design
-* [ ] Backend Architecture
+* [x] Database Design
+* [x] Backend Architecture
 * [ ] Authentication Module
 * [ ] Member Management
 * [ ] Department Management
