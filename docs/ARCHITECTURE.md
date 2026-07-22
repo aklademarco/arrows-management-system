@@ -61,12 +61,14 @@ flowchart LR
     W[Next.js Web Application]
     A[NestJS REST API]
     D[(PostgreSQL Database)]
+    E[Transactional Email Provider]
     S[Object Storage]
     M[Monitoring and Logs]
 
     U --> W
     W --> A
     A --> D
+    A --> E
     A --> S
     A --> M
 ```
@@ -79,6 +81,7 @@ flowchart LR
 | NestJS REST API | Business logic, validation, authorization, geofence checks |
 | PostgreSQL | Persistent relational data |
 | Drizzle ORM | Database schema, queries, migrations |
+| Transactional email provider | Email verification and password-reset delivery |
 | Object storage | Profile images and future uploaded files |
 | Docker | Local and production service packaging |
 | Nginx | Production reverse proxy |
@@ -268,12 +271,14 @@ apps/api/src/
 Responsible for:
 
 - Registration
+- Email verification
 - Login
 - Password hashing
 - Access tokens
 - Refresh-token rotation
 - Logout
 - Password reset
+- Account-action token issuance, hashing, expiry, and consumption
 - Account-status checks
 
 ### Users Module
@@ -458,6 +463,7 @@ schema/
 ├── absence-requests.ts
 ├── leaderboards.ts
 ├── refresh-tokens.ts
+├── account-action-tokens.ts
 ├── audit-logs.ts
 └── index.ts
 ```
@@ -482,13 +488,19 @@ sequenceDiagram
     participant W as Web App
     participant A as API
     participant D as Database
+    participant E as Email Provider
     participant ADM as Administrator
 
     U->>W: Submit registration
     W->>A: POST /auth/register
-    A->>D: Create pending account
+    A->>D: Create pending account and hashed verification token
     D-->>A: Account created
-    A-->>W: Pending approval
+    A->>E: Send verification link with raw token
+    A-->>W: Verification required
+    U->>W: Open verification link
+    W->>A: Confirm email-verification token
+    A->>D: Verify email and consume token atomically
+    A-->>W: Pending administrator approval
     ADM->>A: Approve account
     A->>D: Activate user and assign role
     A-->>ADM: Approval successful
@@ -529,6 +541,47 @@ Never:
 - Log password values
 - Return password hashes
 - Implement custom cryptography
+
+## 9.5 Account Action Tokens
+
+Use a shared account-action token service for email verification and password reset.
+
+Issuance flow:
+
+```text
+Generate a cryptographically secure random token
+        ↓
+Hash the token with SHA-256
+        ↓
+Revoke prior unused tokens of the same type
+        ↓
+Store only the hash and expiry
+        ↓
+Send the raw token through the transactional email provider
+```
+
+Consumption flow:
+
+```text
+Hash the submitted token
+        ↓
+Lock and validate the matching database row
+        ↓
+Reject expired, used, or revoked tokens
+        ↓
+Apply the account action and mark the token used in one transaction
+```
+
+Policy:
+
+- Email-verification tokens expire after 24 hours.
+- Password-reset tokens expire after 30 minutes.
+- Raw tokens must never be stored, logged, or returned in API response data.
+- Verification and reset request endpoints use generic responses to resist account enumeration.
+- Email must be verified before an administrator can approve an account.
+- Successful password reset revokes every refresh-token session for the user.
+- Concurrent consumption attempts must allow at most one success.
+- Email delivery shall be accessed through an application interface so providers can be changed without modifying authentication business logic.
 
 ---
 
@@ -775,6 +828,9 @@ FRONTEND_URL
 STORAGE_ENDPOINT
 STORAGE_ACCESS_KEY
 STORAGE_SECRET_KEY
+EMAIL_FROM
+EMAIL_PROVIDER
+EMAIL_API_KEY
 SENTRY_DSN
 ```
 
@@ -889,6 +945,8 @@ Test:
 - Approval
 - Login
 - Token refresh
+- Email verification and token reuse prevention
+- Password reset, expiry, and session revocation
 - Event creation
 - Attendance check-in
 - Duplicate prevention
