@@ -1,0 +1,33 @@
+Table churches {
+  id uuid [pk]
+  name varchar(150) [not null]
+  slug varchar(100) [not null, unique]
+  logo_url text
+  email varchar(255)
+  phone varchar(30)
+  address text
+  latitude decimal(9,6)
+  longitude decimal(9,6)
+  geofence_radius_meters integer [not null, default: 100]
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table users {
+  id uuid [pk]
+  church_id uuid [not null]
+  email varchar(255) [not null, unique]
+  phone varchar(30) [unique]
+  password_hash text [not null]
+  account_status varchar [not null, default: 'PENDING_APPROVAL']
+  email_verified_at timestamptz
+  last_login_at timestamptz
+  failed_login_attempts integer [not null, default: 0]
+  locked_until timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  archived_at timestamptz
+}
+
+Ref: users.church_id > churches.id
