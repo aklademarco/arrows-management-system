@@ -1,0 +1,831 @@
+# Database Design and Entity Relationship Diagram
+
+## Arrows Church Management System (ACMS)
+
+**Version:** 1.0  
+**Status:** Draft  
+**Database:** PostgreSQL  
+**ORM:** Drizzle ORM  
+
+---
+
+## 1. Purpose
+
+This document defines the initial relational database design for the Arrows Church Management System.
+
+The database supports:
+
+- Public user registration
+- Administrator approval
+- Role-based access control
+- Members and departments
+- Church events
+- Geofence-based attendance
+- Manual attendance
+- Absence requests
+- Leaderboards
+- Audit logging
+
+The first version serves Arrows Church only, but selected tables include `church_id` to simplify future support for multiple branches or churches.
+
+---
+
+## 2. Design Principles
+
+- Use UUID primary keys.
+- Use foreign-key constraints.
+- Use timestamps in UTC.
+- Use database-level unique constraints for critical business rules.
+- Preserve historical attendance records.
+- Avoid hard deletion of important records.
+- Use status fields for lifecycle management.
+- Store only necessary location evidence.
+- Keep authentication data separate from member profile data.
+- Use join tables for many-to-many relationships.
+
+---
+
+## 3. Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    CHURCHES ||--o{ USERS : contains
+    CHURCHES ||--o{ DEPARTMENTS : owns
+    CHURCHES ||--o{ EVENTS : schedules
+
+    USERS ||--o| MEMBER_PROFILES : has
+    USERS ||--o{ USER_ROLES : receives
+    ROLES ||--o{ USER_ROLES : assigns
+
+    USERS ||--o{ ACCOUNT_REVIEWS : reviewed_user
+    USERS ||--o{ ACCOUNT_REVIEWS : reviewed_by
+
+    MEMBER_PROFILES ||--o{ DEPARTMENT_MEMBERS : joins
+    DEPARTMENTS ||--o{ DEPARTMENT_MEMBERS : contains
+
+    DEPARTMENTS ||--o{ DEPARTMENT_LEADERS : has
+    MEMBER_PROFILES ||--o{ DEPARTMENT_LEADERS : leads
+
+    EVENTS ||--o{ EVENT_DEPARTMENTS : requires
+    DEPARTMENTS ||--o{ EVENT_DEPARTMENTS : assigned
+
+    MEMBER_PROFILES ||--o{ ATTENDANCE_RECORDS : records
+    EVENTS ||--o{ ATTENDANCE_RECORDS : contains
+    USERS ||--o{ ATTENDANCE_RECORDS : manually_marked_by
+
+    MEMBER_PROFILES ||--o{ ABSENCE_REQUESTS : submits
+    EVENTS ||--o{ ABSENCE_REQUESTS : concerns
+    USERS ||--o{ ABSENCE_REQUESTS : reviewed_by
+
+    MEMBER_PROFILES ||--o{ LEADERBOARD_ENTRIES : earns
+    DEPARTMENTS ||--o{ LEADERBOARD_ENTRIES : earns
+    EVENTS ||--o{ LEADERBOARD_ENTRIES : source
+
+    USERS ||--o{ REFRESH_TOKENS : owns
+    USERS ||--o{ AUDIT_LOGS : performs
+```
+
+---
+
+## 4. Enumerations
+
+### 4.1 Account Status
+
+```text
+PENDING_APPROVAL
+ACTIVE
+REJECTED
+SUSPENDED
+ARCHIVED
+```
+
+### 4.2 Membership Status
+
+```text
+ACTIVE
+INACTIVE
+ON_LEAVE
+ARCHIVED
+```
+
+### 4.3 Event Status
+
+```text
+DRAFT
+SCHEDULED
+ACTIVE
+COMPLETED
+CANCELLED
+```
+
+### 4.4 Attendance Status
+
+```text
+EARLY
+ON_TIME
+LATE
+ABSENT
+EXCUSED
+MANUAL
+PENDING_REVIEW
+INVALID
+```
+
+### 4.5 Attendance Method
+
+```text
+GEOLOCATION
+MANUAL
+SYSTEM
+```
+
+### 4.6 Absence Request Status
+
+```text
+PENDING
+APPROVED
+REJECTED
+NEEDS_CLARIFICATION
+CANCELLED
+```
+
+### 4.7 Review Decision
+
+```text
+APPROVED
+REJECTED
+SUSPENDED
+REACTIVATED
+```
+
+### 4.8 Leaderboard Subject Type
+
+```text
+MEMBER
+DEPARTMENT
+```
+
+### 4.9 Leaderboard Period
+
+```text
+WEEKLY
+MONTHLY
+QUARTERLY
+YEARLY
+```
+
+---
+
+# 5. Tables
+
+## 5.1 `churches`
+
+Stores the church organization.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Church identifier |
+| `name` | VARCHAR(150) | Not null | Church name |
+| `slug` | VARCHAR(100) | Unique, not null | URL-safe identifier |
+| `logo_url` | TEXT | Nullable | Church logo |
+| `email` | VARCHAR(255) | Nullable | Church email |
+| `phone` | VARCHAR(30) | Nullable | Church phone |
+| `address` | TEXT | Nullable | Church address |
+| `latitude` | DECIMAL(9,6) | Nullable | Default church latitude |
+| `longitude` | DECIMAL(9,6) | Nullable | Default church longitude |
+| `geofence_radius_meters` | INTEGER | Not null, default 100 | Default attendance radius |
+| `is_active` | BOOLEAN | Not null, default true | Organization status |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last update |
+
+For version 1, this table will contain one Arrows Church record.
+
+---
+
+## 5.2 `users`
+
+Stores authentication and account lifecycle information.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | User identifier |
+| `church_id` | UUID | FK → churches.id, not null | Associated church |
+| `email` | VARCHAR(255) | Unique, not null | Login email |
+| `phone` | VARCHAR(30) | Unique, nullable | User phone |
+| `password_hash` | TEXT | Not null | Argon2 password hash |
+| `account_status` | account_status | Not null, default PENDING_APPROVAL | Account lifecycle |
+| `email_verified_at` | TIMESTAMPTZ | Nullable | Email verification time |
+| `last_login_at` | TIMESTAMPTZ | Nullable | Last successful login |
+| `failed_login_attempts` | INTEGER | Not null, default 0 | Failed login count |
+| `locked_until` | TIMESTAMPTZ | Nullable | Temporary lock expiration |
+| `created_at` | TIMESTAMPTZ | Not null | Registration time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last update |
+| `archived_at` | TIMESTAMPTZ | Nullable | Archive time |
+
+### Constraints
+
+- Normalize emails to lowercase.
+- Phone numbers should be stored in a normalized international format.
+- Rejected and suspended users retain their records.
+- Password hashes must never be returned through the API.
+
+---
+
+## 5.3 `member_profiles`
+
+Stores church-member information separately from authentication data.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Member identifier |
+| `user_id` | UUID | Unique FK → users.id, not null | Related user |
+| `membership_number` | VARCHAR(50) | Unique, nullable | Church member number |
+| `first_name` | VARCHAR(100) | Not null | First name |
+| `last_name` | VARCHAR(100) | Not null | Last name |
+| `other_names` | VARCHAR(150) | Nullable | Other names |
+| `profile_photo_url` | TEXT | Nullable | Profile image |
+| `requested_department_id` | UUID | Nullable FK → departments.id | Registration preference |
+| `primary_department_id` | UUID | Nullable FK → departments.id | Confirmed primary department |
+| `membership_status` | membership_status | Not null, default ACTIVE | Member status |
+| `joined_at` | DATE | Nullable | Church joining date |
+| `approved_at` | TIMESTAMPTZ | Nullable | Account approval time |
+| `approved_by` | UUID | Nullable FK → users.id | Approving administrator |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last update |
+
+A requested department does not grant membership automatically.
+
+---
+
+## 5.4 `roles`
+
+Stores system roles.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Role identifier |
+| `name` | VARCHAR(80) | Unique, not null | Role name |
+| `description` | TEXT | Nullable | Role explanation |
+| `is_system_role` | BOOLEAN | Not null, default true | Protected role |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+
+Initial roles:
+
+```text
+SUPER_ADMIN
+ADMIN
+DEPARTMENT_LEADER
+ATTENDANCE_OFFICER
+MEMBER
+```
+
+---
+
+## 5.5 `user_roles`
+
+Many-to-many relationship between users and roles.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Assignment identifier |
+| `user_id` | UUID | FK → users.id, not null | User |
+| `role_id` | UUID | FK → roles.id, not null | Role |
+| `assigned_by` | UUID | Nullable FK → users.id | Assigning administrator |
+| `assigned_at` | TIMESTAMPTZ | Not null | Assignment time |
+
+### Unique Constraint
+
+```text
+UNIQUE (user_id, role_id)
+```
+
+Trusted roles must never be assigned during public registration.
+
+---
+
+## 5.6 `account_reviews`
+
+Records administrative account decisions.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Review identifier |
+| `user_id` | UUID | FK → users.id, not null | Reviewed user |
+| `reviewed_by` | UUID | FK → users.id, not null | Administrator |
+| `previous_status` | account_status | Not null | Previous status |
+| `new_status` | account_status | Not null | New status |
+| `decision` | review_decision | Not null | Administrative decision |
+| `reason` | TEXT | Nullable | Reason or note |
+| `created_at` | TIMESTAMPTZ | Not null | Decision time |
+
+This table creates a history of approvals, rejections, suspensions, and reactivations.
+
+---
+
+## 5.7 `departments`
+
+Stores church departments.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Department identifier |
+| `church_id` | UUID | FK → churches.id, not null | Church |
+| `name` | VARCHAR(120) | Not null | Department name |
+| `slug` | VARCHAR(120) | Not null | URL-safe identifier |
+| `description` | TEXT | Nullable | Department description |
+| `is_active` | BOOLEAN | Not null, default true | Department status |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last update |
+
+### Unique Constraint
+
+```text
+UNIQUE (church_id, slug)
+```
+
+---
+
+## 5.8 `department_members`
+
+Many-to-many relationship between members and departments.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Membership identifier |
+| `department_id` | UUID | FK → departments.id, not null | Department |
+| `member_id` | UUID | FK → member_profiles.id, not null | Member |
+| `is_primary` | BOOLEAN | Not null, default false | Primary membership |
+| `joined_at` | DATE | Not null | Membership start |
+| `left_at` | DATE | Nullable | Membership end |
+| `assigned_by` | UUID | Nullable FK → users.id | Assigning administrator |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+
+### Unique Constraint
+
+```text
+UNIQUE (department_id, member_id)
+```
+
+Application and database logic should enforce at most one active primary department per member.
+
+---
+
+## 5.9 `department_leaders`
+
+Assigns leadership responsibility to a department.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Leadership assignment |
+| `department_id` | UUID | FK → departments.id, not null | Department |
+| `member_id` | UUID | FK → member_profiles.id, not null | Leader |
+| `title` | VARCHAR(100) | Nullable | Example: Head Usher |
+| `starts_at` | DATE | Not null | Leadership start |
+| `ends_at` | DATE | Nullable | Leadership end |
+| `assigned_by` | UUID | Nullable FK → users.id | Assigning administrator |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+
+### Unique Constraint
+
+```text
+UNIQUE (department_id, member_id, starts_at)
+```
+
+A department may have multiple leaders.
+
+---
+
+## 5.10 `events`
+
+Stores services, meetings, rehearsals, and special programmes.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Event identifier |
+| `church_id` | UUID | FK → churches.id, not null | Church |
+| `name` | VARCHAR(180) | Not null | Event name |
+| `event_type` | VARCHAR(80) | Not null | Event category |
+| `description` | TEXT | Nullable | Event details |
+| `starts_at` | TIMESTAMPTZ | Not null | Event start |
+| `ends_at` | TIMESTAMPTZ | Not null | Event end |
+| `attendance_opens_at` | TIMESTAMPTZ | Not null | Check-in opening |
+| `attendance_closes_at` | TIMESTAMPTZ | Not null | Check-in closing |
+| `early_until` | TIMESTAMPTZ | Nullable | Early threshold |
+| `late_after` | TIMESTAMPTZ | Not null | Late threshold |
+| `location_name` | VARCHAR(180) | Nullable | Venue name |
+| `latitude` | DECIMAL(9,6) | Not null | Event latitude |
+| `longitude` | DECIMAL(9,6) | Not null | Event longitude |
+| `geofence_radius_meters` | INTEGER | Not null | Attendance radius |
+| `maximum_accuracy_meters` | INTEGER | Not null, default 50 | Accepted GPS accuracy |
+| `status` | event_status | Not null, default DRAFT | Event lifecycle |
+| `created_by` | UUID | FK → users.id, not null | Creator |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last update |
+
+### Validation Rules
+
+- `ends_at` must be after `starts_at`.
+- `attendance_closes_at` must be after `attendance_opens_at`.
+- `geofence_radius_meters` must be greater than zero.
+- Coordinates must be valid geographic values.
+
+---
+
+## 5.11 `event_departments`
+
+Identifies departments expected at an event.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Assignment identifier |
+| `event_id` | UUID | FK → events.id, not null | Event |
+| `department_id` | UUID | FK → departments.id, not null | Required department |
+| `is_required` | BOOLEAN | Not null, default true | Whether attendance is expected |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+
+### Unique Constraint
+
+```text
+UNIQUE (event_id, department_id)
+```
+
+If an event has no department assignments, it may be treated as open to all active members.
+
+---
+
+## 5.12 `attendance_records`
+
+Stores attendance decisions and geolocation evidence.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Attendance identifier |
+| `event_id` | UUID | FK → events.id, not null | Event |
+| `member_id` | UUID | FK → member_profiles.id, not null | Member |
+| `status` | attendance_status | Not null | Attendance result |
+| `method` | attendance_method | Not null | Attendance method |
+| `checked_in_at` | TIMESTAMPTZ | Nullable | Check-in time |
+| `latitude` | DECIMAL(9,6) | Nullable | Submitted latitude |
+| `longitude` | DECIMAL(9,6) | Nullable | Submitted longitude |
+| `accuracy_meters` | DECIMAL(8,2) | Nullable | Browser-reported accuracy |
+| `distance_meters` | DECIMAL(8,2) | Nullable | Server-calculated distance |
+| `within_geofence` | BOOLEAN | Nullable | Verification result |
+| `points_awarded` | INTEGER | Not null, default 0 | Leaderboard points |
+| `marked_by` | UUID | Nullable FK → users.id | Manual actor |
+| `manual_reason` | TEXT | Nullable | Manual attendance reason |
+| `review_note` | TEXT | Nullable | Administrative note |
+| `created_at` | TIMESTAMPTZ | Not null | Record creation |
+| `updated_at` | TIMESTAMPTZ | Not null | Last update |
+
+### Unique Constraint
+
+```text
+UNIQUE (event_id, member_id)
+```
+
+### Important Rules
+
+- Geolocation attendance requires coordinates, accuracy, and distance.
+- Manual attendance requires `marked_by` and `manual_reason`.
+- The server timestamp determines punctuality.
+- Duplicate attendance must be rejected at the database level.
+
+---
+
+## 5.13 `absence_requests`
+
+Stores absence and leave requests.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Request identifier |
+| `member_id` | UUID | FK → member_profiles.id, not null | Requesting member |
+| `event_id` | UUID | Nullable FK → events.id | Affected event |
+| `starts_on` | DATE | Nullable | Leave start |
+| `ends_on` | DATE | Nullable | Leave end |
+| `reason` | VARCHAR(150) | Not null | Reason category |
+| `details` | TEXT | Nullable | Explanation |
+| `status` | absence_request_status | Not null, default PENDING | Review state |
+| `reviewed_by` | UUID | Nullable FK → users.id | Reviewer |
+| `review_note` | TEXT | Nullable | Review note |
+| `reviewed_at` | TIMESTAMPTZ | Nullable | Review time |
+| `created_at` | TIMESTAMPTZ | Not null | Submission time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last update |
+
+At least one of `event_id` or a valid date range must be provided.
+
+---
+
+## 5.14 `leaderboard_entries`
+
+Stores points as an auditable ledger rather than only storing totals.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Entry identifier |
+| `subject_type` | leaderboard_subject_type | Not null | Member or department |
+| `member_id` | UUID | Nullable FK → member_profiles.id | Member subject |
+| `department_id` | UUID | Nullable FK → departments.id | Department subject |
+| `event_id` | UUID | Nullable FK → events.id | Source event |
+| `points` | INTEGER | Not null | Points added or removed |
+| `reason` | VARCHAR(180) | Not null | Reason for points |
+| `period_type` | leaderboard_period | Not null | Ranking period |
+| `period_start` | DATE | Not null | Period start |
+| `period_end` | DATE | Not null | Period end |
+| `created_at` | TIMESTAMPTZ | Not null | Entry time |
+
+### Validation Rules
+
+- A `MEMBER` entry requires `member_id`.
+- A `DEPARTMENT` entry requires `department_id`.
+- Exactly one subject identifier should be populated.
+- Totals should be calculated from ledger entries or cached separately.
+
+---
+
+## 5.15 `refresh_tokens`
+
+Stores hashed refresh-token sessions.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Token identifier |
+| `user_id` | UUID | FK → users.id, not null | Token owner |
+| `token_hash` | TEXT | Unique, not null | Hashed token |
+| `device_name` | VARCHAR(180) | Nullable | Device label |
+| `ip_address` | INET | Nullable | Session IP |
+| `user_agent` | TEXT | Nullable | Browser information |
+| `expires_at` | TIMESTAMPTZ | Not null | Expiry |
+| `revoked_at` | TIMESTAMPTZ | Nullable | Revocation time |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+
+Raw refresh tokens must never be stored.
+
+---
+
+## 5.16 `audit_logs`
+
+Stores sensitive administrative and system actions.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Audit identifier |
+| `church_id` | UUID | FK → churches.id, not null | Church |
+| `actor_user_id` | UUID | Nullable FK → users.id | Acting user |
+| `action` | VARCHAR(120) | Not null | Action code |
+| `entity_type` | VARCHAR(100) | Not null | Target entity type |
+| `entity_id` | UUID | Nullable | Target identifier |
+| `previous_data` | JSONB | Nullable | Previous state |
+| `new_data` | JSONB | Nullable | New state |
+| `metadata` | JSONB | Nullable | Additional information |
+| `ip_address` | INET | Nullable | Actor IP |
+| `user_agent` | TEXT | Nullable | Actor browser |
+| `created_at` | TIMESTAMPTZ | Not null | Action time |
+
+Sensitive values such as password hashes, tokens, and secrets must never be written to audit logs.
+
+---
+
+# 6. Main Relationships
+
+## Church and Users
+
+```text
+One church has many users.
+One user belongs to one church in version 1.
+```
+
+## User and Member Profile
+
+```text
+One user has zero or one member profile.
+One member profile belongs to exactly one user.
+```
+
+The profile may be created during registration or finalized during approval.
+
+## Members and Departments
+
+```text
+One member can belong to many departments.
+One department can contain many members.
+```
+
+This relationship is implemented through `department_members`.
+
+## Departments and Leaders
+
+```text
+One department can have multiple leaders.
+One member can lead multiple departments.
+```
+
+## Events and Departments
+
+```text
+One event can require many departments.
+One department can be required at many events.
+```
+
+## Events and Attendance
+
+```text
+One event has many attendance records.
+One member has many attendance records.
+One member has at most one attendance record per event.
+```
+
+## Members and Absence Requests
+
+```text
+One member can submit many absence requests.
+An absence request may apply to one event or a date range.
+```
+
+---
+
+# 7. Recommended Indexes
+
+## Users
+
+```text
+UNIQUE INDEX users_email_unique ON users (LOWER(email))
+UNIQUE INDEX users_phone_unique ON users (phone) WHERE phone IS NOT NULL
+INDEX users_account_status_idx ON users (account_status)
+INDEX users_church_id_idx ON users (church_id)
+```
+
+## Departments
+
+```text
+UNIQUE INDEX departments_church_slug_unique
+ON departments (church_id, slug)
+```
+
+## Department Membership
+
+```text
+UNIQUE INDEX department_members_unique
+ON department_members (department_id, member_id)
+
+INDEX department_members_member_idx
+ON department_members (member_id)
+```
+
+## Events
+
+```text
+INDEX events_status_start_idx
+ON events (status, starts_at)
+
+INDEX events_attendance_window_idx
+ON events (attendance_opens_at, attendance_closes_at)
+```
+
+## Attendance
+
+```text
+UNIQUE INDEX attendance_event_member_unique
+ON attendance_records (event_id, member_id)
+
+INDEX attendance_member_checked_in_idx
+ON attendance_records (member_id, checked_in_at DESC)
+
+INDEX attendance_event_status_idx
+ON attendance_records (event_id, status)
+```
+
+## Absence Requests
+
+```text
+INDEX absence_requests_member_status_idx
+ON absence_requests (member_id, status)
+
+INDEX absence_requests_event_idx
+ON absence_requests (event_id)
+```
+
+## Audit Logs
+
+```text
+INDEX audit_logs_actor_created_idx
+ON audit_logs (actor_user_id, created_at DESC)
+
+INDEX audit_logs_entity_idx
+ON audit_logs (entity_type, entity_id)
+```
+
+---
+
+# 8. Deletion Strategy
+
+Use soft deletion or lifecycle statuses for:
+
+- Users
+- Members
+- Departments
+- Events
+
+Do not permanently delete:
+
+- Attendance records
+- Account reviews
+- Audit logs
+- Approved absence records
+- Leaderboard ledger entries
+
+Permanent deletion should be limited to authorized privacy or maintenance operations.
+
+---
+
+# 9. Transaction Requirements
+
+Use database transactions for:
+
+## Account Approval
+
+```text
+Update account status
+Create or update member profile
+Assign default MEMBER role
+Assign confirmed department
+Create account review
+Create audit log
+```
+
+All actions should succeed or fail together.
+
+## Attendance Check-In
+
+```text
+Validate event
+Create attendance record
+Create leaderboard ledger entry
+Create audit metadata when required
+```
+
+The unique attendance constraint protects against concurrent duplicate requests.
+
+## Manual Attendance Correction
+
+```text
+Update attendance
+Adjust leaderboard entries
+Create audit log
+```
+
+---
+
+# 10. Open Database Decisions
+
+- Should the member profile be created during registration or approval?
+- Should rejected users retain profile records?
+- Should attendance coordinates be removed after a retention period?
+- Should leaderboard totals be calculated dynamically or cached?
+- Should event recurrence use a recurrence rule or generated event instances?
+- Should departments belong directly to the church or to ministries?
+- Should Arrows Youth Ministry be represented as a ministry entity?
+- Should one user be allowed to belong to multiple churches in future versions?
+
+---
+
+# 11. Future Tables
+
+Potential future additions:
+
+```text
+branches
+ministries
+permissions
+role_permissions
+notifications
+notification_preferences
+achievements
+member_achievements
+event_recurring_rules
+duty_rosters
+files
+training_resources
+church_invitations
+subscriptions
+billing_customers
+```
+
+---
+
+# 12. Next Deliverable
+
+The next document should be:
+
+```text
+docs/API.md
+```
+
+It will define:
+
+- REST API endpoints
+- Request and response bodies
+- Authentication requirements
+- Role requirements
+- Validation rules
+- Error response format
