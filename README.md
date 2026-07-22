@@ -154,7 +154,7 @@ http://localhost:3000
 
 * [x] Project planning
 * [x] Product Requirements Document (PRD)
-* [ ] Software Requirements Specification (SRS)
+* [x] Software Requirements Specification (SRS)
 * [ ] Database Design
 * [ ] Backend Architecture
 * [ ] Authentication Module
