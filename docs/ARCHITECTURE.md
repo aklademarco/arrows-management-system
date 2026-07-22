@@ -336,10 +336,14 @@ Responsible for:
 
 Responsible for:
 
-- Points ledger
+- Percentage-based individual and department rankings
+- Attendance and punctuality rate calculation
+- Minimum-participation qualification
+- Points ledger as a secondary motivational metric
 - Individual rankings
 - Department rankings
 - Attendance streaks
+- Leaderboard visibility settings
 
 ### Reports Module
 
@@ -629,6 +633,68 @@ The database unique constraint on:
 ```
 
 prevents duplicate attendance.
+
+## 11.4 Punctuality Evidence
+
+Geolocation check-ins shall derive `punctuality_status` from server time and the event thresholds.
+
+Manual attendance may record `EARLY`, `ON_TIME`, or `LATE` only when the authorized actor can verify the arrival category. Otherwise, manual attendance remains valid for the attendance rate and is neutral in the punctuality-rate calculation.
+
+---
+
+## 11.5 Leaderboard Architecture
+
+### 11.5.1 Official Score
+
+The Leaderboards Module shall calculate official rankings from attendance source records:
+
+```text
+Attendance Rate =
+Attended Eligible Events / Expected Eligible Events * 100
+
+Punctuality Rate =
+Early and On-Time Attendances / Attendances with Known Punctuality * 100
+
+Official Score =
+(Attendance Rate * 0.70) + (Punctuality Rate * 0.30)
+```
+
+When the selected population has no attendance with known punctuality, the official score shall equal the attendance rate. Unknown manual-attendance punctuality is neutral rather than zero.
+
+Raw point totals and streaks are secondary values and shall not alter the official score.
+
+Each valid attendance shall create a 10-point member ledger entry. All other outcomes create no positive points. Version 1 uses no negative points or streak bonuses.
+
+### 11.5.2 Eligibility and Qualification
+
+- Members require at least three expected events in the selected period for a numbered rank.
+- Departments require at least three applicable events in the selected period for a numbered rank.
+- Approved absences, unresolved reviews, cancelled events, and ineligible events are excluded from denominators.
+- Manual attendance with unknown punctuality is excluded only from the punctuality denominator.
+- Inactive and suspended members are excluded from current public rankings without deleting historical results.
+
+### 11.5.3 Department Calculation
+
+Department rates shall be calculated from expected member-event attendance slots. Raw department totals and averages of individual scores shall not determine rank.
+
+### 11.5.4 Streaks
+
+Streaks shall be derived from ordered eligible attendance history:
+
+- Attended events extend the attendance streak.
+- Early and on-time events extend the punctuality streak.
+- Approved absences pause rather than break a streak.
+- Actual absences break the applicable streak.
+- Streaks are displayed separately and do not award Version 1 score bonuses.
+
+### 11.5.5 Periods, Privacy, and History
+
+- Monthly is the default period; weekly, quarterly, and yearly views are supported.
+- Period changes affect query boundaries only and never delete historical source records.
+- Public member rankings use privacy-conscious display names.
+- Lowest-performer lists are not exposed to members.
+- Administrators may disable member-visible leaderboards without disabling personal attendance statistics.
+- Results may be computed on demand initially; caching should be introduced only after measurement shows it is necessary.
 
 ---
 

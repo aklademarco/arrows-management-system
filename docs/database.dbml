@@ -43,6 +43,12 @@ Enum attendance_method {
   SYSTEM
 }
 
+Enum attendance_punctuality_status {
+  EARLY
+  ON_TIME
+  LATE
+}
+
 Enum absence_request_status {
   PENDING
   APPROVED
@@ -70,6 +76,11 @@ Enum leaderboard_period {
   YEARLY
 }
 
+Enum account_action_token_type {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 Table churches {
   id uuid [pk]
   name varchar(150) [not null]
@@ -81,6 +92,7 @@ Table churches {
   latitude decimal(9,6)
   longitude decimal(9,6)
   geofence_radius_meters integer [not null, default: 100]
+  leaderboards_enabled boolean [not null, default: true]
   is_active boolean [not null, default: true]
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
@@ -264,6 +276,7 @@ Table attendance_records {
   member_id uuid [not null, ref: > member_profiles.id]
   status attendance_status [not null]
   method attendance_method [not null]
+  punctuality_status attendance_punctuality_status [note: 'Derived from server time for geolocation check-ins. Optional for manual attendance when arrival category cannot be verified.']
   checked_in_at timestamptz
   latitude decimal(9,6)
   longitude decimal(9,6)
@@ -283,7 +296,7 @@ Table attendance_records {
     (event_id, status) [name: 'attendance_event_status_idx']
   }
 
-  Note: 'Geolocation records require coordinates, accuracy, and distance. Manual records require marked_by and manual_reason. The server timestamp determines punctuality.'
+  Note: 'Geolocation records require coordinates, accuracy, and distance. Manual records require marked_by and manual_reason. Official rank uses 70% attendance rate and 30% punctuality rate; valid manual attendance is punctuality-neutral when punctuality_status is null.'
 }
 
 Table absence_requests {
@@ -319,17 +332,14 @@ Table leaderboard_entries {
   event_id uuid [ref: > events.id]
   points integer [not null]
   reason varchar(180) [not null]
-  period_type leaderboard_period [not null]
-  period_start date [not null]
-  period_end date [not null]
+  occurred_at timestamptz [not null]
   created_at timestamptz [not null]
 
   checks {
     `(subject_type = 'MEMBER' AND member_id IS NOT NULL AND department_id IS NULL) OR (subject_type = 'DEPARTMENT' AND department_id IS NOT NULL AND member_id IS NULL)` [name: 'leaderboard_entries_valid_subject']
-    `period_end >= period_start` [name: 'leaderboard_entries_valid_period']
   }
 
-  Note: 'Auditable points ledger; totals are calculated from entries or cached separately.'
+  Note: 'Auditable secondary points ledger. A valid attendance awards 10 member points; other outcomes award zero. Points do not determine official rank. Period views filter occurred_at instead of duplicating entries. Version 1 does not use negative attendance penalties or streak bonuses.'
 }
 
 Table refresh_tokens {
@@ -344,6 +354,25 @@ Table refresh_tokens {
   created_at timestamptz [not null]
 
   Note: 'Only hashed refresh tokens may be stored.'
+}
+
+Table account_action_tokens {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  type account_action_token_type [not null]
+  token_hash varchar(64) [not null, unique, note: 'SHA-256 hash of a high-entropy random token. Raw tokens are never persisted or logged.']
+  expires_at timestamptz [not null]
+  used_at timestamptz
+  revoked_at timestamptz
+  requested_ip inet
+  created_at timestamptz [not null]
+
+  indexes {
+    (user_id, type, created_at) [name: 'account_action_tokens_user_type_idx', note: 'created_at is descending in PostgreSQL.']
+    expires_at [name: 'account_action_tokens_expiry_idx']
+  }
+
+  Note: 'Tokens are valid only while unexpired, unused, and unrevoked. New tokens revoke prior unused tokens of the same type. Email verification expires after 24 hours; password reset expires after 30 minutes.'
 }
 
 Table audit_logs {

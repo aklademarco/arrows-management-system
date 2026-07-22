@@ -82,6 +82,7 @@ erDiagram
     EVENTS ||--o{ LEADERBOARD_ENTRIES : source
 
     USERS ||--o{ REFRESH_TOKENS : owns
+    USERS ||--o{ ACCOUNT_ACTION_TOKENS : owns
     USERS ||--o{ AUDIT_LOGS : performs
 ```
 
@@ -139,7 +140,17 @@ MANUAL
 SYSTEM
 ```
 
-### 4.6 Absence Request Status
+### 4.6 Attendance Punctuality Status
+
+```text
+EARLY
+ON_TIME
+LATE
+```
+
+This value is calculated from server time for geolocation check-ins. For manual attendance, it is recorded only when an authorized officer can verify the member's arrival category.
+
+### 4.7 Absence Request Status
 
 ```text
 PENDING
@@ -149,7 +160,7 @@ NEEDS_CLARIFICATION
 CANCELLED
 ```
 
-### 4.7 Review Decision
+### 4.8 Review Decision
 
 ```text
 APPROVED
@@ -158,20 +169,27 @@ SUSPENDED
 REACTIVATED
 ```
 
-### 4.8 Leaderboard Subject Type
+### 4.9 Leaderboard Subject Type
 
 ```text
 MEMBER
 DEPARTMENT
 ```
 
-### 4.9 Leaderboard Period
+### 4.10 Leaderboard Period
 
 ```text
 WEEKLY
 MONTHLY
 QUARTERLY
 YEARLY
+```
+
+### 4.11 Account Action Token Type
+
+```text
+EMAIL_VERIFICATION
+PASSWORD_RESET
 ```
 
 ---
@@ -194,6 +212,7 @@ Stores the church organization.
 | `latitude` | DECIMAL(9,6) | Nullable | Default church latitude |
 | `longitude` | DECIMAL(9,6) | Nullable | Default church longitude |
 | `geofence_radius_meters` | INTEGER | Not null, default 100 | Default attendance radius |
+| `leaderboards_enabled` | BOOLEAN | Not null, default true | Member-visible leaderboard setting |
 | `is_active` | BOOLEAN | Not null, default true | Organization status |
 | `created_at` | TIMESTAMPTZ | Not null | Creation time |
 | `updated_at` | TIMESTAMPTZ | Not null | Last update |
@@ -464,6 +483,7 @@ Stores attendance decisions and geolocation evidence.
 | `member_id` | UUID | FK → member_profiles.id, not null | Member |
 | `status` | attendance_status | Not null | Attendance result |
 | `method` | attendance_method | Not null | Attendance method |
+| `punctuality_status` | attendance_punctuality_status | Nullable | Verified early, on-time, or late result |
 | `checked_in_at` | TIMESTAMPTZ | Nullable | Check-in time |
 | `latitude` | DECIMAL(9,6) | Nullable | Submitted latitude |
 | `longitude` | DECIMAL(9,6) | Nullable | Submitted longitude |
@@ -487,6 +507,8 @@ UNIQUE (event_id, member_id)
 
 - Geolocation attendance requires coordinates, accuracy, and distance.
 - Manual attendance requires `marked_by` and `manual_reason`.
+- Geolocation attendance derives `punctuality_status` using server time.
+- Manual attendance may leave `punctuality_status` null when arrival time cannot be verified.
 - The server timestamp determines punctuality.
 - Duplicate attendance must be rejected at the database level.
 
@@ -518,7 +540,7 @@ At least one of `event_id` or a valid date range must be provided.
 
 ## 5.14 `leaderboard_entries`
 
-Stores points as an auditable ledger rather than only storing totals.
+Stores secondary motivational points as an auditable ledger. Official leaderboard rank is calculated from attendance and punctuality percentages, not from the sum of these points.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
@@ -529,9 +551,7 @@ Stores points as an auditable ledger rather than only storing totals.
 | `event_id` | UUID | Nullable FK → events.id | Source event |
 | `points` | INTEGER | Not null | Points added or removed |
 | `reason` | VARCHAR(180) | Not null | Reason for points |
-| `period_type` | leaderboard_period | Not null | Ranking period |
-| `period_start` | DATE | Not null | Period start |
-| `period_end` | DATE | Not null | Period end |
+| `occurred_at` | TIMESTAMPTZ | Not null | Time of the point-producing activity |
 | `created_at` | TIMESTAMPTZ | Not null | Entry time |
 
 ### Validation Rules
@@ -539,7 +559,37 @@ Stores points as an auditable ledger rather than only storing totals.
 - A `MEMBER` entry requires `member_id`.
 - A `DEPARTMENT` entry requires `department_id`.
 - Exactly one subject identifier should be populated.
-- Totals should be calculated from ledger entries or cached separately.
+- Point totals should be calculated from ledger entries or cached separately.
+- Points shall not determine the official leaderboard position.
+- A valid attendance awards 10 secondary points; all other outcomes award zero.
+- Negative attendance penalties and streak-bonus entries are not used in Version 1.
+- Weekly, monthly, quarterly, and yearly views filter `occurred_at`; separate point rows are not created for each period.
+
+### Official Ranking Formula
+
+```text
+Attendance Rate =
+Attended Eligible Events / Expected Eligible Events * 100
+
+Punctuality Rate =
+Early and On-Time Attendances / Attendances with Known Punctuality * 100
+
+Official Score =
+(Attendance Rate * 0.70) + (Punctuality Rate * 0.30)
+```
+
+When no attendance in the selected period has known punctuality, the official score equals the attendance rate. Unknown manual-attendance punctuality is neutral rather than zero.
+
+Rules:
+
+- A member requires at least three expected events in the selected period to receive a numbered rank.
+- A department requires at least three applicable events in the selected period to receive a numbered rank.
+- Approved absences, unresolved reviews, cancelled events, and ineligible events are excluded from denominators.
+- Valid manual attendance counts toward attendance; it counts toward punctuality only when `punctuality_status` is known.
+- Department rates are calculated from expected member-event attendance slots, not raw totals or averages of member scores.
+- Streaks are derived from ordered attendance history and are displayed separately from the official score.
+- An approved absence pauses a streak; an absence breaks it.
+- Historical source records are retained when leaderboard periods change.
 
 ---
 
@@ -563,7 +613,35 @@ Raw refresh tokens must never be stored.
 
 ---
 
-## 5.16 `audit_logs`
+## 5.16 `account_action_tokens`
+
+Stores hashed, expiring, single-use tokens for account verification and recovery.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | Primary key | Token record identifier |
+| `user_id` | UUID | FK → users.id, not null | Token owner |
+| `type` | account_action_token_type | Not null | Verification or password reset |
+| `token_hash` | VARCHAR(64) | Unique, not null | SHA-256 hash of the random token |
+| `expires_at` | TIMESTAMPTZ | Not null | Token expiry time |
+| `used_at` | TIMESTAMPTZ | Nullable | Successful consumption time |
+| `revoked_at` | TIMESTAMPTZ | Nullable | Explicit invalidation time |
+| `requested_ip` | INET | Nullable | Request source for security review |
+| `created_at` | TIMESTAMPTZ | Not null | Creation time |
+
+### Important Rules
+
+- Raw token values shall be sent to the user but never persisted or logged.
+- A token is valid only when its hash matches, it has not expired, and both `used_at` and `revoked_at` are null.
+- Issuing a new token of the same type shall revoke prior unused tokens for that user.
+- Email-verification tokens expire after 24 hours.
+- Password-reset tokens expire after 30 minutes.
+- Successful password reset shall consume the token and revoke every refresh token for the user in one transaction.
+- Expired, used, and revoked token records may be deleted according to a documented retention policy.
+
+---
+
+## 5.17 `audit_logs`
 
 Stores sensitive administrative and system actions.
 
@@ -715,6 +793,19 @@ INDEX audit_logs_entity_idx
 ON audit_logs (entity_type, entity_id)
 ```
 
+## Account Action Tokens
+
+```text
+UNIQUE INDEX account_action_tokens_hash_unique
+ON account_action_tokens (token_hash)
+
+INDEX account_action_tokens_user_type_idx
+ON account_action_tokens (user_id, type, created_at DESC)
+
+INDEX account_action_tokens_expiry_idx
+ON account_action_tokens (expires_at)
+```
+
 ---
 
 # 8. Deletion Strategy
@@ -774,6 +865,26 @@ Adjust leaderboard entries
 Create audit log
 ```
 
+## Email Verification
+
+```text
+Validate and lock the account-action token
+Set users.email_verified_at
+Mark the token as used
+Revoke other unused email-verification tokens
+```
+
+## Password Reset
+
+```text
+Validate and lock the account-action token
+Update users.password_hash
+Reset failed login attempts and account lock
+Mark the token as used
+Revoke other unused password-reset tokens
+Revoke all refresh tokens for the user
+```
+
 ---
 
 # 10. Open Database Decisions
@@ -781,7 +892,6 @@ Create audit log
 - Should the member profile be created during registration or approval?
 - Should rejected users retain profile records?
 - Should attendance coordinates be removed after a retention period?
-- Should leaderboard totals be calculated dynamically or cached?
 - Should event recurrence use a recurrence rule or generated event instances?
 - Should departments belong directly to the church or to ministries?
 - Should Arrows Youth Ministry be represented as a ministry entity?

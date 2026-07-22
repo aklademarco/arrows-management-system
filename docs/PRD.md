@@ -86,6 +86,7 @@ Responsible for attendance verification.
 **Authentication**  
 
 - Secure login
+- Email verification
 - Password reset  
 - Session management  
 
@@ -126,7 +127,9 @@ Responsible for attendance verification.
 
 - Only registered members can log in.  
 - Public registration is allowed.  
-- Administrators has to approve  member accounts.  
+- Registered users must verify their email address.
+- Administrators have to approve member accounts after email verification.
+- Password-reset and email-verification links must expire and be single-use.
 **Attendance**  
 The system shall:  
 - Detect active events.  
@@ -146,12 +149,18 @@ The system shall:
 - Assign department leaders.  
 - Generate department reports.  
 
-**Leaderboards**  
+**Leaderboards**
 The system shall:  
 
-- Rank individuals.
-- Rank departments using percentage-based scoring.  
-- Track attendance streaks.  
+- Rank individuals and departments using percentage-based scoring rather than raw attendance totals.
+- Calculate the official score as 70% attendance rate and 30% punctuality rate.
+- Require at least three expected events in a period before assigning a numbered rank.
+- Use monthly rankings by default, with weekly, quarterly, and yearly views.
+- Treat points as a secondary motivational value rather than the official ranking metric.
+- Track current and longest attendance and punctuality streaks separately from the official score.
+- Exclude approved absences, cancelled events, and ineligible events from score denominators.
+- Avoid negative points and avoid publishing lowest-performer lists.
+- Allow administrators to disable public leaderboards.
 
 **7. Non-Functional Requirements**  
 
@@ -202,8 +211,6 @@ The system shall:
 
 - What geofence radius should be used?  
 - Should check-out be required?  
-- How are leaderboard points calculated?  
-- How are excused absences handled?  
 - Will visitors have limited access?  
 - Will multiple services overlap?  
 

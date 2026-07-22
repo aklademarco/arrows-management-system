@@ -164,6 +164,7 @@ The system shall support the following account statuses:
 
 - Public account registration shall be available.
 - Every new account shall start as `PENDING_APPROVAL`.
+- Every new account shall verify its email address before administrator approval.
 - Registration shall not automatically assign a trusted role.
 - A requested department shall be treated as a preference only.
 - An administrator shall confirm the final department and role.
@@ -193,11 +194,17 @@ The system shall:
 - Require unique email addresses.
 - Support unique phone numbers where phone numbers are collected.
 - Hash passwords securely.
+- Require email verification before administrator approval.
+- Send email-verification links without exposing token values in logs or persistent storage.
 - Allow approved users to log in.
 - Prevent rejected and suspended users from accessing protected modules.
 - Support access token renewal.
 - Support secure logout.
 - Support password reset.
+- Store only hashes of password-reset and email-verification tokens.
+- Make account-action tokens expiring, single-use, and revocable.
+- Return generic responses when account-action requests could reveal whether an account exists.
+- Revoke all existing refresh-token sessions after a successful password reset.
 - Expire compromised or revoked sessions.
 
 ### 5.2 Member Management
@@ -353,22 +360,61 @@ Approved absences shall not unfairly reduce leaderboard scores.
 The system shall:
 
 - Rank eligible active members.
-- Use configurable point rules.
+- Use an official percentage score calculated as 70% attendance rate and 30% punctuality rate.
+- Calculate attendance rate as attended eligible events divided by expected eligible events.
+- Calculate punctuality rate as early and on-time attendances divided by attendances with a known punctuality result.
+- Require at least three expected events in the selected period before assigning a numbered rank.
 - Support weekly, monthly, quarterly, and yearly periods.
-- Display attendance streaks.
-- Exclude approved absences from penalties.
+- Use the monthly period as the default leaderboard view.
+- Display current and longest attendance and punctuality streaks separately from the official score.
+- Treat approved absences as neutral: they shall not reduce the score or break a streak.
+- Exclude cancelled events, ineligible events, and events before the member joined from score denominators.
+- Treat unresolved attendance reviews as neutral until they are resolved.
+- Treat raw points as a secondary motivational value rather than the official ranking metric.
+- Award 10 secondary points for each valid attendance and zero points for all other outcomes.
+- Avoid negative points and oversized streak bonuses.
 - Avoid ranking inactive or suspended accounts.
+- Avoid publicly identifying the lowest-performing members.
 
 ### 5.13 Department Leaderboard
 
 The system shall:
 
-- Rank departments using percentage-based calculations.
-- Avoid using raw attendance totals as the main ranking measure.
-- Consider attendance rate.
-- Consider punctuality rate.
-- Exclude excused absences where configured.
+- Rank departments using an official score calculated as 70% attendance rate and 30% punctuality rate.
+- Calculate rates from all expected member-event attendance slots for the department.
+- Avoid using raw attendance totals or the average of member scores as the main ranking measure.
+- Remove approved absences and other neutral attendance slots from the denominator.
+- Require at least three applicable events in the selected period before assigning a numbered rank.
 - Support weekly, monthly, quarterly, and yearly periods.
+- Use punctuality rate, then attendance rate, then department name as deterministic tie-breakers.
+
+### 5.13.1 Leaderboard Definitions
+
+For a selected period:
+
+```text
+Attendance Rate =
+Attended Eligible Events / Expected Eligible Events * 100
+
+Punctuality Rate =
+Early and On-Time Attendances / Attendances with Known Punctuality * 100
+
+Official Score =
+(Attendance Rate * 0.70) + (Punctuality Rate * 0.30)
+```
+
+When a qualifying member or department has no attendance with known punctuality in the selected period, the official score shall equal the attendance rate. This makes unknown manual-attendance punctuality neutral rather than treating it as zero.
+
+Attendance outcomes shall be interpreted as follows:
+
+- `EARLY`, `ON_TIME`, `LATE`, and valid manual attendance count as attended.
+- `ABSENT` and `INVALID` do not count as attended.
+- `EXCUSED`, `PENDING_REVIEW`, cancelled events, and ineligible events are excluded from the denominator.
+- Manual attendance with no verified punctuality counts toward attendance but not toward the punctuality denominator.
+
+Leaderboard history shall be retained. Changing the selected period shall not delete or reset attendance or point records.
+
+Administrators shall be able to disable member-visible leaderboards. Members shall retain access to their own attendance statistics when public leaderboards are disabled.
 
 ### 5.14 Reports
 
@@ -566,6 +612,8 @@ The MVP shall be considered ready for internal testing when:
 
 - Users can register successfully.
 - New accounts remain pending.
+- Registered users can verify their email with an expiring, single-use token.
+- Administrators cannot approve an account before email verification.
 - Administrators can approve or reject accounts.
 - Approved users can log in.
 - Pending, rejected, and suspended users cannot access protected features.
@@ -580,6 +628,7 @@ The MVP shall be considered ready for internal testing when:
 - Individual and department leaderboards calculate correctly.
 - Administrators can export attendance data as CSV.
 - Critical authentication and attendance flows have automated tests.
+- Password-reset completion revokes existing sessions and prevents token reuse.
 
 ---
 
@@ -626,7 +675,6 @@ The MVP shall be considered ready for internal testing when:
 - Maximum accepted GPS accuracy.
 - Early attendance threshold.
 - Late attendance threshold.
-- Exact leaderboard point rules.
 - Whether check-out is required.
 - Whether rejected users may reapply.
 - Whether attendance officers can correct existing records.

@@ -155,10 +155,12 @@ All primary identifiers shall use UUIDs.
 | `INVALID_CREDENTIALS` | 401 | Login details are incorrect |
 | `UNAUTHENTICATED` | 401 | Access token is missing or invalid |
 | `TOKEN_EXPIRED` | 401 | Access token has expired |
+| `INVALID_ACCOUNT_ACTION_TOKEN` | 400 | Verification or reset token is invalid, expired, used, or revoked |
 | `FORBIDDEN` | 403 | User lacks permission |
 | `ACCOUNT_PENDING` | 403 | Account is awaiting approval |
 | `ACCOUNT_REJECTED` | 403 | Account has been rejected |
 | `ACCOUNT_SUSPENDED` | 403 | Account is suspended |
+| `EMAIL_NOT_VERIFIED` | 422 | Account email must be verified before approval |
 | `NOT_FOUND` | 404 | Resource does not exist |
 | `CONFLICT` | 409 | Request conflicts with existing data |
 | `DUPLICATE_ATTENDANCE` | 409 | Member already checked in |
@@ -166,6 +168,7 @@ All primary identifiers shall use UUIDs.
 | `OUTSIDE_GEOFENCE` | 422 | User is outside the allowed radius |
 | `POOR_LOCATION_ACCURACY` | 422 | Reported location accuracy is unacceptable |
 | `EVENT_NOT_ELIGIBLE` | 422 | Member is not eligible for the event |
+| `LEADERBOARDS_DISABLED` | 403 | Member-visible leaderboards are disabled |
 | `RATE_LIMITED` | 429 | Too many requests |
 | `INTERNAL_SERVER_ERROR` | 500 | Unexpected server error |
 
@@ -202,6 +205,7 @@ POST /auth/register
 - Password must meet configured security rules.
 - Requested department is a preference only.
 - New account status must be `PENDING_APPROVAL`.
+- A 24-hour email-verification token must be issued.
 - No trusted role may be assigned automatically.
 
 ### Response
@@ -211,10 +215,11 @@ POST /auth/register
 ```json
 {
   "success": true,
-  "message": "Registration submitted for administrator approval.",
+  "message": "Registration received. Verify your email before administrator approval.",
   "data": {
     "userId": "a65d7e4f-9dd6-40b5-8c83-431bd84f9f57",
-    "accountStatus": "PENDING_APPROVAL"
+    "accountStatus": "PENDING_APPROVAL",
+    "emailVerificationRequired": true
   }
 }
 ```
@@ -325,6 +330,7 @@ GET /auth/me
   "data": {
     "id": "a65d7e4f-9dd6-40b5-8c83-431bd84f9f57",
     "email": "bismark@example.com",
+    "emailVerifiedAt": "2026-07-22T09:00:00.000Z",
     "phone": "+233240000000",
     "accountStatus": "ACTIVE",
     "roles": ["MEMBER"],
@@ -361,6 +367,25 @@ POST /auth/password-reset/request
 
 The response should not reveal whether the account exists.
 
+### Response
+
+```json
+{
+  "success": true,
+  "message": "If an eligible account exists, password-reset instructions have been sent.",
+  "data": null
+}
+```
+
+### Rules
+
+- Apply the same response and similar timing whether or not the account exists.
+- Create a cryptographically random high-entropy token.
+- Persist only its SHA-256 hash.
+- Set expiry to 30 minutes.
+- Revoke prior unused password-reset tokens for the user.
+- Never log the raw token or include it in API response data.
+
 ---
 
 ## 5.7 Complete Password Reset
@@ -377,6 +402,93 @@ POST /auth/password-reset/confirm
 {
   "token": "<reset-token>",
   "newPassword": "NewStrongPassword123!"
+}
+```
+
+### Transaction
+
+The backend shall:
+
+1. Hash and validate the submitted token.
+2. Reject tokens that are expired, used, or revoked.
+3. Update the Argon2 password hash.
+4. Reset failed login attempts and clear the account lock.
+5. Mark the token as used.
+6. Revoke other unused password-reset tokens.
+7. Revoke all refresh-token sessions for the user.
+
+Token consumption and database updates must be atomic. A consumed token must never work again.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Password reset successfully. Sign in again on all devices.",
+  "data": null
+}
+```
+
+---
+
+## 5.8 Request Email Verification
+
+```http
+POST /auth/email-verification/request
+```
+
+**Access:** Public or limited pending-user session
+
+### Request
+
+```json
+{
+  "email": "bismark@example.com"
+}
+```
+
+The endpoint shall return the same generic response for unknown, already verified, rejected, and eligible pending accounts.
+
+```json
+{
+  "success": true,
+  "message": "If verification is required, instructions have been sent.",
+  "data": null
+}
+```
+
+Eligible requests create a high-entropy token that expires after 24 hours, persist only its SHA-256 hash, and revoke prior unused email-verification tokens.
+
+---
+
+## 5.9 Confirm Email Verification
+
+```http
+POST /auth/email-verification/confirm
+```
+
+**Access:** Public
+
+### Request
+
+```json
+{
+  "token": "<verification-token>"
+}
+```
+
+### Transaction
+
+The backend shall atomically validate and lock the token, set `users.email_verified_at` using server time, mark the token as used, and revoke other unused email-verification tokens for the user.
+
+```json
+{
+  "success": true,
+  "message": "Email verified. Your registration is ready for administrator review.",
+  "data": {
+    "emailVerified": true,
+    "accountStatus": "PENDING_APPROVAL"
+  }
 }
 ```
 
@@ -438,12 +550,13 @@ POST /admin/registrations/:userId/approve
 The backend should:
 
 1. Validate that the account is pending.
-2. Change account status to `ACTIVE`.
-3. Create or update the member profile.
-4. Assign confirmed departments.
-5. Assign approved roles.
-6. Create an account review record.
-7. Create an audit log.
+2. Validate that `email_verified_at` is not null.
+3. Change account status to `ACTIVE`.
+4. Create or update the member profile.
+5. Assign confirmed departments.
+6. Assign approved roles.
+7. Create an account review record.
+8. Create an audit log.
 
 ---
 
@@ -902,9 +1015,12 @@ POST /attendance/manual
   "eventId": "2fd92f13-e52b-4afa-9c60-5d477f59e685",
   "memberId": "ce686f62-3e76-4f41-aef2-c9d376a52906",
   "status": "MANUAL",
+  "punctualityStatus": null,
   "reason": "Member's phone battery was unavailable."
 }
 ```
+
+`punctualityStatus` may be `EARLY`, `ON_TIME`, `LATE`, or `null`. It must remain `null` unless the authorized actor can verify the member's arrival category. Valid manual attendance counts toward attendance even when its punctuality is unknown.
 
 An audit log entry is required.
 
@@ -923,6 +1039,7 @@ PATCH /attendance/:attendanceId
 ```json
 {
   "status": "EXCUSED",
+  "punctualityStatus": null,
   "reviewNote": "Approved ministry assignment at another venue."
 }
 ```
@@ -1012,6 +1129,45 @@ departmentId=<uuid>
 limit=50
 ```
 
+The default period is `MONTHLY`. Supported periods are `WEEKLY`, `MONTHLY`, `QUARTERLY`, and `YEARLY`.
+
+### Response Example
+
+```json
+{
+  "success": true,
+  "message": "Individual leaderboard retrieved successfully.",
+  "data": {
+    "period": "MONTHLY",
+    "startsOn": "2026-07-01",
+    "endsOn": "2026-07-31",
+    "minimumQualifyingEvents": 3,
+    "items": [
+      {
+        "rank": 1,
+        "memberId": "ce686f62-3e76-4f41-aef2-c9d376a52906",
+        "displayName": "Bismark M.",
+        "expectedEvents": 9,
+        "attendedEvents": 8,
+        "attendanceRate": 88.89,
+        "knownPunctualityAttendances": 8,
+        "punctualAttendances": 7,
+        "punctualityRate": 87.5,
+        "score": 88.47,
+        "qualified": true,
+        "currentAttendanceStreak": 4,
+        "longestAttendanceStreak": 7,
+        "secondaryPoints": 72
+      }
+    ]
+  }
+}
+```
+
+Members with fewer than three expected events may be returned with `qualified: false` and `rank: null`, but they must not displace qualified members.
+
+Member-visible results should use a privacy-conscious display name such as first name and surname initial. Detailed identity and attendance information remains restricted by role.
+
 ---
 
 ## 12.2 Department Leaderboard
@@ -1042,14 +1198,50 @@ date=2026-07-01
         "rank": 1,
         "departmentId": "4aefc243-f9be-4bd0-b420-752eb9ec04d5",
         "departmentName": "Media",
+        "applicableEvents": 4,
+        "expectedAttendanceSlots": 40,
+        "attendedSlots": 38,
         "attendanceRate": 95.4,
         "punctualityRate": 91.2,
-        "score": 94.3
+        "score": 94.14,
+        "qualified": true
       }
     ]
   }
 }
 ```
+
+Department metrics must be calculated from expected member-event attendance slots. They must not use raw attendance totals or an average of individual member scores.
+
+## 12.3 Leaderboard Calculation Rules
+
+```text
+Attendance Rate =
+Attended Eligible Events / Expected Eligible Events * 100
+
+Punctuality Rate =
+Early and On-Time Attendances / Attendances with Known Punctuality * 100
+
+Official Score =
+(Attendance Rate * 0.70) + (Punctuality Rate * 0.30)
+```
+
+When `knownPunctualityAttendances` is zero, `punctualityRate` is `null` and the official score equals the attendance rate. Unknown manual-attendance punctuality must not be treated as zero.
+
+Calculation rules:
+
+- `EARLY`, `ON_TIME`, `LATE`, and valid manual attendance count as attended.
+- `ABSENT` and `INVALID` do not count as attended.
+- `EXCUSED`, `PENDING_REVIEW`, cancelled events, and ineligible events are excluded from denominators.
+- Manual attendance without a verified `punctualityStatus` is excluded only from the punctuality denominator.
+- At least three expected or applicable events are required for a numbered rank.
+- Individual ties are resolved by punctuality rate, then attendance rate, then display name.
+- Department ties are resolved by punctuality rate, then attendance rate, then department name.
+- Streaks and secondary points do not alter the official score.
+- Each valid attendance awards 10 secondary points; all other outcomes award zero.
+- Approved absences pause streaks; actual absences break streaks.
+- The service calculates results from retained source records; changing periods does not reset or delete history.
+- When church settings disable leaderboards, leaderboard endpoints return `403 LEADERBOARDS_DISABLED`; members may still access their own attendance statistics.
 
 ---
 
@@ -1181,7 +1373,8 @@ PATCH /church/settings
   "address": "Accra, Ghana",
   "latitude": 5.6037,
   "longitude": -0.187,
-  "geofenceRadiusMeters": 100
+  "geofenceRadiusMeters": 100,
+  "leaderboardsEnabled": true
 }
 ```
 
@@ -1267,6 +1460,10 @@ Approval endpoints must reject accounts that are no longer pending.
 
 Refresh token rotation must invalidate the previous token atomically.
 
+## Account Action Tokens
+
+Email-verification and password-reset confirmation shall lock the matching token row during consumption. Concurrent submissions for the same token must result in at most one success.
+
 ---
 
 # 19. Rate Limiting
@@ -1278,6 +1475,8 @@ Recommended limits:
 | Login | 5 attempts per 15 minutes |
 | Registration | 5 attempts per hour per IP |
 | Password reset | 3 attempts per hour |
+| Email verification resend | 3 attempts per hour |
+| Account-action token confirmation | 10 attempts per 15 minutes per IP |
 | Refresh token | 30 requests per 15 minutes |
 | Attendance check-in | 10 requests per 5 minutes |
 | General API | 100 requests per minute |
@@ -1328,7 +1527,6 @@ Non-breaking fields may be added without creating a new API version.
 
 - Whether access tokens use headers or secure cookies.
 - Whether pending users receive limited access tokens.
-- Whether email verification occurs before administrator approval.
 - Whether phone number is required.
 - Whether department leaders can add department members.
 - Whether attendance officers can correct existing records.
