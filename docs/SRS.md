@@ -109,6 +109,13 @@ The Department Leader shall be able to:
 - View department leaderboard performance.
 - Submit attendance exceptions for review.
 
+Department Leader access requires both:
+
+- The global `DEPARTMENT_LEADER` role.
+- An active `department_leaders` assignment for the requested department.
+
+The role alone grants no department data access, and an assignment alone grants no leader capability. Department leaders shall not add or remove department members in Version 1.
+
 ### 3.4 Attendance Officer
 
 The Attendance Officer shall be able to:
@@ -227,10 +234,21 @@ The system shall:
 - Allow administrators to create departments.
 - Allow departments to have descriptions.
 - Assign one or more department leaders.
-- Add and remove department members.
-- Prevent duplicate department membership records.
-- Track current and historical membership where required.
+- Assign members and end department memberships.
+- Represent each department membership as a dated historical period.
+- Allow a member to leave and later rejoin the same department through a new period.
+- Prevent overlapping membership periods for the same member and department.
+- End memberships through lifecycle updates rather than deleting records.
+- Record the ending administrator and reason.
+- Use half-open date ranges: `joined_at` is the first active date and `left_at` is the first inactive date.
+- Determine historical event eligibility using the membership period containing the event start date in the church timezone.
 - Generate department-specific attendance reports.
+- Require both the `DEPARTMENT_LEADER` role and an active dated leadership assignment for leader-scoped actions.
+- Treat an assignment as active when it has not been revoked, its leadership dates are active, and the leader also has an active membership period in the same department.
+- Apply scope checks in backend queries and services rather than relying on frontend filtering.
+- Allow one member to lead multiple departments through separate active assignments.
+- Remove access immediately when an assignment ends, regardless of unexpired access-token claims.
+- Reserve department membership assignment and removal for `SUPER_ADMIN` and `ADMIN` in Version 1.
 
 Example departments include Media, Ushers, Sound Engineering, Protocol, Leadership, Prayer, Welfare, and Music.
 
@@ -377,6 +395,14 @@ Members shall be able to submit absence requests containing:
 
 Department leaders or administrators shall be able to approve, reject, request clarification, and add an administrative note.
 
+For department-leader review:
+
+- Event-specific requests require an active leadership assignment to a department that both contains the member and makes the member eligible for the event.
+- For open-to-all events, the leader must actively lead the member's primary department.
+- Date-range requests may be reviewed only by an active leader of the member's primary department.
+- When a member has no primary department, open-to-all event and date-range requests require administrator review.
+- Administrators may review requests church-wide.
+
 Approved absences shall not unfairly reduce leaderboard scores.
 
 Absence approval shall follow these rules:
@@ -494,6 +520,8 @@ The system shall record audit logs for:
 - User suspension.
 - Role changes.
 - Department assignment changes.
+- Department membership period creation and ending.
+- Department-leader assignment and revocation.
 - Event creation and updates.
 - Event cancellation and point voiding.
 - Attendance corrections.
@@ -538,8 +566,15 @@ Authentication audit records shall never contain raw action tokens, password val
 
 - A member may belong to multiple departments.
 - A member shall have at most one primary department.
+- A membership period is active on date `D` when `joined_at <= D` and (`left_at` is null or `D < left_at`).
+- Membership periods for the same member and department shall not overlap.
+- Ending a membership shall preserve prior attendance, leadership, and reporting history.
+- A member may rejoin the same department only through a new non-overlapping membership period.
 - Department requests made during registration require administrator confirmation.
-- Department leaders shall only manage assigned departments.
+- Department leaders shall access leader features only within actively assigned departments.
+- A department-leader role without an active assignment grants no department scope.
+- A revoked, expired, or future assignment grants no department scope.
+- Ending an assignment shall take effect on the next authorization check without waiting for token expiry.
 
 ### 6.4 Data Retention Rules
 
@@ -668,6 +703,14 @@ The MVP shall be considered ready for internal testing when:
 - Approved users can log in.
 - Pending, rejected, and suspended users cannot access protected features.
 - Administrators can create departments.
+- A department leader with both a live role and active assignment can access only assigned department data.
+- Role-only, assignment-only, future, expired, and revoked leadership states grant no department access.
+- Revoking leadership removes scoped access on the next request even when the previous JWT remains valid.
+- Ending department membership removes leader scope for that department on the next request while preserving historical access records.
+- Cross-department member, attendance, absence, and report requests are rejected without leaking protected data.
+- Members can leave and rejoin a department without overwriting or duplicating historical periods.
+- Overlapping department membership periods are rejected.
+- Department leaders cannot add or remove department members.
 - Administrators can create events with geofence settings.
 - Administrators can cancel an eligible event with complete audit metadata.
 - Event cancellation preserves attendance, voids points, excludes metrics, and prevents finalization.
@@ -733,7 +776,6 @@ The MVP shall be considered ready for internal testing when:
 - Whether check-out is required.
 - Whether rejected users may reapply.
 - Whether attendance officers can correct existing records.
-- Whether department leaders approve absence requests directly.
 - How long precise attendance coordinates are retained.
 
 ---

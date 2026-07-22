@@ -198,14 +198,22 @@ Table department_members {
   joined_at date [not null]
   left_at date
   assigned_by uuid [ref: > users.id]
+  ended_by uuid [ref: > users.id]
+  end_reason text
   created_at timestamptz [not null]
+  updated_at timestamptz [not null]
 
   indexes {
-    (department_id, member_id) [unique, name: 'department_members_unique']
+    (department_id, member_id, joined_at, left_at) [name: 'department_members_department_member_dates_idx']
     member_id [name: 'department_members_member_idx']
   }
 
-  Note: 'Application and database logic must enforce at most one active primary department per member.'
+  checks {
+    `left_at IS NULL OR left_at > joined_at` [name: 'department_members_valid_date_range']
+    `(left_at IS NULL AND ended_by IS NULL AND end_reason IS NULL) OR (left_at IS NOT NULL AND ended_by IS NOT NULL AND end_reason IS NOT NULL AND char_length(btrim(end_reason)) > 0)` [name: 'department_members_valid_end_metadata']
+  }
+
+  Note: 'Each row is a half-open [joined_at, left_at) membership period. The PostgreSQL migration must enable btree_gist and add an exclusion constraint preventing overlapping dateranges for the same department_id and member_id. Rejoining creates a new period. Normal workflows never hard-delete periods.'
 }
 
 Table department_leaders {
@@ -215,12 +223,24 @@ Table department_leaders {
   title varchar(100)
   starts_at date [not null]
   ends_at date
+  revoked_at timestamptz
+  revoked_by uuid [ref: > users.id]
+  revocation_reason text
   assigned_by uuid [ref: > users.id]
   created_at timestamptz [not null]
 
   indexes {
     (department_id, member_id, starts_at) [unique, name: 'department_leaders_assignment_unique']
+    (member_id, revoked_at, starts_at, ends_at) [name: 'department_leaders_member_dates_idx']
+    (department_id, revoked_at, starts_at, ends_at) [name: 'department_leaders_department_dates_idx']
   }
+
+  checks {
+    `ends_at IS NULL OR ends_at >= starts_at` [name: 'department_leaders_valid_date_range']
+    `(revoked_at IS NULL AND revoked_by IS NULL AND revocation_reason IS NULL) OR (revoked_at IS NOT NULL AND revoked_by IS NOT NULL AND revocation_reason IS NOT NULL AND char_length(btrim(revocation_reason)) > 0)` [name: 'department_leaders_valid_revocation_metadata']
+  }
+
+  Note: 'Leader authorization also requires DEPARTMENT_LEADER and an active membership period in the same department. Active assignments are unrevoked and within their church-local date range; no condition grants access independently. Assignment creation rejects overlapping unrevoked terms.'
 }
 
 Table events {

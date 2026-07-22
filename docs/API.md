@@ -161,6 +161,7 @@ All primary identifiers shall use UUIDs.
 | `ACCOUNT_REJECTED` | 403 | Account has been rejected |
 | `ACCOUNT_SUSPENDED` | 403 | Account is suspended |
 | `EMAIL_NOT_VERIFIED` | 422 | Account email must be verified before approval |
+| `DEPARTMENT_SCOPE_FORBIDDEN` | 403 | Department leader lacks an active assignment for the requested resource |
 | `NOT_FOUND` | 404 | Resource does not exist |
 | `CONFLICT` | 409 | Request conflicts with existing data |
 | `DUPLICATE_ATTENDANCE` | 409 | Member already checked in |
@@ -630,7 +631,7 @@ membershipStatus=ACTIVE
 accountStatus=ACTIVE
 ```
 
-Department leaders should only see members from their assigned departments.
+Department leaders receive only members who share at least one actively led department. If `departmentId` is supplied, it must be actively led. Leader responses must omit account-security and unrelated-department fields.
 
 ---
 
@@ -641,6 +642,10 @@ GET /members/:memberId
 ```
 
 **Roles:** Authorized staff or the member themself
+
+A department leader may retrieve another member only when both currently belong to a department the requester actively leads. Authorization must be enforced in the database query or service before returning data.
+
+Scoped object lookups return `NOT_FOUND` when the record is missing or outside the leader's scope, avoiding disclosure of out-of-scope member data.
 
 ---
 
@@ -758,21 +763,43 @@ POST /departments/:departmentId/members
 ```json
 {
   "memberId": "ce686f62-3e76-4f41-aef2-c9d376a52906",
-  "isPrimary": true
+  "isPrimary": true,
+  "joinedAt": "2026-07-22",
+  "leftAt": null
 }
 ```
 
+Each request creates a new membership period. `joinedAt` defaults to the current date in the church timezone; `leftAt`, when supplied for a scheduled term, is the first inactive date and must be later than `joinedAt`.
+
+The transaction shall lock relevant membership periods, reject any overlap for the same member and department, maintain the member's single-primary-department invariant, and create an audit log. A member who previously left the department rejoins through a new period rather than reopening or overwriting the old row.
+
 ---
 
-## 8.6 Remove Department Member
+## 8.6 End Department Membership
 
 ```http
-DELETE /departments/:departmentId/members/:memberId
+POST /departments/:departmentId/memberships/:membershipId/end
 ```
 
 **Roles:** `SUPER_ADMIN`, `ADMIN`
 
-Use lifecycle dates rather than deleting historical membership where possible.
+### Request
+
+```json
+{
+  "leftAt": "2026-08-01",
+  "reason": "Member transferred to another department.",
+  "replacementPrimaryDepartmentId": null
+}
+```
+
+`leftAt` is the first inactive date and defaults to the current church-local date when valid. It must be later than `joinedAt`. The reason must contain meaningful non-whitespace text.
+
+The backend shall lock the exact membership period, validate that it belongs to the route department, set `leftAt`, `endedBy`, `endReason`, and `updatedAt`, and create an audit log. The record must never be deleted.
+
+If the period is primary, the transaction must either set a valid active replacement supplied by the administrator or clear the member's primary department. Ending membership removes any department-leader scope derived from that membership on the next request, although historical leadership assignments remain stored.
+
+Repeating the same end operation is idempotent. A conflicting attempt to rewrite an already ended period returns `CONFLICT`.
 
 ---
 
@@ -790,9 +817,50 @@ POST /departments/:departmentId/leaders
 {
   "memberId": "ce686f62-3e76-4f41-aef2-c9d376a52906",
   "title": "Media Head",
-  "startsAt": "2026-07-22"
+  "startsAt": "2026-07-22",
+  "endsAt": null
 }
 ```
+
+### Transaction
+
+The backend shall validate that the member and department belong to the same church, the member has a membership period covering the proposed leadership start, the leadership term does not extend beyond a scheduled membership end, the date range is valid, and no unrevoked assignment overlaps the proposed term. It shall create the leadership assignment, ensure the related user holds `DEPARTMENT_LEADER`, and create an audit log atomically.
+
+The global role does not grant access until the assignment becomes active.
+
+---
+
+## 8.8 Revoke Department Leader Assignment
+
+```http
+POST /departments/:departmentId/leaders/:assignmentId/revoke
+```
+
+**Roles:** `SUPER_ADMIN`, `ADMIN`
+
+### Request
+
+```json
+{
+  "reason": "Leadership responsibility reassigned."
+}
+```
+
+The reason must contain meaningful non-whitespace text. The backend shall lock and validate the assignment, record `revokedAt`, `revokedBy`, and `revocationReason` using server values, and create an audit log. The operation is idempotent and takes effect on the next authorization check. Historical assignment data must remain intact.
+
+The `DEPARTMENT_LEADER` role may remain assigned because the member may lead another department; role presence never bypasses assignment scope.
+
+---
+
+## 8.9 Get My Led Departments
+
+```http
+GET /departments/my-leadership
+```
+
+**Roles:** `DEPARTMENT_LEADER`
+
+Returns only unrevoked assignments active on the current date in the church timezone. Future, expired, and revoked assignments are excluded from active scope.
 
 ---
 
@@ -958,7 +1026,7 @@ The same application service may be invoked automatically after the attendance w
 The backend shall:
 
 1. Lock or claim the event finalization operation.
-2. Resolve every member eligible for the event.
+2. Resolve every member whose membership period contains the event start date in the church timezone and who otherwise satisfies event eligibility.
 3. Preserve existing valid geolocation and manual attendance.
 4. Match approved event-specific or date-range absence requests.
 5. Create or update `EXCUSED` system records with `absenceRequestId`.
@@ -1086,6 +1154,8 @@ GET /attendance/events/:eventId
 
 **Roles:** `SUPER_ADMIN`, `ADMIN`, `ATTENDANCE_OFFICER`, eligible `DEPARTMENT_LEADER`
 
+Department leaders may access event attendance only for members and required departments within their active assignment scope. Open-to-all events are restricted to members of actively led departments.
+
 ---
 
 ## 10.4 Manual Attendance
@@ -1192,6 +1262,14 @@ PATCH /absence-requests/:requestId/review
 ```
 
 **Roles:** `SUPER_ADMIN`, `ADMIN`, assigned `DEPARTMENT_LEADER`
+
+The backend must resolve department-leader scope for every review:
+
+- Event-specific requests require an actively led department that contains the member and makes the member eligible for the event.
+- Open-to-all events and date-range requests require active leadership of the member's primary department.
+- If the member has no primary department, open-to-all event and date-range requests require `SUPER_ADMIN` or `ADMIN` review.
+- Role presence without an active assignment returns `DEPARTMENT_SCOPE_FORBIDDEN`.
+- A scoped absence-request lookup returns `NOT_FOUND` when the request is missing or outside the leader's scope.
 
 ### Request
 
@@ -1364,6 +1442,8 @@ GET /reports/attendance-summary
 
 **Roles:** `SUPER_ADMIN`, `ADMIN`, restricted `DEPARTMENT_LEADER`
 
+Department leaders must supply or be constrained to an actively led `departmentId`. They cannot retrieve church-wide report aggregates.
+
 ### Query Parameters
 
 ```text
@@ -1385,6 +1465,8 @@ GET /reports/repeated-absences
 ```
 
 **Roles:** `SUPER_ADMIN`, `ADMIN`, restricted `DEPARTMENT_LEADER`
+
+Department leaders are constrained to actively led departments and cannot retrieve church-wide repeated-absence results.
 
 ### Query Parameters
 
@@ -1505,7 +1587,8 @@ An audit log entry is required.
 | View own attendance | Yes | Yes | Yes | Yes | Yes |
 | Review pending users | No | No | No | Yes | Yes |
 | Manage members | No | Limited | No | Yes | Yes |
-| Manage departments | No | Limited | No | Yes | Yes |
+| View assigned department data | No | Assigned only | No | Yes | Yes |
+| Assign or end department memberships | No | No | No | Yes | Yes |
 | Create events | No | No | No | Yes | Yes |
 | Manual attendance | No | No | Yes | Yes | Yes |
 | Correct attendance | No | No | No | Yes | Yes |
@@ -1513,6 +1596,8 @@ An audit log entry is required.
 | View church-wide reports | No | No | No | Yes | Yes |
 | View audit logs | No | No | No | No | Yes |
 | Update church settings | No | No | No | No | Yes |
+
+`Assigned only` always requires both the `DEPARTMENT_LEADER` role and an active, unrevoked `department_leaders` record. Scope must be checked against the requested resource on every backend request.
 
 ---
 
@@ -1649,7 +1734,6 @@ Non-breaking fields may be added without creating a new API version.
 - Whether access tokens use headers or secure cookies.
 - Whether pending users receive limited access tokens.
 - Whether phone number is required.
-- Whether department leaders can add department members.
 - Whether attendance officers can correct existing records.
 - Whether location coordinates are retained indefinitely or removed after a configured period.
 - Whether event recurrence is handled by recurring rules or generated event instances.

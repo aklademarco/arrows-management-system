@@ -60,10 +60,11 @@ Responsible for a single department.
 
 **Permissions**  
 
-- View department attendance  
-- View department reports  
-- Approve absences  
-- Manage department members  
+- View attendance and reports only for actively assigned departments.
+- View members only within actively assigned departments.
+- Review absence requests only when the member and event or primary department fall within the leader's active scope.
+- Submit attendance exceptions for administrator review.
+- Department leaders cannot add or remove members in Version 1.
 
 **Attendance Officer**  
 Responsible for attendance verification.  
@@ -153,6 +154,8 @@ The system shall:
 
 - Allow multiple departments per member.
 - Assign department leaders.  
+- Enforce leadership start and end dates for department access.
+- Preserve dated department-membership history when members leave and rejoin.
 - Generate department reports.  
 
 **Leaderboards**

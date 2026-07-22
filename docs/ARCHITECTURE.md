@@ -304,7 +304,8 @@ Responsible for:
 Responsible for:
 
 - Departments
-- Membership assignments
+- Historical membership-period creation and ending
+- Membership overlap prevention
 - Department leaders
 - Department access restrictions
 
@@ -597,7 +598,7 @@ Use:
 - JWT authentication guard
 - Account-status guard
 - Role guard
-- Department-scope checks
+- Central department-scope authorization service
 
 Authorization flow:
 
@@ -608,7 +609,7 @@ Account ACTIVE?
     ↓
 Role allowed?
     ↓
-Resource scope allowed?
+Live role and active resource assignment allowed?
     ↓
 Execute action
 ```
@@ -619,6 +620,35 @@ Examples:
 - Department leaders view only assigned departments.
 - Administrators view church-wide records.
 - Only the Super Administrator views audit logs.
+
+### Department Leader Scope
+
+Department-leader authorization uses two live database conditions:
+
+```text
+User has DEPARTMENT_LEADER in user_roles
+                    AND
+User's member profile has an unrevoked department_leaders assignment
+that is active on the current date in the church timezone
+                    AND
+The member has an active department_members period for that department
+```
+
+Neither condition grants access independently. JWT role claims may be used as an early rejection optimization, but they are not sufficient authorization because assignments and roles can change before token expiry.
+
+A shared `DepartmentScopeService` shall:
+
+- Resolve active department IDs for the authenticated user.
+- Require an active membership period in each resolved department.
+- Verify a requested department is in that set.
+- Apply department predicates directly to member, attendance, absence, leaderboard, and report queries.
+- Enforce same-church boundaries.
+- Use the member's primary department for date-range absences and open-to-all event absence reviews.
+- Use scoped queries and return `NOT_FOUND` for missing or out-of-scope object identifiers; use `DEPARTMENT_SCOPE_FORBIDDEN` only when denying access to an explicitly known department context.
+
+Controllers and the frontend must not implement independent versions of this rule. Services must not fetch church-wide data and filter it in memory after authorization.
+
+Assignment revocation takes effect on the next authorization check. Authorization results must not be cached beyond a duration that would defeat immediate revocation; Version 1 should prefer live indexed queries.
 
 Frontend route protection is for user experience only.
 
@@ -716,7 +746,7 @@ Create ABSENT records for remaining missing eligible members
 Complete the event and record audit metadata
 ```
 
-Eligibility must use department membership lifecycle dates and the event's required departments. An event with no department assignments is open to all eligible active members. Date-range absences and leaderboard/reporting periods use the church's configured IANA timezone, defaulting to `Africa/Accra`.
+Eligibility must use the half-open membership period containing the event start date: `joined_at <= event_date` and (`left_at` is null or `event_date < left_at`). It must not use only current department membership. An event with no department assignments is open to all otherwise eligible members. Date-range absences and leaderboard/reporting periods use the church's configured IANA timezone, defaulting to `Africa/Accra`.
 
 Finalization may be invoked by an authenticated administrative endpoint and by a lightweight scheduled reconciliation process. Both entry points must call the same application service. Version 1 does not require Redis or a distributed job queue.
 
@@ -927,6 +957,7 @@ Log:
 - Email-verification completion
 - Password-reset completion and session revocation
 - Registration approvals
+- Department-leader assignment and revocation
 - Attendance decisions
 - Event attendance finalization summaries
 - Event cancellation summaries and point-voiding counts
@@ -1006,6 +1037,7 @@ Test:
 - Leaderboard scoring
 - Absence handling
 - Role authorization helpers
+- Department-scope date and revocation evaluation
 
 ## 17.2 Integration Tests
 
@@ -1013,6 +1045,9 @@ Test:
 
 - Registration
 - Approval
+- Department-leader role-plus-assignment enforcement
+- Cross-department IDOR rejection
+- Immediate leadership revocation with an otherwise valid JWT
 - Login
 - Token refresh
 - Email verification and token reuse prevention

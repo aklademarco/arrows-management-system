@@ -376,18 +376,36 @@ Many-to-many relationship between members and departments.
 | `department_id` | UUID | FK → departments.id, not null | Department |
 | `member_id` | UUID | FK → member_profiles.id, not null | Member |
 | `is_primary` | BOOLEAN | Not null, default false | Primary membership |
-| `joined_at` | DATE | Not null | Membership start |
-| `left_at` | DATE | Nullable | Membership end |
+| `joined_at` | DATE | Not null | First active membership date |
+| `left_at` | DATE | Nullable | First inactive membership date; null while open-ended |
 | `assigned_by` | UUID | Nullable FK → users.id | Assigning administrator |
+| `ended_by` | UUID | Nullable FK → users.id | Administrator who ended the period |
+| `end_reason` | TEXT | Nullable | Required reason for ending membership |
 | `created_at` | TIMESTAMPTZ | Not null | Creation time |
+| `updated_at` | TIMESTAMPTZ | Not null | Last lifecycle update |
 
-### Unique Constraint
+### Membership Period Constraints
 
 ```text
-UNIQUE (department_id, member_id)
+CHECK (left_at IS NULL OR left_at > joined_at)
+
+EXCLUDE USING GIST (
+  department_id WITH =,
+  member_id WITH =,
+  daterange(joined_at, left_at, '[)') WITH &&
+)
 ```
 
-Application and database logic should enforce at most one active primary department per member.
+The exclusion constraint requires PostgreSQL's `btree_gist` extension and prevents overlapping periods while allowing a member to leave and later rejoin the same department.
+
+Lifecycle rules:
+
+- A period is active on date `D` when `joined_at <= D` and (`left_at` is null or `D < left_at`).
+- `left_at`, `ended_by`, and `end_reason` are either all null or all populated.
+- `end_reason` must contain meaningful non-whitespace text.
+- Membership periods are never hard-deleted through normal application workflows.
+- Event eligibility uses the period containing the event start date in `churches.timezone`, not the member's current membership.
+- Application and database logic should enforce at most one active primary department per member.
 
 ---
 
@@ -403,6 +421,9 @@ Assigns leadership responsibility to a department.
 | `title` | VARCHAR(100) | Nullable | Example: Head Usher |
 | `starts_at` | DATE | Not null | Leadership start |
 | `ends_at` | DATE | Nullable | Leadership end |
+| `revoked_at` | TIMESTAMPTZ | Nullable | Immediate revocation time |
+| `revoked_by` | UUID | Nullable FK → users.id | Revoking administrator |
+| `revocation_reason` | TEXT | Nullable | Required reason for immediate revocation |
 | `assigned_by` | UUID | Nullable FK → users.id | Assigning administrator |
 | `created_at` | TIMESTAMPTZ | Not null | Creation time |
 
@@ -413,6 +434,17 @@ UNIQUE (department_id, member_id, starts_at)
 ```
 
 A department may have multiple leaders.
+
+### Leadership Scope Rules
+
+- `ends_at` must be null or on or after `starts_at`.
+- Revocation fields must be either all null or all populated, and `revocation_reason` must contain meaningful text.
+- An assignment is active when `revoked_at` is null, its leadership dates contain the current date in `churches.timezone`, and the leader has an active `department_members` period for the same department.
+- Authorization additionally requires the assigned member's user to hold the global `DEPARTMENT_LEADER` role.
+- Neither the role nor the assignment grants leader access independently.
+- Revoked, historical, and future assignments remain stored but provide no active scope.
+- One member may actively lead multiple departments.
+- Assignment creation must reject overlapping unrevoked terms for the same member and department.
 
 ---
 
@@ -766,11 +798,24 @@ ON departments (church_id, slug)
 ## Department Membership
 
 ```text
-UNIQUE INDEX department_members_unique
-ON department_members (department_id, member_id)
+INDEX department_members_department_member_dates_idx
+ON department_members (department_id, member_id, joined_at, left_at)
 
 INDEX department_members_member_idx
 ON department_members (member_id)
+```
+
+## Department Leadership
+
+```text
+UNIQUE INDEX department_leaders_assignment_unique
+ON department_leaders (department_id, member_id, starts_at)
+
+INDEX department_leaders_member_dates_idx
+ON department_leaders (member_id, revoked_at, starts_at, ends_at)
+
+INDEX department_leaders_department_dates_idx
+ON department_leaders (department_id, revoked_at, starts_at, ends_at)
 ```
 
 ## Events
@@ -921,6 +966,29 @@ Create an audit log
 ```
 
 Cancellation is idempotent and cannot be applied to a finalized or `COMPLETED` event. Cancelled events are excluded from normal metrics and cannot accept attendance or be finalized.
+
+## Department Leader Assignment
+
+```text
+Validate same-church department membership and assignment dates
+Create the department_leaders record
+Ensure the related user has the DEPARTMENT_LEADER role
+Create an audit log
+```
+
+Immediate revocation records `revoked_at`, `revoked_by`, and `revocation_reason` without deleting history. Authorization checks query both the live role assignment and an active, unrevoked department assignment.
+
+## Department Membership Assignment
+
+```text
+Lock membership periods for the member and department
+Validate the proposed half-open date range does not overlap
+Create a new department_members period
+Update primary membership consistently when requested
+Create an audit log
+```
+
+Ending membership updates `left_at`, `ended_by`, `end_reason`, and `updated_at` without deleting the period. Historical event eligibility and reports continue to use the preserved dates.
 
 ## Manual Attendance Correction
 
