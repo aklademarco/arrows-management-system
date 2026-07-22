@@ -135,7 +135,8 @@ The system shall:
 - Prevent duplicate attendance.  
 - Record timestamps.  
 - Calculate attendance status.  
-- Lock device to user so that people do not check in for others  
+
+The MVP will not use device locking, browser fingerprinting, or QR-code verification. Attendance is based on the authenticated account, the event attendance window, and server-side geofence validation.
 
 **Departments**  
 

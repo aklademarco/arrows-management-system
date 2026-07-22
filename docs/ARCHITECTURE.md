@@ -1033,6 +1033,8 @@ Version 1 shall not include:
 - BullMQ unless required later
 - Continuous location tracking
 - Face recognition
+- Device locking or browser fingerprinting
+- QR-code attendance verification
 - Offline attendance synchronization
 
 ---

@@ -597,6 +597,8 @@ The MVP shall be considered ready for internal testing when:
 - WhatsApp automation.
 - Advanced AI analytics.
 - Multiple independent churches.
+- Device locking or browser fingerprinting.
+- QR-code attendance verification.
 
 ---
 
