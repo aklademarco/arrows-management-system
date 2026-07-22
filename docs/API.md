@@ -764,12 +764,11 @@ POST /departments/:departmentId/members
 {
   "memberId": "ce686f62-3e76-4f41-aef2-c9d376a52906",
   "isPrimary": true,
-  "joinedAt": "2026-07-22",
-  "leftAt": null
+  "joinedAt": "2026-07-22"
 }
 ```
 
-Each request creates a new membership period. `joinedAt` defaults to the current date in the church timezone; `leftAt`, when supplied for a scheduled term, is the first inactive date and must be later than `joinedAt`.
+Each request creates a new open-ended membership period. `joinedAt` defaults to the current date in the church timezone. Immediate or scheduled endings must use the audited end-membership endpoint.
 
 The transaction shall lock relevant membership periods, reject any overlap for the same member and department, maintain the member's single-primary-department invariant, and create an audit log. A member who previously left the department rejoins through a new period rather than reopening or overwriting the old row.
 

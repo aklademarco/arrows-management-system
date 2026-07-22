@@ -481,6 +481,7 @@ schema/
 - Migrations must be committed to Git.
 - Migrations must be tested before deployment.
 - Database backups should exist before destructive changes.
+- The membership-period migration shall enable PostgreSQL's `btree_gist` extension and add the documented GiST exclusion constraint.
 
 ---
 
@@ -958,6 +959,7 @@ Log:
 - Password-reset completion and session revocation
 - Registration approvals
 - Department-leader assignment and revocation
+- Department membership assignment and ending
 - Attendance decisions
 - Event attendance finalization summaries
 - Event cancellation summaries and point-voiding counts
@@ -1038,6 +1040,7 @@ Test:
 - Absence handling
 - Role authorization helpers
 - Department-scope date and revocation evaluation
+- Half-open membership-period and event-eligibility calculations
 
 ## 17.2 Integration Tests
 
@@ -1048,6 +1051,10 @@ Test:
 - Department-leader role-plus-assignment enforcement
 - Cross-department IDOR rejection
 - Immediate leadership revocation with an otherwise valid JWT
+- Department membership leave-and-rejoin history
+- Membership overlap rejection under concurrent requests
+- Historical event eligibility before and after a membership boundary
+- Leader-scope removal when department membership ends
 - Login
 - Token refresh
 - Email verification and token reuse prevention
