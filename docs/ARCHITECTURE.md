@@ -861,6 +861,8 @@ Recommended:
 Log:
 
 - Authentication failures
+- Email-verification completion
+- Password-reset completion and session revocation
 - Registration approvals
 - Attendance decisions
 - Manual attendance

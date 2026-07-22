@@ -416,6 +416,7 @@ The backend shall:
 5. Mark the token as used.
 6. Revoke other unused password-reset tokens.
 7. Revoke all refresh-token sessions for the user.
+8. Record a password-reset completion audit event without sensitive values.
 
 Token consumption and database updates must be atomic. A consumed token must never work again.
 
@@ -479,7 +480,7 @@ POST /auth/email-verification/confirm
 
 ### Transaction
 
-The backend shall atomically validate and lock the token, set `users.email_verified_at` using server time, mark the token as used, and revoke other unused email-verification tokens for the user.
+The backend shall atomically validate and lock the token, set `users.email_verified_at` using server time, mark the token as used, revoke other unused email-verification tokens for the user, and record a verification audit event without the token value.
 
 ```json
 {

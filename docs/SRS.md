@@ -460,8 +460,12 @@ The system shall record audit logs for:
 - Attendance corrections.
 - Manual attendance.
 - Configuration changes.
+- Email verification completion.
+- Password reset completion and session revocation.
 
 Audit logs shall include actor, action, target entity, previous value where appropriate, new value where appropriate, timestamp, and optional IP address and device information.
+
+Authentication audit records shall never contain raw action tokens, password values, password hashes, or refresh tokens.
 
 ---
 
