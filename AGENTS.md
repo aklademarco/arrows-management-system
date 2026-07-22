@@ -5,7 +5,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Project
 
-Youth Workforce Management System (YWMS)
+Arrows Church Management System (ACMS)
 
 A modern church workforce management platform that manages members, departments, attendance, events, leaderboards, and reporting through secure location-based attendance.
 

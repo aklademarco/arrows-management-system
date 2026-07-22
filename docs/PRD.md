@@ -1,8 +1,9 @@
 # Product Requirements Document (PRD)
 
-**Project**  
-**Church Management System (Arrows)**  
-*Working title. The name can change later.*  
+**Project:** Arrows Church Management System (ACMS)
+
+**Initial Organization:** Arrows Youth Ministry
+
 **1. Vision**  
 Build a web-based platform that helps a church youth ministry manage  
 workers, departments, attendance, and engagement through location-based check-ins, reporting, and leaderboards.  
