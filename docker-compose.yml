@@ -1,3 +1,26 @@
 name: arrows-church-management-system
 
-services: {}
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-arrows_cms}
+      POSTGRES_USER: ${POSTGRES_USER:-arrows}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arrows_local_password}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-arrows} -d ${POSTGRES_DB:-arrows_cms}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+    name: arrows_cms_postgres_data

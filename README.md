@@ -129,11 +129,21 @@ Prerequisites:
 
 * Node.js 20.9 or newer
 * pnpm 11
+* Docker Engine with Docker Compose
 
 Install all workspace dependencies from the repository root:
 
 ```bash
 pnpm install
+```
+
+Create the local environment file, start PostgreSQL, and apply all pending
+migrations:
+
+```bash
+cp .env.example .env
+pnpm db:start
+pnpm db:migrate
 ```
 
 Start both applications:
@@ -150,7 +160,20 @@ pnpm dev:api
 ```
 
 The web application runs at `http://localhost:3000`. The API runs at
-`http://localhost:4000`.
+`http://localhost:4000`. Database connectivity can be checked at
+`http://localhost:4000/api/v1/health`.
+
+Useful database commands:
+
+```bash
+pnpm db:start
+pnpm db:stop
+pnpm db:logs
+pnpm db:migrate
+```
+
+See [`docs/DATABASE.md`](docs/DATABASE.md) for local data storage, backups, and
+the future VPS migration process.
 
 Run repository checks:
 

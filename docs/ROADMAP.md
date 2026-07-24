@@ -186,11 +186,11 @@ Create a reproducible local development environment.
 
 ### PostgreSQL
 
-- [ ] Add PostgreSQL to `docker-compose.yml`.
-- [ ] Create development database.
-- [ ] Add persistent Docker volume.
-- [ ] Add database health check.
-- [ ] Add `.env.example`.
+- [x] Add PostgreSQL to `docker-compose.yml`.
+- [x] Create development database.
+- [x] Add persistent Docker volume.
+- [x] Add database health check.
+- [x] Add `.env.example`.
 
 ### Environment Variables
 
@@ -209,9 +209,9 @@ REFRESH_TOKEN_TTL
 
 ### Developer Workflow
 
-- [ ] Add commands to start infrastructure.
-- [ ] Add commands to stop infrastructure.
-- [ ] Document database connection.
+- [x] Add commands to start infrastructure.
+- [x] Add commands to stop infrastructure.
+- [x] Document database connection.
 - [ ] Confirm the API connects to PostgreSQL.
 
 ## Deliverables
@@ -371,14 +371,14 @@ Implement secure registration and session management.
 
 ### Registration
 
-- [ ] Public registration endpoint.
-- [ ] Email normalization.
-- [ ] Phone normalization.
-- [ ] Password validation.
-- [ ] Argon2 password hashing.
-- [ ] Default `PENDING_APPROVAL` status.
-- [ ] Requested department validation.
-- [ ] Duplicate account handling.
+- [x] Public registration endpoint.
+- [x] Email normalization.
+- [x] Phone normalization.
+- [x] Password validation.
+- [x] Argon2 password hashing.
+- [x] Default `PENDING_APPROVAL` status.
+- [x] Requested department validation.
+- [x] Duplicate account handling.
 
 ### Login
 
