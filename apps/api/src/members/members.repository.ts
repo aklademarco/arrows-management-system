@@ -377,4 +377,141 @@ export class MembersRepository {
       throw error;
     }
   }
+
+  async archiveMember(input: {
+    memberId: string;
+    actorUserId: string;
+    churchId: string;
+  }): Promise<void> {
+    await this.database.transaction(async (transaction) => {
+      const [member] = await transaction
+        .select({
+          id: memberProfiles.id,
+          userId: users.id,
+          accountStatus: users.accountStatus,
+          membershipStatus: memberProfiles.membershipStatus,
+        })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(memberProfiles.id, input.memberId),
+            eq(users.churchId, input.churchId),
+          ),
+        )
+        .limit(1)
+        .for('update');
+      if (!member) {
+        throw new NotFoundException('Member not found.');
+      }
+      if (member.userId === input.actorUserId) {
+        throw new ConflictException(
+          'Administrators cannot archive their own membership.',
+        );
+      }
+      if (member.accountStatus === 'ARCHIVED') {
+        throw new ConflictException('This member is already archived.');
+      }
+      if (
+        member.accountStatus !== 'ACTIVE' &&
+        member.accountStatus !== 'SUSPENDED'
+      ) {
+        throw new ConflictException(
+          'Only active or suspended members can be archived.',
+        );
+      }
+
+      const now = new Date();
+      const archiveDate = now.toISOString().slice(0, 10);
+      const activePrimaryAssignments = await transaction
+        .select({
+          id: primaryDepartmentAssignments.id,
+          departmentMembershipId:
+            primaryDepartmentAssignments.departmentMembershipId,
+          startsAt: primaryDepartmentAssignments.startsAt,
+        })
+        .from(primaryDepartmentAssignments)
+        .where(
+          and(
+            eq(primaryDepartmentAssignments.memberId, member.id),
+            isNull(primaryDepartmentAssignments.endsAt),
+          ),
+        )
+        .for('update');
+      const activeMemberships = await transaction
+        .select({
+          id: departmentMembers.id,
+          joinedAt: departmentMembers.joinedAt,
+        })
+        .from(departmentMembers)
+        .where(
+          and(
+            eq(departmentMembers.memberId, member.id),
+            isNull(departmentMembers.leftAt),
+          ),
+        )
+        .for('update');
+      for (const membership of activeMemberships) {
+        const dayAfterJoining = new Date(
+          new Date(`${membership.joinedAt}T00:00:00.000Z`).getTime() +
+            86_400_000,
+        )
+          .toISOString()
+          .slice(0, 10);
+        const primaryStartsAt = activePrimaryAssignments.find(
+          (assignment) => assignment.departmentMembershipId === membership.id,
+        )?.startsAt;
+        const leftAt = [archiveDate, dayAfterJoining, primaryStartsAt ?? '']
+          .sort()
+          .at(-1)!;
+        await transaction
+          .update(departmentMembers)
+          .set({
+            leftAt,
+            endedBy: input.actorUserId,
+            endReason: 'Member archived.',
+            updatedAt: now,
+          })
+          .where(eq(departmentMembers.id, membership.id));
+      }
+      for (const assignment of activePrimaryAssignments) {
+        await transaction
+          .update(primaryDepartmentAssignments)
+          .set({
+            endsAt:
+              assignment.startsAt > archiveDate
+                ? assignment.startsAt
+                : archiveDate,
+            endedBy: input.actorUserId,
+            endReason: 'Member archived.',
+            updatedAt: now,
+          })
+          .where(eq(primaryDepartmentAssignments.id, assignment.id));
+      }
+      await transaction
+        .update(memberProfiles)
+        .set({ membershipStatus: 'ARCHIVED', updatedAt: now })
+        .where(eq(memberProfiles.id, member.id));
+      await transaction
+        .update(users)
+        .set({ accountStatus: 'ARCHIVED', updatedAt: now })
+        .where(eq(users.id, member.userId));
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'MEMBER_ARCHIVED',
+        entityType: 'MEMBER_PROFILE',
+        entityId: member.id,
+        previousData: {
+          accountStatus: member.accountStatus,
+          membershipStatus: member.membershipStatus,
+        },
+        newData: {
+          accountStatus: 'ARCHIVED',
+          membershipStatus: 'ARCHIVED',
+          archivedAt: now.toISOString(),
+        },
+      });
+    });
+  }
 }

@@ -39,4 +39,12 @@ export class MembersService {
     }
     return this.repository.updateMember(input);
   }
+
+  archiveMember(input: {
+    memberId: string;
+    actorUserId: string;
+    churchId: string;
+  }) {
+    return this.repository.archiveMember(input);
+  }
 }

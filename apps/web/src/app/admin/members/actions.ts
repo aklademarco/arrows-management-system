@@ -47,3 +47,24 @@ export async function updateMember(formData: FormData) {
   revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/admin/members");
 }
+
+export async function archiveMember(formData: FormData) {
+  const memberId = memberIdSchema.parse(formData.get("memberId"));
+  const token = (await cookies()).get("acms_admin_session")?.value;
+  if (!token) redirect("/admin/login");
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const response = await fetch(`${apiUrl}/members/${memberId}/archive`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (response.status === 401 || response.status === 403) {
+    redirect("/admin/login");
+  }
+  if (!response.ok) {
+    const body = (await response.json()) as { message?: string };
+    throw new Error(body.message ?? "The member could not be archived.");
+  }
+  revalidatePath("/admin/members");
+  revalidatePath(`/admin/members/${memberId}`);
+}

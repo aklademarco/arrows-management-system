@@ -4,6 +4,22 @@ import { MembersRepository } from './members.repository';
 import { MembersService } from './members.service';
 
 describe('MembersService', () => {
+  it('archives a member within the administrator church', async () => {
+    const archiveMember = jest.fn().mockResolvedValue(undefined);
+    const service = new MembersService({
+      archiveMember,
+    } as unknown as MembersRepository);
+    const input = {
+      memberId: 'member-id',
+      actorUserId: 'admin-id',
+      churchId: 'church-id',
+    };
+
+    await service.archiveMember(input);
+
+    expect(archiveMember).toHaveBeenCalledWith(input);
+  });
+
   it('passes administrator member updates with church scope', async () => {
     const updateMember = jest.fn().mockResolvedValue({ id: 'member-id' });
     const service = new MembersService({

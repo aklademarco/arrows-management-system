@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
 import { MembersModule } from './members/members.module';
+import { DepartmentsModule } from './departments/departments.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { MembersModule } from './members/members.module';
     AuthModule,
     AdminModule,
     MembersModule,
+    DepartmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

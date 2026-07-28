@@ -3,6 +3,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   ParseUUIDPipe,
   Body,
   Query,
@@ -79,6 +80,24 @@ export class MembersController {
         churchId: admin.churchId,
         updates: body,
       }),
+    };
+  }
+
+  @Post(':memberId/archive')
+  @UseGuards(AdminGuard)
+  async archiveMember(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    await this.service.archiveMember({
+      memberId,
+      actorUserId: admin.id,
+      churchId: admin.churchId,
+    });
+    return {
+      success: true,
+      message: 'Member archived.',
+      data: null,
     };
   }
 }

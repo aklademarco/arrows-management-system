@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FiArrowLeft, FiMail, FiPhone } from "react-icons/fi";
 import { reactivateUser, suspendUser } from "../../registrations/actions";
 import { getAdminResource } from "../../registrations/admin-api";
-import { updateMember } from "../actions";
+import { archiveMember, updateMember } from "../actions";
 
 type MemberProfile = {
   id: string;
@@ -192,6 +192,22 @@ export default async function MemberProfilePage({
               Reactivate account
             </button>
           </form>
+        ) : null}
+
+        {member.accountStatus !== "ARCHIVED" ? (
+          <section className="mt-6 rounded-2xl border border-red-300 bg-red-50 p-6">
+            <h2 className="text-xl font-bold text-red-900">Archive member</h2>
+            <p className="mt-2 text-sm leading-6 text-red-800">
+              Archiving removes account access and closes current department
+              assignments. Historical records are preserved.
+            </p>
+            <form action={archiveMember} className="mt-4">
+              <input name="memberId" type="hidden" value={member.id} />
+              <button className="rounded-lg bg-red-800 px-5 py-3 font-bold text-white hover:bg-red-900">
+                Archive member
+              </button>
+            </form>
+          </section>
         ) : null}
       </div>
     </main>

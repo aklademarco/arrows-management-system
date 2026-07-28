@@ -485,12 +485,12 @@ Implement core church workforce management.
 - [x] View member profile.
 - [x] Update own profile.
 - [x] Admin update member.
-- [ ] Archive member.
-- [ ] Preserve attendance history.
+- [x] Archive member.
+- [x] Preserve attendance history.
 
 ## Department Tasks
 
-- [ ] List departments.
+- [x] List departments.
 - [ ] Create department.
 - [ ] Update department.
 - [ ] Deactivate department.

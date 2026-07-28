@@ -16,7 +16,7 @@ export default async function AdminDashboardPage() {
   const [members, registrations, departments] = await Promise.all([
     getAdminResource<CountPage>("/members?limit=1"),
     getAdminResource<CountPage>("/admin/registrations?limit=1"),
-    getAdminResource<Department[]>("/admin/registrations/department-options"),
+    getAdminResource<Department[]>("/departments"),
   ]);
 
   const cards = [
@@ -24,7 +24,7 @@ export default async function AdminDashboardPage() {
       title: "Members",
       description:
         "Search member profiles, review departments, and manage account status.",
-      href: "/admin/members",
+      href: "/admin/departments",
       count: members.total,
       countLabel: "approved members",
       icon: FiUsers,
