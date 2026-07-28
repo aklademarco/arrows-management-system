@@ -11,6 +11,10 @@ export async function getAdminResource<T>(path: string): Promise<T> {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
   });
+  const body = (await response.json().catch(() => null)) as {
+    data?: T;
+    message?: string | string[];
+  } | null;
   if (response.status === 401 || response.status === 403) {
     redirect("/admin/login");
   }
@@ -18,8 +22,16 @@ export async function getAdminResource<T>(path: string): Promise<T> {
     notFound();
   }
   if (!response.ok) {
-    throw new Error("Registration review data could not be loaded.");
+    const message = Array.isArray(body?.message)
+      ? body.message.join(" ")
+      : body?.message;
+    throw new Error(
+      message ??
+        `Registration review data could not be loaded (HTTP ${response.status}).`,
+    );
   }
-  const body = (await response.json()) as { data: T };
-  return body.data;
+  if (!body || !("data" in body)) {
+    throw new Error("The registration API returned an invalid response.");
+  }
+  return body.data as T;
 }

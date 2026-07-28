@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FiArrowLeft, FiCheckCircle, FiMail, FiPhone } from "react-icons/fi";
+import { reactivateUser, suspendUser } from "../actions";
 import { getAdminResource } from "../admin-api";
 
 type RegistrationDetail = {
@@ -135,6 +136,53 @@ export default async function RegistrationDetailPage({
             </div>
           </dl>
         </section>
+
+        {registration.accountStatus === "ACTIVE" ? (
+          <section className="mt-6 rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-red-800">Suspend account</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Suspension immediately blocks protected access while preserving
+              the member&apos;s history.
+            </p>
+            <form action={suspendUser} className="mt-4 flex gap-3">
+              <input name="userId" type="hidden" value={registration.id} />
+              <input
+                className="h-11 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 outline-none focus:border-red-700"
+                minLength={3}
+                name="reason"
+                placeholder="Reason for suspension"
+                required
+              />
+              <button
+                className="rounded-lg bg-red-700 px-5 font-bold text-white hover:bg-red-800"
+                type="submit"
+              >
+                Suspend
+              </button>
+            </form>
+          </section>
+        ) : null}
+
+        {registration.accountStatus === "SUSPENDED" ? (
+          <section className="mt-6 rounded-2xl border border-green-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-green-800">
+              Reactivate account
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Reactivation restores access using the member&apos;s existing
+              roles and assignments.
+            </p>
+            <form action={reactivateUser} className="mt-4">
+              <input name="userId" type="hidden" value={registration.id} />
+              <button
+                className="rounded-lg bg-green-700 px-5 py-3 font-bold text-white hover:bg-green-800"
+                type="submit"
+              >
+                Reactivate
+              </button>
+            </form>
+          </section>
+        ) : null}
       </div>
     </main>
   );

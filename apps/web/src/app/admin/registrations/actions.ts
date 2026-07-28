@@ -31,7 +31,7 @@ async function review(
   }
   if (!response.ok) {
     const body = (await response.json()) as { message?: string };
-    throw new Error(body.message ?? "The registration could not be reviewed.");
+    throw new Error(body.message ?? "The administrative action failed.");
   }
   revalidatePath("/admin/registrations");
 }
@@ -59,6 +59,22 @@ export async function rejectRegistration(formData: FormData) {
     throw new Error("Enter a rejection reason.");
   }
   await review(`/admin/registrations/${userId}/reject`, { reason });
+}
+
+export async function suspendUser(formData: FormData) {
+  const userId = userIdSchema.parse(formData.get("userId"));
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (reason.length < 3) {
+    throw new Error("Enter a suspension reason.");
+  }
+  await review(`/admin/users/${userId}/suspend`, { reason });
+  revalidatePath(`/admin/registrations/${userId}`);
+}
+
+export async function reactivateUser(formData: FormData) {
+  const userId = userIdSchema.parse(formData.get("userId"));
+  await review(`/admin/users/${userId}/reactivate`, {});
+  revalidatePath(`/admin/registrations/${userId}`);
 }
 
 export async function adminLogout() {

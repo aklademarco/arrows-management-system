@@ -453,8 +453,8 @@ Allow administrators to review and manage registrations.
 - [x] Assign additional departments.
 - [x] Assign the default member role.
 - [x] Reject user with reason.
-- [ ] Suspend user.
-- [ ] Reactivate user.
+- [x] Suspend user.
+- [x] Reactivate user.
 - [x] Record account review.
 - [x] Record audit log.
 - [x] Perform the implemented approval actions as one transaction.
