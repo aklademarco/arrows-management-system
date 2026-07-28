@@ -23,8 +23,6 @@ export default function RegisterPage() {
           </div>
         </section>
         <section className="p-7 sm:p-12">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-950">Create your account</h2>
-          <p className="mt-2 mb-8 text-slate-600">Enter your details exactly as you use them at church.</p>
           <RegistrationForm />
         </section>
       </div>

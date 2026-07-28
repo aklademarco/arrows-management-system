@@ -7,6 +7,10 @@ import {
   Post,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import {
+  ConfirmEmailVerificationDto,
+  RequestEmailVerificationDto,
+} from './dto/email-verification.dto';
 import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
@@ -16,11 +20,42 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() body: RegisterDto, @Ip() ip: string) {
+    const result = await this.authService.register(body, ip);
+    return {
+      success: true,
+      message: result.verificationEmailSent
+        ? 'Registration received. Check your email to verify your address.'
+        : 'Registration received. Request a new verification email to continue.',
+      data: result,
+    };
+  }
+
+  @Post('email-verification/request')
+  @HttpCode(HttpStatus.OK)
+  async requestEmailVerification(
+    @Body() body: RequestEmailVerificationDto,
+    @Ip() ip: string,
+  ) {
+    await this.authService.requestEmailVerification(body.email, ip);
+    return {
+      success: true,
+      message: 'If verification is required, instructions have been sent.',
+      data: null,
+    };
+  }
+
+  @Post('email-verification/confirm')
+  @HttpCode(HttpStatus.OK)
+  async confirmEmailVerification(@Body() body: ConfirmEmailVerificationDto) {
+    await this.authService.confirmEmailVerification(body.token);
     return {
       success: true,
       message:
-        'Registration received. Verify your email before administrator approval.',
-      data: await this.authService.register(body, ip),
+        'Email verified. Your registration is ready for administrator review.',
+      data: {
+        emailVerified: true,
+        accountStatus: 'PENDING_APPROVAL',
+      },
     };
   }
 }

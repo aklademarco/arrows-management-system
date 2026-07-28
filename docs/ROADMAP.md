@@ -380,6 +380,20 @@ Implement secure registration and session management.
 - [x] Requested department validation.
 - [x] Duplicate account handling.
 
+### Email Verification
+
+- [x] Local Mailpit email inbox.
+- [x] Provider-independent email-delivery interface.
+- [x] Send a 24-hour verification link after registration.
+- [x] Generic verification-email request endpoint.
+- [x] Revoke prior unused tokens when issuing a replacement.
+- [x] Limit verification-token issuance to three per hour.
+- [x] Atomically consume a single-use verification token.
+- [x] Record `email_verified_at` using server time.
+- [x] Browser verification and resend pages.
+- [ ] Record the verification audit event.
+- [ ] Configure Resend and the production sending domain.
+
 ### Login
 
 - [ ] Credential verification.
