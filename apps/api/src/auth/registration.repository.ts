@@ -63,6 +63,7 @@ export class RegistrationRepository {
               and(
                 eq(departments.id, input.requestedDepartmentId),
                 eq(departments.churchId, input.churchId),
+                eq(departments.isActive, true),
               ),
             )
             .limit(1);

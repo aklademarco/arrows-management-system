@@ -1,5 +1,6 @@
 import {
   check,
+  boolean,
   date,
   index,
   inet,
@@ -151,13 +152,31 @@ export const auditLogs = pgTable(
   ],
 );
 
-export const departments = pgTable('departments', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  churchId: uuid('church_id')
-    .notNull()
-    .references(() => churches.id),
-  name: varchar('name', { length: 120 }).notNull(),
-});
+export const departments = pgTable(
+  'departments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    name: varchar('name', { length: 120 }).notNull(),
+    slug: varchar('slug', { length: 120 }).notNull(),
+    description: text('description'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('departments_church_slug_unique').on(
+      table.churchId,
+      table.slug,
+    ),
+  ],
+);
 
 export const memberProfiles = pgTable('member_profiles', {
   id: uuid('id').primaryKey().defaultRandom(),

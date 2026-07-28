@@ -106,7 +106,9 @@ export class AdminRegistrationRepository {
     return this.database
       .select({ id: departments.id, name: departments.name })
       .from(departments)
-      .where(eq(departments.churchId, churchId))
+      .where(
+        and(eq(departments.churchId, churchId), eq(departments.isActive, true)),
+      )
       .orderBy(asc(departments.name));
   }
 
@@ -213,6 +215,7 @@ export class AdminRegistrationRepository {
             and(
               inArray(departments.id, selectedDepartmentIds),
               eq(departments.churchId, account.churchId),
+              eq(departments.isActive, true),
             ),
           );
         if (selectedDepartments.length !== selectedDepartmentIds.length) {

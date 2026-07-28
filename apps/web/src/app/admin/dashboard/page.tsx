@@ -10,7 +10,7 @@ import { adminLogout } from "../registrations/actions";
 import { getAdminResource } from "../registrations/admin-api";
 
 type CountPage = { total: number };
-type Department = { id: string; name: string };
+type Department = { id: string; name: string; isActive: boolean };
 
 export default async function AdminDashboardPage() {
   const [members, registrations, departments] = await Promise.all([
@@ -43,7 +43,7 @@ export default async function AdminDashboardPage() {
       description:
         "View the departments currently available for member assignment.",
       href: "/admin/members",
-      count: departments.length,
+      count: departments.filter((department) => department.isActive).length,
       countLabel: "departments",
       icon: FiGrid,
     },

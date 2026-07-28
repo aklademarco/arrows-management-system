@@ -491,9 +491,9 @@ Implement core church workforce management.
 ## Department Tasks
 
 - [x] List departments.
-- [ ] Create department.
-- [ ] Update department.
-- [ ] Deactivate department.
+- [x] Create department.
+- [x] Update department.
+- [x] Deactivate department.
 - [ ] Add member to department.
 - [ ] Remove active membership.
 - [ ] Set or clear primary department through dated assignment periods.
