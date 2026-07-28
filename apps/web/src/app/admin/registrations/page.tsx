@@ -21,6 +21,8 @@ type Registration = {
   firstName: string;
   lastName: string;
   otherNames: string | null;
+  requestedDepartmentId: string | null;
+  requestedDepartmentName: string | null;
   emailVerifiedAt: string;
   createdAt: string;
 };
@@ -130,6 +132,10 @@ export default async function RegistrationsPage() {
                           dateStyle: "medium",
                         }).format(new Date(registration.createdAt))}
                       </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Requested department:{" "}
+                        {registration.requestedDepartmentName ?? "None selected"}
+                      </p>
                     </div>
                   </div>
                   <span className="h-fit rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800">
@@ -139,15 +145,27 @@ export default async function RegistrationsPage() {
 
                 <div className="mt-5 grid gap-4 border-t border-slate-100 pt-5 lg:grid-cols-2">
                   <form action={approveRegistration} className="flex gap-2">
-                    <input name="userId" type="hidden" value={registration.id} />
+                    <input
+                      name="userId"
+                      type="hidden"
+                      value={registration.id}
+                    />
+                    {registration.requestedDepartmentId ? (
+                      <input
+                        name="primaryDepartmentId"
+                        type="hidden"
+                        value={registration.requestedDepartmentId}
+                      />
+                    ) : null}
                     <input
                       className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-[#240046]"
                       name="note"
                       placeholder="Approval note (optional)"
                     />
                     <button
-                      className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#240046] px-4 font-bold text-white hover:bg-[#17002e]"
+                      className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#240046] px-4 font-bold text-white hover:bg-[#17002e] disabled:cursor-not-allowed disabled:bg-slate-300"
                       type="submit"
+                      disabled={!registration.requestedDepartmentId}
                     >
                       <FiCheck aria-hidden="true" />
                       Approve

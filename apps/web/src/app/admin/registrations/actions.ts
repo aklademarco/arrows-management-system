@@ -35,8 +35,12 @@ async function review(path: string, payload: Record<string, string>) {
 
 export async function approveRegistration(formData: FormData) {
   const userId = userIdSchema.parse(formData.get("userId"));
+  const primaryDepartmentId = userIdSchema.parse(
+    formData.get("primaryDepartmentId"),
+  );
   const note = String(formData.get("note") ?? "").trim();
   await review(`/admin/registrations/${userId}/approve`, {
+    primaryDepartmentId,
     ...(note ? { note } : {}),
   });
 }

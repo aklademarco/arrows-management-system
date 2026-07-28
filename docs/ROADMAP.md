@@ -449,7 +449,7 @@ Allow administrators to review and manage registrations.
 - [ ] Search and filter registrations.
 - [ ] View registration details.
 - [x] Approve user.
-- [ ] Create the initial dated primary-department assignment.
+- [x] Create the initial dated primary-department assignment.
 - [ ] Assign additional departments.
 - [x] Assign the default member role.
 - [x] Reject user with reason.

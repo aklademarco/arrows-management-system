@@ -45,6 +45,7 @@ export class AdminRegistrationController {
     await this.service.approve({
       userId,
       reviewerId: admin.id,
+      primaryDepartmentId: body.primaryDepartmentId,
       note: body.note,
       requestedIp,
       userAgent,

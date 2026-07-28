@@ -12,6 +12,7 @@ export class AdminRegistrationService {
   approve(input: {
     userId: string;
     reviewerId: string;
+    primaryDepartmentId: string;
     note?: string;
     requestedIp?: string;
     userAgent?: string;

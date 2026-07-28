@@ -11,7 +11,10 @@ import { DATABASE, type Database } from '../database/database.module';
 import {
   accountReviews,
   auditLogs,
+  departmentMembers,
+  departments,
   memberProfiles,
+  primaryDepartmentAssignments,
   roles,
   userRoles,
   users,
@@ -30,11 +33,17 @@ export class AdminRegistrationRepository {
         firstName: memberProfiles.firstName,
         lastName: memberProfiles.lastName,
         otherNames: memberProfiles.otherNames,
+        requestedDepartmentId: memberProfiles.requestedDepartmentId,
+        requestedDepartmentName: departments.name,
         emailVerifiedAt: users.emailVerifiedAt,
         createdAt: users.createdAt,
       })
       .from(users)
       .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
+      .leftJoin(
+        departments,
+        eq(departments.id, memberProfiles.requestedDepartmentId),
+      )
       .where(
         and(
           eq(users.accountStatus, 'PENDING_APPROVAL'),
@@ -48,6 +57,7 @@ export class AdminRegistrationRepository {
     userId: string;
     reviewerId: string;
     approve: boolean;
+    primaryDepartmentId?: string;
     reason?: string;
     requestedIp?: string;
     userAgent?: string;
@@ -59,8 +69,10 @@ export class AdminRegistrationRepository {
           churchId: users.churchId,
           accountStatus: users.accountStatus,
           emailVerifiedAt: users.emailVerifiedAt,
+          memberId: memberProfiles.id,
         })
         .from(users)
+        .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
         .where(eq(users.id, input.userId))
         .limit(1)
         .for('update');
@@ -86,6 +98,43 @@ export class AdminRegistrationRepository {
         .where(eq(users.id, account.id));
 
       if (input.approve) {
+        if (!input.primaryDepartmentId) {
+          throw new BadRequestException(
+            'A primary department is required for approval.',
+          );
+        }
+        const [department] = await transaction
+          .select({ id: departments.id })
+          .from(departments)
+          .where(
+            and(
+              eq(departments.id, input.primaryDepartmentId),
+              eq(departments.churchId, account.churchId),
+            ),
+          )
+          .limit(1);
+        if (!department) {
+          throw new BadRequestException(
+            'The selected primary department does not exist.',
+          );
+        }
+        const effectiveDate = now.toISOString().slice(0, 10);
+        const [membership] = await transaction
+          .insert(departmentMembers)
+          .values({
+            departmentId: department.id,
+            memberId: account.memberId,
+            joinedAt: effectiveDate,
+            assignedBy: input.reviewerId,
+          })
+          .returning({ id: departmentMembers.id });
+        await transaction.insert(primaryDepartmentAssignments).values({
+          memberId: account.memberId,
+          departmentMembershipId: membership.id,
+          startsAt: effectiveDate,
+          assignedBy: input.reviewerId,
+        });
+
         const [memberRole] = await transaction
           .select({ id: roles.id })
           .from(roles)
@@ -119,7 +168,12 @@ export class AdminRegistrationRepository {
         entityType: 'USER',
         entityId: account.id,
         previousData: { accountStatus: 'PENDING_APPROVAL' },
-        newData: { accountStatus: nextStatus },
+        newData: {
+          accountStatus: nextStatus,
+          ...(input.approve
+            ? { primaryDepartmentId: input.primaryDepartmentId }
+            : {}),
+        },
         metadata: input.reason ? { reason: input.reason } : undefined,
         requestedIp: input.requestedIp,
         userAgent: input.userAgent,

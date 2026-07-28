@@ -1,4 +1,6 @@
 import {
+  check,
+  date,
   index,
   inet,
   pgEnum,
@@ -179,6 +181,91 @@ export const memberProfiles = pgTable('member_profiles', {
     .notNull()
     .defaultNow(),
 });
+
+export const departmentMembers = pgTable(
+  'department_members',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    departmentId: uuid('department_id')
+      .notNull()
+      .references(() => departments.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    joinedAt: date('joined_at').notNull(),
+    leftAt: date('left_at'),
+    assignedBy: uuid('assigned_by').references(() => users.id),
+    endedBy: uuid('ended_by').references(() => users.id),
+    endReason: text('end_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('department_members_department_member_dates_idx').on(
+      table.departmentId,
+      table.memberId,
+      table.joinedAt,
+      table.leftAt,
+    ),
+    index('department_members_member_idx').on(table.memberId),
+    check(
+      'department_members_valid_date_range',
+      sql`${table.leftAt} is null or ${table.leftAt} > ${table.joinedAt}`,
+    ),
+    check(
+      'department_members_valid_end_metadata',
+      sql`(${table.leftAt} is null and ${table.endedBy} is null and ${table.endReason} is null) or (${table.leftAt} is not null and ${table.endedBy} is not null and ${table.endReason} is not null and char_length(btrim(${table.endReason})) > 0)`,
+    ),
+  ],
+);
+
+export const primaryDepartmentAssignments = pgTable(
+  'primary_department_assignments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    departmentMembershipId: uuid('department_membership_id')
+      .notNull()
+      .references(() => departmentMembers.id),
+    startsAt: date('starts_at').notNull(),
+    endsAt: date('ends_at'),
+    assignedBy: uuid('assigned_by')
+      .notNull()
+      .references(() => users.id),
+    endedBy: uuid('ended_by').references(() => users.id),
+    endReason: text('end_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('primary_department_assignments_member_dates_idx').on(
+      table.memberId,
+      table.startsAt,
+      table.endsAt,
+    ),
+    index('primary_department_assignments_membership_idx').on(
+      table.departmentMembershipId,
+    ),
+    check(
+      'primary_department_assignments_valid_date_range',
+      sql`${table.endsAt} is null or ${table.endsAt} >= ${table.startsAt}`,
+    ),
+    check(
+      'primary_department_assignments_valid_end_metadata',
+      sql`(${table.endsAt} is null and ${table.endedBy} is null and ${table.endReason} is null) or (${table.endsAt} is not null and ${table.endedBy} is not null and ${table.endReason} is not null and char_length(btrim(${table.endReason})) > 0)`,
+    ),
+  ],
+);
 
 export const accountActionTokens = pgTable(
   'account_action_tokens',
