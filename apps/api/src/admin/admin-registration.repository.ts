@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { and, asc, eq, isNotNull } from 'drizzle-orm';
@@ -85,18 +86,19 @@ export class AdminRegistrationRepository {
         .where(eq(users.id, account.id));
 
       if (input.approve) {
+        const [memberRole] = await transaction
+          .select({ id: roles.id })
+          .from(roles)
+          .where(eq(roles.name, 'MEMBER'))
+          .limit(1);
+        if (!memberRole) {
+          throw new InternalServerErrorException(
+            'The default member role is not configured.',
+          );
+        }
         await transaction
           .insert(userRoles)
-          .select(
-            transaction
-              .select({
-                userId: users.id,
-                roleId: roles.id,
-              })
-              .from(users)
-              .innerJoin(roles, eq(roles.name, 'MEMBER'))
-              .where(eq(users.id, account.id)),
-          )
+          .values({ userId: account.id, roleId: memberRole.id })
           .onConflictDoNothing();
       }
 
