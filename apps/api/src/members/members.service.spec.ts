@@ -4,6 +4,62 @@ import { MembersRepository } from './members.repository';
 import { MembersService } from './members.service';
 
 describe('MembersService', () => {
+  it('passes administrator member updates with church scope', async () => {
+    const updateMember = jest.fn().mockResolvedValue({ id: 'member-id' });
+    const service = new MembersService({
+      updateMember,
+    } as unknown as MembersRepository);
+    const input = {
+      memberId: 'member-id',
+      actorUserId: 'admin-id',
+      churchId: 'church-id',
+      updates: { membershipStatus: 'ON_LEAVE' as const },
+    };
+
+    await service.updateMember(input);
+
+    expect(updateMember).toHaveBeenCalledWith(input);
+  });
+
+  it('updates only the authenticated member profile', async () => {
+    const updateOwnProfile = jest.fn().mockResolvedValue({ id: 'member-id' });
+    const service = new MembersService({
+      updateOwnProfile,
+    } as unknown as MembersRepository);
+
+    await service.updateOwnProfile(
+      {
+        id: 'user-id',
+        churchId: 'church-id',
+        email: 'member@example.com',
+        roles: ['MEMBER'],
+      },
+      { firstName: 'Updated' },
+    );
+
+    expect(updateOwnProfile).toHaveBeenCalledWith({
+      userId: 'user-id',
+      churchId: 'church-id',
+      updates: { firstName: 'Updated' },
+    });
+  });
+
+  it('rejects an empty profile update', () => {
+    const service = new MembersService({} as MembersRepository);
+
+    expect(() =>
+      service.updateOwnProfile(
+        {
+          id: 'user-id',
+          churchId: 'church-id',
+          email: 'member@example.com',
+          roles: ['MEMBER'],
+        },
+        {},
+      ),
+    ).toThrow('Provide at least one profile field.');
+  });
+
   it('loads a member within the administrator church', async () => {
     const findById = jest.fn().mockResolvedValue({ id: 'member-id' });
     const service = new MembersService({

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FiArrowLeft, FiMail, FiPhone } from "react-icons/fi";
 import { reactivateUser, suspendUser } from "../../registrations/actions";
 import { getAdminResource } from "../../registrations/admin-api";
+import { updateMember } from "../actions";
 
 type MemberProfile = {
   id: string;
@@ -96,6 +97,69 @@ export default async function MemberProfilePage({
               ))}
             </div>
           )}
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-bold">Edit member</h2>
+          <form
+            action={updateMember}
+            className="mt-5 grid gap-4 sm:grid-cols-2"
+          >
+            <input name="memberId" type="hidden" value={member.id} />
+            <label className="grid gap-2 text-sm font-semibold">
+              First name
+              <input
+                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                defaultValue={member.firstName}
+                name="firstName"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-semibold">
+              Last name
+              <input
+                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                defaultValue={member.lastName}
+                name="lastName"
+                required
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-semibold">
+              Other names
+              <input
+                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                defaultValue={member.otherNames ?? ""}
+                name="otherNames"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-semibold">
+              Phone
+              <input
+                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                defaultValue={member.phone ?? ""}
+                name="phone"
+                placeholder="+233240000000"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-semibold">
+              Membership status
+              <select
+                className="h-11 rounded-lg border border-slate-300 bg-white px-3 font-normal"
+                defaultValue={member.membershipStatus}
+                name="membershipStatus"
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="ON_LEAVE">On leave</option>
+                <option value="ARCHIVED">Archived</option>
+              </select>
+            </label>
+            <div className="flex items-end">
+              <button className="h-11 rounded-lg bg-[#240046] px-5 font-bold text-white">
+                Save changes
+              </button>
+            </div>
+          </form>
         </section>
 
         {member.accountStatus === "ACTIVE" ? (

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import { ListMembersDto } from './dto/list-members.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
+import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersRepository } from './members.repository';
 
 @Injectable()
@@ -16,10 +17,7 @@ export class MembersService {
     return this.repository.findById(memberId, churchId);
   }
 
-  updateOwnProfile(
-    user: AuthenticatedPrincipal,
-    updates: UpdateOwnProfileDto,
-  ) {
+  updateOwnProfile(user: AuthenticatedPrincipal, updates: UpdateOwnProfileDto) {
     if (Object.values(updates).every((value) => value === undefined)) {
       throw new BadRequestException('Provide at least one profile field.');
     }
@@ -28,5 +26,17 @@ export class MembersService {
       churchId: user.churchId,
       updates,
     });
+  }
+
+  updateMember(input: {
+    memberId: string;
+    actorUserId: string;
+    churchId: string;
+    updates: UpdateMemberDto;
+  }) {
+    if (Object.values(input.updates).every((value) => value === undefined)) {
+      throw new BadRequestException('Provide at least one member field.');
+    }
+    return this.repository.updateMember(input);
   }
 }

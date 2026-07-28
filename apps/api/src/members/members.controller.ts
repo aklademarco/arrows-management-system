@@ -18,6 +18,7 @@ import {
 } from '../auth/authenticated.guard';
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
+import { UpdateMemberDto } from './dto/update-member.dto';
 
 @Controller('members')
 export class MembersController {
@@ -59,6 +60,25 @@ export class MembersController {
       success: true,
       message: 'Member retrieved.',
       data: await this.service.findById(memberId, admin.churchId),
+    };
+  }
+
+  @Patch(':memberId')
+  @UseGuards(AdminGuard)
+  async updateMember(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() body: UpdateMemberDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Member updated.',
+      data: await this.service.updateMember({
+        memberId,
+        actorUserId: admin.id,
+        churchId: admin.churchId,
+        updates: body,
+      }),
     };
   }
 }

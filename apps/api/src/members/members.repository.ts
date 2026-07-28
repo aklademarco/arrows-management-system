@@ -1,5 +1,4 @@
 import {
-  auditLogs,
   ConflictException,
   Inject,
   Injectable,
@@ -8,6 +7,7 @@ import {
 import { and, asc, count, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
+  auditLogs,
   departmentMembers,
   departments,
   memberProfiles,
@@ -16,6 +16,7 @@ import {
 } from '../database/schema';
 import { ListMembersDto } from './dto/list-members.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
+import { UpdateMemberDto } from './dto/update-member.dto';
 
 @Injectable()
 export class MembersRepository {
@@ -221,10 +222,7 @@ export class MembersRepository {
           .from(memberProfiles)
           .innerJoin(users, eq(users.id, memberProfiles.userId))
           .where(
-            and(
-              eq(users.id, input.userId),
-              eq(users.churchId, input.churchId),
-            ),
+            and(eq(users.id, input.userId), eq(users.churchId, input.churchId)),
           )
           .limit(1)
           .for('update');
@@ -281,6 +279,89 @@ export class MembersRepository {
           .innerJoin(users, eq(users.id, memberProfiles.userId))
           .where(eq(memberProfiles.id, member.id));
         return updated;
+      });
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === '23505'
+      ) {
+        throw new ConflictException(
+          'This phone number is already used by another account.',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async updateMember(input: {
+    memberId: string;
+    actorUserId: string;
+    churchId: string;
+    updates: UpdateMemberDto;
+  }) {
+    try {
+      return await this.database.transaction(async (transaction) => {
+        const [member] = await transaction
+          .select({
+            id: memberProfiles.id,
+            userId: users.id,
+            firstName: memberProfiles.firstName,
+            lastName: memberProfiles.lastName,
+            otherNames: memberProfiles.otherNames,
+            phone: users.phone,
+            membershipStatus: memberProfiles.membershipStatus,
+          })
+          .from(memberProfiles)
+          .innerJoin(users, eq(users.id, memberProfiles.userId))
+          .where(
+            and(
+              eq(memberProfiles.id, input.memberId),
+              eq(users.churchId, input.churchId),
+            ),
+          )
+          .limit(1)
+          .for('update');
+        if (!member) {
+          throw new NotFoundException('Member not found.');
+        }
+
+        const now = new Date();
+        await transaction
+          .update(memberProfiles)
+          .set({
+            ...(input.updates.firstName !== undefined
+              ? { firstName: input.updates.firstName }
+              : {}),
+            ...(input.updates.lastName !== undefined
+              ? { lastName: input.updates.lastName }
+              : {}),
+            ...(input.updates.otherNames !== undefined
+              ? { otherNames: input.updates.otherNames }
+              : {}),
+            ...(input.updates.membershipStatus !== undefined
+              ? { membershipStatus: input.updates.membershipStatus }
+              : {}),
+            updatedAt: now,
+          })
+          .where(eq(memberProfiles.id, member.id));
+        if (input.updates.phone !== undefined) {
+          await transaction
+            .update(users)
+            .set({ phone: input.updates.phone, updatedAt: now })
+            .where(eq(users.id, member.userId));
+        }
+        await transaction.insert(auditLogs).values({
+          churchId: input.churchId,
+          actorUserId: input.actorUserId,
+          action: 'MEMBER_PROFILE_ADMIN_UPDATED',
+          entityType: 'MEMBER_PROFILE',
+          entityId: member.id,
+          previousData: member,
+          newData: input.updates,
+        });
+        return { id: member.id };
       });
     } catch (error: unknown) {
       if (

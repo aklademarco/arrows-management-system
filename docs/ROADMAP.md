@@ -484,7 +484,7 @@ Implement core church workforce management.
 - [x] Filter by department.
 - [x] View member profile.
 - [x] Update own profile.
-- [ ] Admin update member.
+- [x] Admin update member.
 - [ ] Archive member.
 - [ ] Preserve attendance history.
 
