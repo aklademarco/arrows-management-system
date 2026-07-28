@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { RegistrationForm } from "./registration-form";
 
@@ -13,15 +12,6 @@ export default function RegisterPage() {
       <div className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-white/70 bg-white shadow-2xl shadow-[#240046]/10 lg:grid-cols-[0.85fr_1.15fr]">
         <section className="bg-[#240046] p-8 text-white sm:p-12">
           <Link className="inline-flex items-center gap-3 font-bold" href="/">
-            <span className="grid size-11 place-items-center overflow-hidden rounded-xl bg-white p-1">
-              <Image
-                src="/apple-touch-icon.png"
-                alt=""
-                width={180}
-                height={180}
-                className="size-full object-contain"
-              />
-            </span>
             Love Community Chapel Youth Ministry-Arrows
           </Link>
           <div className="mt-20">

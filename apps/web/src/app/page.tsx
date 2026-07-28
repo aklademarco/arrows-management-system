@@ -5,18 +5,20 @@ export default function Home() {
   return (
     <main className="grid min-h-screen place-items-center bg-[#240046] px-6 text-white">
       <section className="max-w-3xl text-center">
-        <div className="inline-flex items-center justify-center gap-4">
-          <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border-[3px] border-white p-1">
-            <Image
-              src="/apple-touch-icon.png"
-              alt=""
-              width={180}
-              height={180}
-              className="size-full object-contain"
-              priority
-            />
+        <div className="inline-flex flex-col items-center justify-center gap-4">
+          <span className="grid shrink-0 place-items-center rounded-full border-[3px] border-white p-3">
+            <span className="grid size-40 place-items-center overflow-hidden rounded-full bg-white">
+              <Image
+                src="/assets/logo.jpg"
+                alt=""
+                width={1080}
+                height={1057}
+                className="size-full scale-125 object-cover"
+                priority
+              />
+            </span>
           </span>
-          <p className="text-left text-sm font-bold uppercase tracking-[0.22em] text-amber-300">
+          <p className="text-center text-sm font-bold uppercase tracking-[0.22em] text-amber-300">
             Love Community Chapel Youth Ministry-Arrows
           </p>
         </div>
