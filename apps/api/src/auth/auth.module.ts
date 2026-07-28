@@ -8,6 +8,7 @@ import { RegistrationRepository } from './registration.repository';
 import { AdminGuard } from './admin.guard';
 import { LoginRepository } from './login.repository';
 import { LoginService } from './login.service';
+import { AuthenticatedGuard } from './authenticated.guard';
 
 @Module({
   imports: [MailModule, JwtModule.register({})],
@@ -19,7 +20,8 @@ import { LoginService } from './login.service';
     LoginRepository,
     LoginService,
     AdminGuard,
+    AuthenticatedGuard,
   ],
-  exports: [JwtModule, LoginRepository, AdminGuard],
+  exports: [JwtModule, LoginRepository, AdminGuard, AuthenticatedGuard],
 })
 export class AuthModule {}

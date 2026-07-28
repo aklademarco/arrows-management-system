@@ -80,7 +80,9 @@ export default async function RegistrationsPage({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
           <div>
-            <p className="font-bold text-[#240046]">ACMS</p>
+            <Link className="font-bold text-[#240046]" href="/admin/dashboard">
+              ACMS
+            </Link>
             <p className="text-sm text-slate-500">Administration</p>
           </div>
           <form action={adminLogout}>
@@ -114,6 +116,12 @@ export default async function RegistrationsPage({
               {registrationPage.total} pending
             </span>
           </div>
+          <Link
+            className="font-bold text-[#6b21a8] hover:text-[#240046]"
+            href="/admin/members"
+          >
+            Member directory
+          </Link>
         </div>
 
         <form

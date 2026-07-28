@@ -479,11 +479,11 @@ Implement core church workforce management.
 
 ## Member Tasks
 
-- [ ] List members.
-- [ ] Search members.
-- [ ] Filter by department.
-- [ ] View member profile.
-- [ ] Update own profile.
+- [x] List members.
+- [x] Search members.
+- [x] Filter by department.
+- [x] View member profile.
+- [x] Update own profile.
 - [ ] Admin update member.
 - [ ] Archive member.
 - [ ] Preserve attendance history.
@@ -744,7 +744,7 @@ Build the complete mobile-first user experience.
 
 ## Admin Pages
 
-- [ ] Admin dashboard.
+- [x] Admin dashboard.
 - [ ] Pending registrations.
 - [ ] Member management.
 - [ ] Department management.

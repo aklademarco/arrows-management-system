@@ -69,12 +69,20 @@ export async function suspendUser(formData: FormData) {
   }
   await review(`/admin/users/${userId}/suspend`, { reason });
   revalidatePath(`/admin/registrations/${userId}`);
+  const memberId = formData.get("memberId");
+  if (typeof memberId === "string") {
+    revalidatePath(`/admin/members/${userIdSchema.parse(memberId)}`);
+  }
 }
 
 export async function reactivateUser(formData: FormData) {
   const userId = userIdSchema.parse(formData.get("userId"));
   await review(`/admin/users/${userId}/reactivate`, {});
   revalidatePath(`/admin/registrations/${userId}`);
+  const memberId = formData.get("memberId");
+  if (typeof memberId === "string") {
+    revalidatePath(`/admin/members/${userIdSchema.parse(memberId)}`);
+  }
 }
 
 export async function adminLogout() {

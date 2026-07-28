@@ -64,5 +64,5 @@ export async function adminLogin(
     maxAge: 15 * 60,
     path: "/",
   });
-  redirect("/admin/registrations");
+  redirect("/admin/dashboard");
 }
