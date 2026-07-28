@@ -24,7 +24,7 @@ export default async function AdminDashboardPage() {
       title: "Members",
       description:
         "Search member profiles, review departments, and manage account status.",
-      href: "/admin/departments",
+      href: "/admin/members",
       count: members.total,
       countLabel: "approved members",
       icon: FiUsers,
@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
       title: "Departments",
       description:
         "View the departments currently available for member assignment.",
-      href: "/admin/members",
+      href: "/admin/departments",
       count: departments.filter((department) => department.isActive).length,
       countLabel: "departments",
       icon: FiGrid,

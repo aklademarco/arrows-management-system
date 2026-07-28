@@ -6,6 +6,7 @@ import {
   addMemberToDepartment,
   archiveMember,
   endDepartmentMembership,
+  setPrimaryDepartment,
   updateMember,
 } from "../actions";
 
@@ -92,7 +93,12 @@ export default async function MemberProfilePage({
                 >
                   <div>
                     <p className="font-bold">
-                      {membership.departmentName}
+                      <Link
+                        className="text-[#6b21a8] hover:underline"
+                        href={`/admin/members?departmentId=${membership.departmentId}`}
+                      >
+                        {membership.departmentName}
+                      </Link>
                       {membership.isPrimary ? " · Primary" : ""}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
@@ -169,6 +175,53 @@ export default async function MemberProfilePage({
             </div>
           )}
         </section>
+
+        {member.departmentMemberships.some(
+          (membership) => membership.isActive,
+        ) ? (
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-bold">Primary department</h2>
+            <form
+              action={setPrimaryDepartment}
+              className="mt-4 grid gap-3 md:grid-cols-2"
+            >
+              <input name="memberId" type="hidden" value={member.id} />
+              <select
+                className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+                defaultValue={
+                  member.departmentMemberships.find(
+                    (membership) => membership.isActive && membership.isPrimary,
+                  )?.id ?? ""
+                }
+                name="departmentMembershipId"
+              >
+                <option value="">No primary department</option>
+                {member.departmentMemberships
+                  .filter((membership) => membership.isActive)
+                  .map((membership) => (
+                    <option key={membership.id} value={membership.id}>
+                      {membership.departmentName}
+                    </option>
+                  ))}
+              </select>
+              <input
+                className="h-11 rounded-lg border border-slate-300 px-3"
+                name="effectiveOn"
+                type="date"
+              />
+              <input
+                className="h-11 rounded-lg border border-slate-300 px-3"
+                minLength={3}
+                name="reason"
+                placeholder="Reason for change"
+                required
+              />
+              <button className="h-11 rounded-lg bg-[#240046] px-5 font-bold text-white">
+                Update primary department
+              </button>
+            </form>
+          </section>
+        ) : null}
 
         {member.accountStatus !== "ARCHIVED" ? (
           <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

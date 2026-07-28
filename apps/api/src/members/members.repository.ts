@@ -16,6 +16,7 @@ import {
   isNull,
   lte,
   or,
+  sql,
 } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
@@ -560,8 +561,7 @@ export class MembersRepository {
       }
 
       let targetMembership:
-        | { id: string; joinedAt: string; leftAt: string | null }
-        | undefined;
+        { id: string; joinedAt: string; leftAt: string | null } | undefined;
       if (input.departmentMembershipId) {
         [targetMembership] = await transaction
           .select({

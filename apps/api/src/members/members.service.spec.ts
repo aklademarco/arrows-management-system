@@ -4,6 +4,28 @@ import { MembersRepository } from './members.repository';
 import { MembersService } from './members.service';
 
 describe('MembersService', () => {
+  it('changes the primary assignment without changing memberships', async () => {
+    const setPrimaryDepartment = jest.fn().mockResolvedValue({
+      departmentMembershipId: 'membership-id',
+      effectiveOn: '2026-08-01',
+    });
+    const service = new MembersService({
+      setPrimaryDepartment,
+    } as unknown as MembersRepository);
+    const input = {
+      memberId: 'member-id',
+      churchId: 'church-id',
+      actorUserId: 'admin-id',
+      departmentMembershipId: 'membership-id',
+      effectiveOn: '2026-08-01',
+      reason: 'Primary responsibility changed.',
+    };
+
+    await service.setPrimaryDepartment(input);
+
+    expect(setPrimaryDepartment).toHaveBeenCalledWith(input);
+  });
+
   it('archives a member within the administrator church', async () => {
     const archiveMember = jest.fn().mockResolvedValue(undefined);
     const service = new MembersService({

@@ -144,3 +144,40 @@ export async function endDepartmentMembership(formData: FormData) {
   revalidatePath("/admin/members");
   revalidatePath("/admin/departments");
 }
+
+export async function setPrimaryDepartment(formData: FormData) {
+  const memberId = memberIdSchema.parse(formData.get("memberId"));
+  const membership = String(
+    formData.get("departmentMembershipId") ?? "",
+  ).trim();
+  const effectiveOn = String(formData.get("effectiveOn") ?? "").trim();
+  const token = (await cookies()).get("acms_admin_session")?.value;
+  if (!token) redirect("/admin/login");
+  const payload = {
+    departmentMembershipId: membership || null,
+    reason: String(formData.get("reason") ?? "").trim(),
+    ...(effectiveOn ? { effectiveOn } : {}),
+  };
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const response = await fetch(
+    `${apiUrl}/members/${memberId}/primary-department`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    },
+  );
+  if (response.status === 401 || response.status === 403) {
+    redirect("/admin/login");
+  }
+  if (!response.ok) {
+    const body = (await response.json()) as { message?: string };
+    throw new Error(body.message ?? "The primary department update failed.");
+  }
+  revalidatePath(`/admin/members/${memberId}`);
+  revalidatePath("/admin/members");
+}

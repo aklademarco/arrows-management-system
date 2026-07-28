@@ -145,13 +145,14 @@ export default async function MembersPage({
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {member.departments.map((department) => (
-                        <span
-                          className="rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-800"
+                        <Link
+                          className="rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-800 hover:bg-purple-100"
+                          href={`/admin/members?departmentId=${department.id}`}
                           key={department.id}
                         >
                           {department.name}
                           {department.isPrimary ? " · Primary" : ""}
-                        </span>
+                        </Link>
                       ))}
                     </div>
                   </div>

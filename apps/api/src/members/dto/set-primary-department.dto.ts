@@ -11,8 +11,7 @@ import {
 
 export class SetPrimaryDepartmentDto {
   @ValidateIf(
-    (value: SetPrimaryDepartmentDto) =>
-      value.departmentMembershipId !== null,
+    (value: SetPrimaryDepartmentDto) => value.departmentMembershipId !== null,
   )
   @IsUUID()
   departmentMembershipId!: string | null;
