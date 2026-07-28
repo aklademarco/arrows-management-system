@@ -2,6 +2,58 @@ import { DepartmentsRepository } from './departments.repository';
 import { DepartmentsService } from './departments.service';
 
 describe('DepartmentsService', () => {
+  it('assigns a department leader through the repository transaction', async () => {
+    const assignLeader = jest.fn().mockResolvedValue({ id: 'assignment-id' });
+    const service = new DepartmentsService({
+      assignLeader,
+    } as unknown as DepartmentsRepository);
+    const input = {
+      departmentId: 'department-id',
+      churchId: 'church-id',
+      actorUserId: 'admin-id',
+      memberId: 'member-id',
+      startsAt: '2026-07-28',
+      title: 'Media Head',
+    };
+
+    await service.assignLeader(input);
+
+    expect(assignLeader).toHaveBeenCalledWith(input);
+  });
+
+  it('rejects a leadership term whose end precedes its start', () => {
+    const service = new DepartmentsService({} as DepartmentsRepository);
+
+    expect(() =>
+      service.assignLeader({
+        departmentId: 'department-id',
+        churchId: 'church-id',
+        actorUserId: 'admin-id',
+        memberId: 'member-id',
+        startsAt: '2026-07-28',
+        endsAt: '2026-07-27',
+      }),
+    ).toThrow('The leadership end date cannot precede its start date.');
+  });
+
+  it('revokes a department leader through the repository transaction', async () => {
+    const revokeLeader = jest.fn().mockResolvedValue({ id: 'assignment-id' });
+    const service = new DepartmentsService({
+      revokeLeader,
+    } as unknown as DepartmentsRepository);
+    const input = {
+      departmentId: 'department-id',
+      assignmentId: 'assignment-id',
+      churchId: 'church-id',
+      actorUserId: 'admin-id',
+      reason: 'Leadership responsibility reassigned.',
+    };
+
+    await service.revokeLeader(input);
+
+    expect(revokeLeader).toHaveBeenCalledWith(input);
+  });
+
   it('ends a dated membership without deleting it', async () => {
     const endMembership = jest.fn().mockResolvedValue({
       id: 'membership-id',

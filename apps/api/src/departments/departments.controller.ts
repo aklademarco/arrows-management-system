@@ -20,6 +20,8 @@ import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { AddDepartmentMemberDto } from './dto/add-department-member.dto';
 import { EndDepartmentMembershipDto } from './dto/end-department-membership.dto';
+import { AssignDepartmentLeaderDto } from './dto/assign-department-leader.dto';
+import { RevokeDepartmentLeaderDto } from './dto/revoke-department-leader.dto';
 
 @Controller('departments')
 export class DepartmentsController {
@@ -122,6 +124,46 @@ export class DepartmentsController {
       data: await this.service.endMembership({
         departmentId,
         membershipId,
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        ...body,
+      }),
+    };
+  }
+
+  @Post(':departmentId/leaders')
+  @UseGuards(AdminGuard)
+  async assignLeader(
+    @Param('departmentId', ParseUUIDPipe) departmentId: string,
+    @Body() body: AssignDepartmentLeaderDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Department leader assigned.',
+      data: await this.service.assignLeader({
+        departmentId,
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        ...body,
+      }),
+    };
+  }
+
+  @Post(':departmentId/leaders/:assignmentId/revoke')
+  @UseGuards(AdminGuard)
+  async revokeLeader(
+    @Param('departmentId', ParseUUIDPipe) departmentId: string,
+    @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
+    @Body() body: RevokeDepartmentLeaderDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Department leadership ended.',
+      data: await this.service.revokeLeader({
+        departmentId,
+        assignmentId,
         churchId: admin.churchId,
         actorUserId: admin.id,
         ...body,

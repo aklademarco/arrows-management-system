@@ -286,6 +286,56 @@ export const primaryDepartmentAssignments = pgTable(
   ],
 );
 
+export const departmentLeaders = pgTable(
+  'department_leaders',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    departmentId: uuid('department_id')
+      .notNull()
+      .references(() => departments.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    title: varchar('title', { length: 100 }),
+    startsAt: date('starts_at').notNull(),
+    endsAt: date('ends_at'),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedBy: uuid('revoked_by').references(() => users.id),
+    revocationReason: text('revocation_reason'),
+    assignedBy: uuid('assigned_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('department_leaders_assignment_unique').on(
+      table.departmentId,
+      table.memberId,
+      table.startsAt,
+    ),
+    index('department_leaders_member_dates_idx').on(
+      table.memberId,
+      table.revokedAt,
+      table.startsAt,
+      table.endsAt,
+    ),
+    index('department_leaders_department_dates_idx').on(
+      table.departmentId,
+      table.revokedAt,
+      table.startsAt,
+      table.endsAt,
+    ),
+    check(
+      'department_leaders_valid_date_range',
+      sql`${table.endsAt} is null or ${table.endsAt} >= ${table.startsAt}`,
+    ),
+    check(
+      'department_leaders_valid_revocation',
+      sql`(${table.revokedAt} is null and ${table.revokedBy} is null and ${table.revocationReason} is null) or (${table.revokedAt} is not null and ${table.revokedBy} is not null and ${table.revocationReason} is not null and char_length(btrim(${table.revocationReason})) > 0)`,
+    ),
+  ],
+);
+
 export const accountActionTokens = pgTable(
   'account_action_tokens',
   {

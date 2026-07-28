@@ -10,10 +10,13 @@ import { and, asc, count, eq, gt, isNull, lte, or, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   auditLogs,
+  departmentLeaders,
   departmentMembers,
   departments,
   memberProfiles,
   primaryDepartmentAssignments,
+  roles,
+  userRoles,
   users,
 } from '../database/schema';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
@@ -22,8 +25,8 @@ import { UpdateDepartmentDto } from './dto/update-department.dto';
 export class DepartmentsRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  list(churchId: string) {
-    return this.database
+  async list(churchId: string) {
+    const items = await this.database
       .select({
         id: departments.id,
         name: departments.name,
@@ -43,6 +46,67 @@ export class DepartmentsRepository {
       .where(eq(departments.churchId, churchId))
       .groupBy(departments.id, departments.name)
       .orderBy(asc(departments.name));
+
+    const today = new Date().toISOString().slice(0, 10);
+    const leaders = await this.database
+      .select({
+        id: departmentLeaders.id,
+        departmentId: departmentLeaders.departmentId,
+        memberId: memberProfiles.id,
+        firstName: memberProfiles.firstName,
+        lastName: memberProfiles.lastName,
+        title: departmentLeaders.title,
+        startsAt: departmentLeaders.startsAt,
+        endsAt: departmentLeaders.endsAt,
+      })
+      .from(departmentLeaders)
+      .innerJoin(
+        departments,
+        eq(departments.id, departmentLeaders.departmentId),
+      )
+      .innerJoin(
+        memberProfiles,
+        eq(memberProfiles.id, departmentLeaders.memberId),
+      )
+      .innerJoin(
+        departmentMembers,
+        and(
+          eq(departmentMembers.departmentId, departmentLeaders.departmentId),
+          eq(departmentMembers.memberId, departmentLeaders.memberId),
+          lte(departmentMembers.joinedAt, today),
+          or(
+            isNull(departmentMembers.leftAt),
+            gt(departmentMembers.leftAt, today),
+          ),
+        ),
+      )
+      .where(
+        and(
+          eq(departments.churchId, churchId),
+          isNull(departmentLeaders.revokedAt),
+          lte(departmentLeaders.startsAt, today),
+          or(
+            isNull(departmentLeaders.endsAt),
+            sql`${departmentLeaders.endsAt} >= ${today}`,
+          ),
+        ),
+      )
+      .orderBy(asc(memberProfiles.firstName), asc(memberProfiles.lastName));
+
+    return items.map((department) => ({
+      ...department,
+      leaders: leaders
+        .filter((leader) => leader.departmentId === department.id)
+        .map((leader) => ({
+          id: leader.id,
+          memberId: leader.memberId,
+          firstName: leader.firstName,
+          lastName: leader.lastName,
+          title: leader.title,
+          startsAt: leader.startsAt,
+          endsAt: leader.endsAt,
+        })),
+    }));
   }
 
   async create(input: {
@@ -510,6 +574,198 @@ export class DepartmentsRepository {
         },
       });
       return { id: membership.id, leftAt };
+    });
+  }
+
+  async assignLeader(input: {
+    departmentId: string;
+    churchId: string;
+    actorUserId: string;
+    memberId: string;
+    title?: string;
+    startsAt: string;
+    endsAt?: string | null;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const [candidate] = await transaction
+        .select({
+          departmentId: departments.id,
+          memberId: memberProfiles.id,
+          userId: users.id,
+          membershipLeftAt: departmentMembers.leftAt,
+        })
+        .from(departments)
+        .innerJoin(
+          departmentMembers,
+          eq(departmentMembers.departmentId, departments.id),
+        )
+        .innerJoin(
+          memberProfiles,
+          eq(memberProfiles.id, departmentMembers.memberId),
+        )
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(departments.id, input.departmentId),
+            eq(departments.churchId, input.churchId),
+            eq(departments.isActive, true),
+            eq(memberProfiles.id, input.memberId),
+            eq(users.accountStatus, 'ACTIVE'),
+            lte(departmentMembers.joinedAt, input.startsAt),
+            or(
+              isNull(departmentMembers.leftAt),
+              gt(departmentMembers.leftAt, input.startsAt),
+            ),
+          ),
+        )
+        .limit(1)
+        .for('update');
+      if (!candidate) {
+        throw new BadRequestException(
+          'The leader must be an active member of this department on the start date.',
+        );
+      }
+      if (
+        candidate.membershipLeftAt &&
+        (!input.endsAt || input.endsAt >= candidate.membershipLeftAt)
+      ) {
+        throw new BadRequestException(
+          'The leadership term must end before the department membership ends.',
+        );
+      }
+
+      const overlapConditions = [
+        eq(departmentLeaders.departmentId, input.departmentId),
+        eq(departmentLeaders.memberId, input.memberId),
+        isNull(departmentLeaders.revokedAt),
+        or(
+          isNull(departmentLeaders.endsAt),
+          sql`${departmentLeaders.endsAt} >= ${input.startsAt}`,
+        )!,
+      ];
+      if (input.endsAt) {
+        overlapConditions.push(lte(departmentLeaders.startsAt, input.endsAt));
+      }
+      const [overlap] = await transaction
+        .select({ id: departmentLeaders.id })
+        .from(departmentLeaders)
+        .where(and(...overlapConditions))
+        .limit(1)
+        .for('update');
+      if (overlap) {
+        throw new ConflictException(
+          'This leadership term overlaps an existing assignment.',
+        );
+      }
+
+      const [leaderRole] = await transaction
+        .select({ id: roles.id })
+        .from(roles)
+        .where(eq(roles.name, 'DEPARTMENT_LEADER'))
+        .limit(1);
+      if (!leaderRole) {
+        throw new ConflictException(
+          'The DEPARTMENT_LEADER role is not configured.',
+        );
+      }
+      await transaction
+        .insert(userRoles)
+        .values({ userId: candidate.userId, roleId: leaderRole.id })
+        .onConflictDoNothing();
+
+      const [assignment] = await transaction
+        .insert(departmentLeaders)
+        .values({
+          departmentId: input.departmentId,
+          memberId: input.memberId,
+          title: input.title,
+          startsAt: input.startsAt,
+          endsAt: input.endsAt,
+          assignedBy: input.actorUserId,
+        })
+        .returning({
+          id: departmentLeaders.id,
+          memberId: departmentLeaders.memberId,
+          title: departmentLeaders.title,
+          startsAt: departmentLeaders.startsAt,
+          endsAt: departmentLeaders.endsAt,
+        });
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'DEPARTMENT_LEADER_ASSIGNED',
+        entityType: 'DEPARTMENT_LEADER',
+        entityId: assignment.id,
+        newData: {
+          departmentId: input.departmentId,
+          ...assignment,
+        },
+      });
+      return assignment;
+    });
+  }
+
+  async revokeLeader(input: {
+    departmentId: string;
+    assignmentId: string;
+    churchId: string;
+    actorUserId: string;
+    reason: string;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const [assignment] = await transaction
+        .select({
+          id: departmentLeaders.id,
+          revokedAt: departmentLeaders.revokedAt,
+          revocationReason: departmentLeaders.revocationReason,
+        })
+        .from(departmentLeaders)
+        .innerJoin(
+          departments,
+          and(
+            eq(departments.id, departmentLeaders.departmentId),
+            eq(departments.churchId, input.churchId),
+          ),
+        )
+        .where(
+          and(
+            eq(departmentLeaders.id, input.assignmentId),
+            eq(departmentLeaders.departmentId, input.departmentId),
+          ),
+        )
+        .limit(1)
+        .for('update');
+      if (!assignment) {
+        throw new NotFoundException('Department leadership not found.');
+      }
+      if (assignment.revokedAt) {
+        if (assignment.revocationReason === input.reason) {
+          return { id: assignment.id, revokedAt: assignment.revokedAt };
+        }
+        throw new ConflictException(
+          'This department leadership has already ended.',
+        );
+      }
+
+      const now = new Date();
+      await transaction
+        .update(departmentLeaders)
+        .set({
+          revokedAt: now,
+          revokedBy: input.actorUserId,
+          revocationReason: input.reason,
+        })
+        .where(eq(departmentLeaders.id, assignment.id));
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'DEPARTMENT_LEADER_REVOKED',
+        entityType: 'DEPARTMENT_LEADER',
+        entityId: assignment.id,
+        previousData: { revokedAt: null },
+        newData: { revokedAt: now, reason: input.reason },
+      });
+      return { id: assignment.id, revokedAt: now };
     });
   }
 }

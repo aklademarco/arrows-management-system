@@ -61,4 +61,31 @@ export class DepartmentsService {
   }) {
     return this.repository.endMembership(input);
   }
+
+  assignLeader(input: {
+    departmentId: string;
+    churchId: string;
+    actorUserId: string;
+    memberId: string;
+    title?: string;
+    startsAt: string;
+    endsAt?: string | null;
+  }) {
+    if (input.endsAt && input.endsAt < input.startsAt) {
+      throw new BadRequestException(
+        'The leadership end date cannot precede its start date.',
+      );
+    }
+    return this.repository.assignLeader(input);
+  }
+
+  revokeLeader(input: {
+    departmentId: string;
+    assignmentId: string;
+    churchId: string;
+    actorUserId: string;
+    reason: string;
+  }) {
+    return this.repository.revokeLeader(input);
+  }
 }

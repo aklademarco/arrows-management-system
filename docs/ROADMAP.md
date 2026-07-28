@@ -497,8 +497,8 @@ Implement core church workforce management.
 - [x] Add member to department.
 - [x] Remove active membership.
 - [x] Set or clear primary department through dated assignment periods.
-- [ ] Assign department leader.
-- [ ] End leadership assignment.
+- [x] Assign department leader.
+- [x] End leadership assignment.
 - [ ] Restrict leader visibility by department.
 
 ## Deliverables

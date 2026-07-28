@@ -2,10 +2,22 @@ import Link from "next/link";
 import { FiArrowLeft, FiGrid, FiUsers } from "react-icons/fi";
 import { getAdminResource } from "../registrations/admin-api";
 import {
+  assignDepartmentLeader,
   createDepartment,
   deactivateDepartment,
+  revokeDepartmentLeader,
   updateDepartment,
 } from "./actions";
+
+type DepartmentLeader = {
+  id: string;
+  memberId: string;
+  firstName: string;
+  lastName: string;
+  title: string | null;
+  startsAt: string;
+  endsAt: string | null;
+};
 
 type Department = {
   id: string;
@@ -13,10 +25,26 @@ type Department = {
   activeMemberCount: number;
   description: string | null;
   isActive: boolean;
+  leaders: DepartmentLeader[];
+};
+
+type Member = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  departments: { id: string }[];
+};
+
+type MemberPage = {
+  items: Member[];
 };
 
 export default async function DepartmentsPage() {
-  const departments = await getAdminResource<Department[]>("/departments");
+  const [departments, memberPage] = await Promise.all([
+    getAdminResource<Department[]>("/departments"),
+    getAdminResource<MemberPage>("/members?limit=100"),
+  ]);
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
@@ -92,12 +120,130 @@ export default async function DepartmentsPage() {
                 {department.activeMemberCount} active member
                 {department.activeMemberCount === 1 ? "" : "s"}
               </p>
+              <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Department leadership
+                </p>
+                {department.leaders.length > 0 ? (
+                  <div className="mt-3 grid gap-3">
+                    {department.leaders.map((leader) => (
+                      <div key={leader.id}>
+                        <p className="font-bold">
+                          {leader.firstName} {leader.lastName}
+                        </p>
+                        <p className="text-sm text-slate-600">
+                          {leader.title ?? "Department Leader"}
+                        </p>
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-xs font-bold text-red-700">
+                            End leadership
+                          </summary>
+                          <form
+                            action={revokeDepartmentLeader}
+                            className="mt-2 grid gap-2"
+                          >
+                            <input
+                              name="departmentId"
+                              type="hidden"
+                              value={department.id}
+                            />
+                            <input
+                              name="assignmentId"
+                              type="hidden"
+                              value={leader.id}
+                            />
+                            <input
+                              className="h-9 rounded-lg border border-slate-300 px-3 text-sm"
+                              minLength={3}
+                              name="reason"
+                              placeholder="Reason"
+                              required
+                            />
+                            <button className="h-9 rounded-lg border border-red-200 font-bold text-red-700">
+                              Confirm end
+                            </button>
+                          </form>
+                        </details>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-600">
+                    No active leader assigned.
+                  </p>
+                )}
+              </div>
               <Link
                 className="mt-5 inline-flex text-sm font-bold text-[#6b21a8]"
                 href={`/admin/members?departmentId=${department.id}`}
               >
                 View members
               </Link>
+              {department.isActive ? (
+                <details className="mt-5 border-t border-slate-100 pt-4">
+                  <summary className="cursor-pointer text-sm font-bold text-[#6b21a8]">
+                    Assign department leader
+                  </summary>
+                  <form
+                    action={assignDepartmentLeader}
+                    className="mt-4 grid gap-3"
+                  >
+                    <input
+                      name="departmentId"
+                      type="hidden"
+                      value={department.id}
+                    />
+                    <select
+                      className="h-10 rounded-lg border border-slate-300 px-3"
+                      name="memberId"
+                      required
+                    >
+                      <option value="">Select department member</option>
+                      {memberPage.items
+                        .filter((member) =>
+                          member.departments.some(
+                            (membership) =>
+                              membership.id === department.id,
+                          ),
+                        )
+                        .map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.firstName} {member.lastName}
+                          </option>
+                        ))}
+                    </select>
+                    <input
+                      className="h-10 rounded-lg border border-slate-300 px-3"
+                      maxLength={100}
+                      minLength={2}
+                      name="title"
+                      placeholder="Leadership title (optional)"
+                    />
+                    <label className="grid gap-1 text-xs font-bold text-slate-600">
+                      Starts on
+                      <input
+                        className="h-10 rounded-lg border border-slate-300 px-3"
+                        defaultValue={today}
+                        name="startsAt"
+                        type="date"
+                        required
+                      />
+                    </label>
+                    <label className="grid gap-1 text-xs font-bold text-slate-600">
+                      Ends on (optional)
+                      <input
+                        className="h-10 rounded-lg border border-slate-300 px-3"
+                        min={today}
+                        name="endsAt"
+                        type="date"
+                      />
+                    </label>
+                    <button className="h-10 rounded-lg bg-[#240046] px-4 font-bold text-white">
+                      Assign leader
+                    </button>
+                  </form>
+                </details>
+              ) : null}
               <details className="mt-5 border-t border-slate-100 pt-4">
                 <summary className="cursor-pointer text-sm font-bold text-[#6b21a8]">
                   Edit department
