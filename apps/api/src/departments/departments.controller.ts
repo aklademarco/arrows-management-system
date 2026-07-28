@@ -18,6 +18,7 @@ import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { DepartmentsService } from './departments.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
+import { AddDepartmentMemberDto } from './dto/add-department-member.dto';
 
 @Controller('departments')
 export class DepartmentsController {
@@ -84,6 +85,25 @@ export class DepartmentsController {
       success: true,
       message: 'Department deactivated.',
       data: null,
+    };
+  }
+
+  @Post(':departmentId/members')
+  @UseGuards(AdminGuard)
+  async addMember(
+    @Param('departmentId', ParseUUIDPipe) departmentId: string,
+    @Body() body: AddDepartmentMemberDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Member added to department.',
+      data: await this.service.addMember({
+        departmentId,
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        ...body,
+      }),
     };
   }
 }

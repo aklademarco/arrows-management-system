@@ -2,6 +2,25 @@ import { DepartmentsRepository } from './departments.repository';
 import { DepartmentsService } from './departments.service';
 
 describe('DepartmentsService', () => {
+  it('adds a member through the dated membership transaction', async () => {
+    const addMember = jest.fn().mockResolvedValue({ id: 'membership-id' });
+    const service = new DepartmentsService({
+      addMember,
+    } as unknown as DepartmentsRepository);
+    const input = {
+      departmentId: 'department-id',
+      churchId: 'church-id',
+      actorUserId: 'admin-id',
+      memberId: 'member-id',
+      makePrimary: true,
+      joinedAt: '2026-07-22',
+    };
+
+    await service.addMember(input);
+
+    expect(addMember).toHaveBeenCalledWith(input);
+  });
+
   it('deactivates a department with church and actor scope', async () => {
     const deactivate = jest.fn().mockResolvedValue(undefined);
     const service = new DepartmentsService({

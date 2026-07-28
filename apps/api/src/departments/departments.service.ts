@@ -38,4 +38,15 @@ export class DepartmentsService {
   }) {
     return this.repository.deactivate(input);
   }
+
+  addMember(input: {
+    departmentId: string;
+    churchId: string;
+    actorUserId: string;
+    memberId: string;
+    makePrimary: boolean;
+    joinedAt?: string;
+  }) {
+    return this.repository.addMember(input);
+  }
 }

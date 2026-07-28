@@ -2,7 +2,7 @@ import Link from "next/link";
 import { FiArrowLeft, FiMail, FiPhone } from "react-icons/fi";
 import { reactivateUser, suspendUser } from "../../registrations/actions";
 import { getAdminResource } from "../../registrations/admin-api";
-import { archiveMember, updateMember } from "../actions";
+import { addMemberToDepartment, archiveMember, updateMember } from "../actions";
 
 type MemberProfile = {
   id: string;
@@ -25,6 +25,7 @@ type MemberProfile = {
     isPrimary: boolean;
   }>;
 };
+type Department = { id: string; name: string; isActive: boolean };
 
 export default async function MemberProfilePage({
   params,
@@ -32,7 +33,10 @@ export default async function MemberProfilePage({
   params: Promise<{ memberId: string }>;
 }) {
   const { memberId } = await params;
-  const member = await getAdminResource<MemberProfile>(`/members/${memberId}`);
+  const [member, departments] = await Promise.all([
+    getAdminResource<MemberProfile>(`/members/${memberId}`),
+    getAdminResource<Department[]>("/departments"),
+  ]);
   const name = [member.firstName, member.otherNames, member.lastName]
     .filter(Boolean)
     .join(" ");
@@ -98,6 +102,44 @@ export default async function MemberProfilePage({
             </div>
           )}
         </section>
+
+        {member.accountStatus !== "ARCHIVED" ? (
+          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-bold">Add department membership</h2>
+            <form
+              action={addMemberToDepartment}
+              className="mt-4 grid gap-3 md:grid-cols-[1fr_12rem_auto_auto]"
+            >
+              <input name="memberId" type="hidden" value={member.id} />
+              <select
+                className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+                name="departmentId"
+                required
+              >
+                <option value="">Select department</option>
+                {departments
+                  .filter((department) => department.isActive)
+                  .map((department) => (
+                    <option key={department.id} value={department.id}>
+                      {department.name}
+                    </option>
+                  ))}
+              </select>
+              <input
+                className="h-11 rounded-lg border border-slate-300 px-3"
+                name="joinedAt"
+                type="date"
+              />
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input name="makePrimary" type="checkbox" />
+                Make primary
+              </label>
+              <button className="h-11 rounded-lg bg-[#240046] px-5 font-bold text-white md:col-start-4">
+                Add membership
+              </button>
+            </form>
+          </section>
+        ) : null}
 
         <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold">Edit member</h2>

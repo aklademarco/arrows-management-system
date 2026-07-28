@@ -5,9 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { and, asc, count, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, eq, gt, isNull, or, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
-import { auditLogs, departmentMembers, departments } from '../database/schema';
+import {
+  auditLogs,
+  departmentMembers,
+  departments,
+  memberProfiles,
+  primaryDepartmentAssignments,
+  users,
+} from '../database/schema';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @Injectable()
@@ -213,6 +220,130 @@ export class DepartmentsRepository {
         previousData: { isActive: true },
         newData: { isActive: false },
       });
+    });
+  }
+
+  async addMember(input: {
+    departmentId: string;
+    churchId: string;
+    actorUserId: string;
+    memberId: string;
+    makePrimary: boolean;
+    joinedAt?: string;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const [department] = await transaction
+        .select({ id: departments.id })
+        .from(departments)
+        .where(
+          and(
+            eq(departments.id, input.departmentId),
+            eq(departments.churchId, input.churchId),
+            eq(departments.isActive, true),
+          ),
+        )
+        .limit(1);
+      if (!department) {
+        throw new NotFoundException('Active department not found.');
+      }
+      const [member] = await transaction
+        .select({ id: memberProfiles.id })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(memberProfiles.id, input.memberId),
+            eq(users.churchId, input.churchId),
+            sql`${memberProfiles.membershipStatus} <> 'ARCHIVED'`,
+          ),
+        )
+        .limit(1);
+      if (!member) {
+        throw new NotFoundException('Member not found.');
+      }
+      const joinedAt = input.joinedAt ?? new Date().toISOString().slice(0, 10);
+      const [overlap] = await transaction
+        .select({ id: departmentMembers.id })
+        .from(departmentMembers)
+        .where(
+          and(
+            eq(departmentMembers.departmentId, department.id),
+            eq(departmentMembers.memberId, member.id),
+            or(
+              isNull(departmentMembers.leftAt),
+              gt(departmentMembers.leftAt, joinedAt),
+            ),
+          ),
+        )
+        .limit(1)
+        .for('update');
+      if (overlap) {
+        throw new ConflictException(
+          'This membership overlaps an existing department membership.',
+        );
+      }
+      const [membership] = await transaction
+        .insert(departmentMembers)
+        .values({
+          departmentId: department.id,
+          memberId: member.id,
+          joinedAt,
+          assignedBy: input.actorUserId,
+        })
+        .returning({ id: departmentMembers.id });
+
+      if (input.makePrimary) {
+        const [currentPrimary] = await transaction
+          .select({
+            id: primaryDepartmentAssignments.id,
+            startsAt: primaryDepartmentAssignments.startsAt,
+          })
+          .from(primaryDepartmentAssignments)
+          .where(
+            and(
+              eq(primaryDepartmentAssignments.memberId, member.id),
+              isNull(primaryDepartmentAssignments.endsAt),
+            ),
+          )
+          .limit(1)
+          .for('update');
+        if (currentPrimary) {
+          if (currentPrimary.startsAt > joinedAt) {
+            throw new ConflictException(
+              'The new primary date precedes an existing primary assignment.',
+            );
+          }
+          await transaction
+            .update(primaryDepartmentAssignments)
+            .set({
+              endsAt: joinedAt,
+              endedBy: input.actorUserId,
+              endReason: 'Primary department changed.',
+              updatedAt: new Date(),
+            })
+            .where(eq(primaryDepartmentAssignments.id, currentPrimary.id));
+        }
+        await transaction.insert(primaryDepartmentAssignments).values({
+          memberId: member.id,
+          departmentMembershipId: membership.id,
+          startsAt: joinedAt,
+          assignedBy: input.actorUserId,
+        });
+      }
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'DEPARTMENT_MEMBER_ADDED',
+        entityType: 'DEPARTMENT_MEMBERSHIP',
+        entityId: membership.id,
+        newData: {
+          departmentId: department.id,
+          memberId: member.id,
+          joinedAt,
+          makePrimary: input.makePrimary,
+        },
+      });
+      return { id: membership.id, joinedAt, isPrimary: input.makePrimary };
     });
   }
 }
