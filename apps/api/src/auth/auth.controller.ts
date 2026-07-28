@@ -11,11 +11,26 @@ import {
   ConfirmEmailVerificationDto,
   RequestEmailVerificationDto,
 } from './dto/email-verification.dto';
+import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { LoginService } from './login.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly loginService: LoginService,
+  ) {}
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() body: LoginDto) {
+    return {
+      success: true,
+      message: 'Login successful.',
+      data: await this.loginService.login(body),
+    };
+  }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)

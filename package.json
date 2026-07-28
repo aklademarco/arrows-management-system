@@ -14,6 +14,7 @@
     "db:stop": "docker compose stop postgres",
     "db:logs": "docker compose logs -f postgres",
     "db:migrate": "pnpm --filter api db:migrate",
+    "admin:seed": "pnpm --filter api admin:seed",
     "mail:start": "docker compose up -d mailpit",
     "mail:stop": "docker compose stop mailpit",
     "services:start": "docker compose up -d postgres mailpit",

@@ -8,6 +8,8 @@ import {
   uuid,
   varchar,
   text,
+  integer,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -31,6 +33,11 @@ export const accountActionTokenType = pgEnum('account_action_token_type', [
   'PASSWORD_RESET',
 ]);
 
+export const reviewDecision = pgEnum('review_decision', [
+  'APPROVED',
+  'REJECTED',
+]);
+
 export const churches = pgTable('churches', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 150 }).notNull(),
@@ -51,6 +58,9 @@ export const users = pgTable(
       .notNull()
       .default('PENDING_APPROVAL'),
     emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
+    lockedUntil: timestamp('locked_until', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -64,6 +74,78 @@ export const users = pgTable(
       .on(table.phone)
       .where(sql`${table.phone} is not null`),
     index('users_account_status_idx').on(table.accountStatus),
+  ],
+);
+
+export const roles = pgTable('roles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 50 }).notNull().unique(),
+  description: varchar('description', { length: 255 }),
+});
+
+export const userRoles = pgTable(
+  'user_roles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    roleId: uuid('role_id')
+      .notNull()
+      .references(() => roles.id),
+    assignedAt: timestamp('assigned_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('user_roles_user_role_unique').on(table.userId, table.roleId),
+    index('user_roles_user_idx').on(table.userId),
+  ],
+);
+
+export const accountReviews = pgTable('account_reviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  reviewedBy: uuid('reviewed_by')
+    .notNull()
+    .references(() => users.id),
+  previousStatus: accountStatus('previous_status').notNull(),
+  newStatus: accountStatus('new_status').notNull(),
+  decision: reviewDecision('decision').notNull(),
+  reason: text('reason'),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const auditLogs = pgTable(
+  'audit_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    actorUserId: uuid('actor_user_id').references(() => users.id),
+    action: varchar('action', { length: 120 }).notNull(),
+    entityType: varchar('entity_type', { length: 100 }).notNull(),
+    entityId: uuid('entity_id'),
+    previousData: jsonb('previous_data'),
+    newData: jsonb('new_data'),
+    metadata: jsonb('metadata'),
+    requestedIp: inet('ip_address'),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('audit_logs_actor_created_idx').on(
+      table.actorUserId,
+      table.createdAt,
+    ),
+    index('audit_logs_entity_idx').on(table.entityType, table.entityId),
   ],
 );
 
