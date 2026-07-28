@@ -26,7 +26,7 @@ function Field({
         {label}
       </label>
       <input
-        className="h-12 rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-950 outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-100"
+        className="h-12 rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-950 outline-none transition focus:border-[#240046] focus:ring-4 focus:ring-[#eadcff]"
         id={id}
         name={id}
         type={type}
@@ -49,7 +49,7 @@ export function RegistrationForm() {
 
   if (state.success) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-950" role="status">
+      <div className="rounded-2xl border border-[#d8b4fe] bg-[#faf5ff] p-6 text-[#240046]" role="status">
         <p className="text-lg font-bold">Your registration was received.</p>
         <p className="mt-2 leading-7">{state.message}</p>
       </div>
@@ -74,7 +74,7 @@ export function RegistrationForm() {
         </p>
       )}
       <button
-        className="mt-2 h-12 rounded-xl bg-emerald-800 px-5 font-bold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-2 h-12 rounded-xl bg-[#240046] px-5 font-bold text-white transition hover:bg-[#17002e] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={pending}
         type="submit"
       >
