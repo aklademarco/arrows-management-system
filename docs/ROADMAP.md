@@ -446,11 +446,11 @@ Allow administrators to review and manage registrations.
 ## Tasks
 
 - [x] List verified pending registrations.
-- [ ] Search and filter registrations.
-- [ ] View registration details.
+- [x] Search and filter registrations.
+- [x] View registration details.
 - [x] Approve user.
 - [x] Create the initial dated primary-department assignment.
-- [ ] Assign additional departments.
+- [x] Assign additional departments.
 - [x] Assign the default member role.
 - [x] Reject user with reason.
 - [ ] Suspend user.

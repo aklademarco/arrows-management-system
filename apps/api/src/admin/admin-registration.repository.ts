@@ -6,7 +6,16 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, eq, isNotNull } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  or,
+} from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   accountReviews,
@@ -19,13 +28,40 @@ import {
   userRoles,
   users,
 } from '../database/schema';
+import { ListRegistrationsDto } from './dto/list-registrations.dto';
 
 @Injectable()
 export class AdminRegistrationRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  async listPending() {
-    return this.database
+  async listPending(query: ListRegistrationsDto, churchId: string) {
+    const search = query.search?.trim();
+    const filters = [
+      eq(users.accountStatus, 'PENDING_APPROVAL'),
+      eq(users.churchId, churchId),
+      isNotNull(users.emailVerifiedAt),
+    ];
+    if (query.requestedDepartmentId) {
+      filters.push(
+        eq(memberProfiles.requestedDepartmentId, query.requestedDepartmentId),
+      );
+    }
+    if (search) {
+      const pattern = `%${search}%`;
+      const searchFilter = or(
+        ilike(users.email, pattern),
+        ilike(users.phone, pattern),
+        ilike(memberProfiles.firstName, pattern),
+        ilike(memberProfiles.lastName, pattern),
+        ilike(memberProfiles.otherNames, pattern),
+      );
+      if (searchFilter) {
+        filters.push(searchFilter);
+      }
+    }
+    const where = and(...filters);
+    const offset = (query.page - 1) * query.limit;
+    const baseJoin = this.database
       .select({
         id: users.id,
         email: users.email,
@@ -43,21 +79,76 @@ export class AdminRegistrationRepository {
       .leftJoin(
         departments,
         eq(departments.id, memberProfiles.requestedDepartmentId),
+      );
+    const [items, [{ total }]] = await Promise.all([
+      baseJoin
+        .where(where)
+        .orderBy(asc(users.createdAt))
+        .limit(query.limit)
+        .offset(offset),
+      this.database
+        .select({ total: count() })
+        .from(users)
+        .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
+        .where(where),
+    ]);
+
+    return {
+      items,
+      total,
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit),
+    };
+  }
+
+  async listDepartmentOptions(churchId: string) {
+    return this.database
+      .select({ id: departments.id, name: departments.name })
+      .from(departments)
+      .where(eq(departments.churchId, churchId))
+      .orderBy(asc(departments.name));
+  }
+
+  async findRegistration(userId: string, churchId: string) {
+    const [registration] = await this.database
+      .select({
+        id: users.id,
+        email: users.email,
+        phone: users.phone,
+        accountStatus: users.accountStatus,
+        emailVerifiedAt: users.emailVerifiedAt,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        firstName: memberProfiles.firstName,
+        lastName: memberProfiles.lastName,
+        otherNames: memberProfiles.otherNames,
+        membershipStatus: memberProfiles.membershipStatus,
+        requestedDepartmentId: memberProfiles.requestedDepartmentId,
+        requestedDepartmentName: departments.name,
+      })
+      .from(users)
+      .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
+      .leftJoin(
+        departments,
+        eq(departments.id, memberProfiles.requestedDepartmentId),
       )
-      .where(
-        and(
-          eq(users.accountStatus, 'PENDING_APPROVAL'),
-          isNotNull(users.emailVerifiedAt),
-        ),
-      )
-      .orderBy(asc(users.createdAt));
+      .where(and(eq(users.id, userId), eq(users.churchId, churchId)))
+      .limit(1);
+
+    if (!registration) {
+      throw new NotFoundException('Registration not found.');
+    }
+    return registration;
   }
 
   async review(input: {
     userId: string;
     reviewerId: string;
+    reviewerChurchId: string;
     approve: boolean;
     primaryDepartmentId?: string;
+    additionalDepartmentIds?: string[];
     reason?: string;
     requestedIp?: string;
     userAgent?: string;
@@ -73,7 +164,12 @@ export class AdminRegistrationRepository {
         })
         .from(users)
         .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
-        .where(eq(users.id, input.userId))
+        .where(
+          and(
+            eq(users.id, input.userId),
+            eq(users.churchId, input.reviewerChurchId),
+          ),
+        )
         .limit(1)
         .for('update');
       if (!account) {
@@ -103,34 +199,53 @@ export class AdminRegistrationRepository {
             'A primary department is required for approval.',
           );
         }
-        const [department] = await transaction
+        const additionalDepartmentIds = [
+          ...new Set(input.additionalDepartmentIds ?? []),
+        ].filter((departmentId) => departmentId !== input.primaryDepartmentId);
+        const selectedDepartmentIds = [
+          input.primaryDepartmentId,
+          ...additionalDepartmentIds,
+        ];
+        const selectedDepartments = await transaction
           .select({ id: departments.id })
           .from(departments)
           .where(
             and(
-              eq(departments.id, input.primaryDepartmentId),
+              inArray(departments.id, selectedDepartmentIds),
               eq(departments.churchId, account.churchId),
             ),
-          )
-          .limit(1);
-        if (!department) {
+          );
+        if (selectedDepartments.length !== selectedDepartmentIds.length) {
           throw new BadRequestException(
-            'The selected primary department does not exist.',
+            'One or more selected departments do not exist.',
           );
         }
         const effectiveDate = now.toISOString().slice(0, 10);
-        const [membership] = await transaction
+        const memberships = await transaction
           .insert(departmentMembers)
-          .values({
-            departmentId: department.id,
-            memberId: account.memberId,
-            joinedAt: effectiveDate,
-            assignedBy: input.reviewerId,
-          })
-          .returning({ id: departmentMembers.id });
+          .values(
+            selectedDepartmentIds.map((departmentId) => ({
+              departmentId,
+              memberId: account.memberId,
+              joinedAt: effectiveDate,
+              assignedBy: input.reviewerId,
+            })),
+          )
+          .returning({
+            id: departmentMembers.id,
+            departmentId: departmentMembers.departmentId,
+          });
+        const primaryMembership = memberships.find(
+          (membership) => membership.departmentId === input.primaryDepartmentId,
+        );
+        if (!primaryMembership) {
+          throw new InternalServerErrorException(
+            'The primary department membership could not be created.',
+          );
+        }
         await transaction.insert(primaryDepartmentAssignments).values({
           memberId: account.memberId,
-          departmentMembershipId: membership.id,
+          departmentMembershipId: primaryMembership.id,
           startsAt: effectiveDate,
           assignedBy: input.reviewerId,
         });
@@ -171,7 +286,10 @@ export class AdminRegistrationRepository {
         newData: {
           accountStatus: nextStatus,
           ...(input.approve
-            ? { primaryDepartmentId: input.primaryDepartmentId }
+            ? {
+                primaryDepartmentId: input.primaryDepartmentId,
+                additionalDepartmentIds: input.additionalDepartmentIds ?? [],
+              }
             : {}),
         },
         metadata: input.reason ? { reason: input.reason } : undefined,

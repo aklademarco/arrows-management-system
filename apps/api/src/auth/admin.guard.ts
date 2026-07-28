@@ -12,6 +12,7 @@ import { LoginRepository } from './login.repository';
 
 export type AdminPrincipal = {
   id: string;
+  churchId: string;
   email: string;
   roles: string[];
 };
@@ -59,6 +60,7 @@ export class AdminGuard implements CanActivate {
     }
     request.user = {
       id: account.id,
+      churchId: account.churchId,
       email: account.email,
       roles: account.roles,
     };

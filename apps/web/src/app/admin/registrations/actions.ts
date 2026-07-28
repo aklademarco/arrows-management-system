@@ -7,7 +7,10 @@ import { z } from "zod";
 
 const userIdSchema = z.uuid();
 
-async function review(path: string, payload: Record<string, string>) {
+async function review(
+  path: string,
+  payload: Record<string, string | string[]>,
+) {
   const token = (await cookies()).get("acms_admin_session")?.value;
   if (!token) {
     redirect("/admin/login");
@@ -38,9 +41,13 @@ export async function approveRegistration(formData: FormData) {
   const primaryDepartmentId = userIdSchema.parse(
     formData.get("primaryDepartmentId"),
   );
+  const additionalDepartmentIds = z
+    .array(userIdSchema)
+    .parse(formData.getAll("additionalDepartmentIds"));
   const note = String(formData.get("note") ?? "").trim();
   await review(`/admin/registrations/${userId}/approve`, {
     primaryDepartmentId,
+    additionalDepartmentIds,
     ...(note ? { note } : {}),
   });
 }

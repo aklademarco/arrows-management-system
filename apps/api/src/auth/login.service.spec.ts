@@ -10,6 +10,7 @@ describe('LoginService', () => {
     const repository = {
       findByEmail: jest.fn().mockResolvedValue({
         id: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+        churchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
         email: 'admin@example.com',
         passwordHash: await hash('StrongPassword123!'),
         accountStatus: 'ACTIVE',
@@ -44,6 +45,7 @@ describe('LoginService', () => {
     const repository = {
       findByEmail: jest.fn().mockResolvedValue({
         id: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+        churchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
         email: 'admin@example.com',
         passwordHash: await hash('StrongPassword123!'),
         accountStatus: 'ACTIVE',

@@ -1,4 +1,6 @@
 import {
+  ArrayUnique,
+  IsArray,
   IsOptional,
   IsString,
   IsUUID,
@@ -9,6 +11,12 @@ import {
 export class ApproveRegistrationDto {
   @IsUUID()
   primaryDepartmentId!: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  additionalDepartmentIds?: string[];
 
   @IsOptional()
   @IsString()

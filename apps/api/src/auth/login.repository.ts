@@ -5,6 +5,7 @@ import { roles, userRoles, users } from '../database/schema';
 
 export type LoginAccount = {
   id: string;
+  churchId: string;
   email: string;
   passwordHash: string;
   accountStatus:
@@ -22,6 +23,7 @@ export class LoginRepository {
     const [account] = await this.database
       .select({
         id: users.id,
+        churchId: users.churchId,
         email: users.email,
         passwordHash: users.passwordHash,
         accountStatus: users.accountStatus,
