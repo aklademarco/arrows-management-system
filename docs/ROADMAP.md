@@ -396,14 +396,14 @@ Implement secure registration and session management.
 
 ### Login
 
-- [ ] Credential verification.
-- [ ] Account status handling.
-- [ ] Access token generation.
+- [x] Credential verification.
+- [x] Account status handling.
+- [x] Access token generation.
 - [ ] Refresh token generation.
 - [ ] Refresh token hashing.
-- [ ] Last-login tracking.
-- [ ] Failed-login tracking.
-- [ ] Temporary account lockout.
+- [x] Last-login tracking.
+- [x] Failed-login tracking.
+- [x] Temporary account lockout.
 
 ### Sessions
 
@@ -445,19 +445,19 @@ Allow administrators to review and manage registrations.
 
 ## Tasks
 
-- [ ] List pending registrations.
+- [x] List verified pending registrations.
 - [ ] Search and filter registrations.
 - [ ] View registration details.
-- [ ] Approve user.
+- [x] Approve user.
 - [ ] Create the initial dated primary-department assignment.
 - [ ] Assign additional departments.
-- [ ] Assign roles.
-- [ ] Reject user with reason.
+- [x] Assign the default member role.
+- [x] Reject user with reason.
 - [ ] Suspend user.
 - [ ] Reactivate user.
-- [ ] Record account review.
-- [ ] Record audit log.
-- [ ] Perform approval as one transaction.
+- [x] Record account review.
+- [x] Record audit log.
+- [x] Perform the implemented approval actions as one transaction.
 
 ## Deliverables
 
