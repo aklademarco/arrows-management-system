@@ -19,6 +19,7 @@ import { DepartmentsService } from './departments.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { AddDepartmentMemberDto } from './dto/add-department-member.dto';
+import { EndDepartmentMembershipDto } from './dto/end-department-membership.dto';
 
 @Controller('departments')
 export class DepartmentsController {
@@ -100,6 +101,27 @@ export class DepartmentsController {
       message: 'Member added to department.',
       data: await this.service.addMember({
         departmentId,
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        ...body,
+      }),
+    };
+  }
+
+  @Post(':departmentId/memberships/:membershipId/end')
+  @UseGuards(AdminGuard)
+  async endMembership(
+    @Param('departmentId', ParseUUIDPipe) departmentId: string,
+    @Param('membershipId', ParseUUIDPipe) membershipId: string,
+    @Body() body: EndDepartmentMembershipDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Department membership ended.',
+      data: await this.service.endMembership({
+        departmentId,
+        membershipId,
         churchId: admin.churchId,
         actorUserId: admin.id,
         ...body,

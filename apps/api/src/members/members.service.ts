@@ -47,4 +47,15 @@ export class MembersService {
   }) {
     return this.repository.archiveMember(input);
   }
+
+  setPrimaryDepartment(input: {
+    memberId: string;
+    churchId: string;
+    actorUserId: string;
+    departmentMembershipId: string | null;
+    effectiveOn?: string;
+    reason: string;
+  }) {
+    return this.repository.setPrimaryDepartment(input);
+  }
 }

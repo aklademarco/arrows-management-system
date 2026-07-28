@@ -49,4 +49,16 @@ export class DepartmentsService {
   }) {
     return this.repository.addMember(input);
   }
+
+  endMembership(input: {
+    departmentId: string;
+    membershipId: string;
+    churchId: string;
+    actorUserId: string;
+    leftAt?: string;
+    reason: string;
+    replacementPrimaryMembershipId?: string | null;
+  }) {
+    return this.repository.endMembership(input);
+  }
 }

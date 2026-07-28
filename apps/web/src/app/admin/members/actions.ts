@@ -104,3 +104,43 @@ export async function addMemberToDepartment(formData: FormData) {
   revalidatePath("/admin/members");
   revalidatePath("/admin/departments");
 }
+
+export async function endDepartmentMembership(formData: FormData) {
+  const memberId = memberIdSchema.parse(formData.get("memberId"));
+  const departmentId = memberIdSchema.parse(formData.get("departmentId"));
+  const membershipId = memberIdSchema.parse(formData.get("membershipId"));
+  const token = (await cookies()).get("acms_admin_session")?.value;
+  if (!token) redirect("/admin/login");
+  const leftAt = String(formData.get("leftAt") ?? "").trim();
+  const replacement = String(
+    formData.get("replacementPrimaryMembershipId") ?? "",
+  ).trim();
+  const payload = {
+    reason: String(formData.get("reason") ?? "").trim(),
+    ...(leftAt ? { leftAt } : {}),
+    replacementPrimaryMembershipId: replacement || null,
+  };
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const response = await fetch(
+    `${apiUrl}/departments/${departmentId}/memberships/${membershipId}/end`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    },
+  );
+  if (response.status === 401 || response.status === 403) {
+    redirect("/admin/login");
+  }
+  if (!response.ok) {
+    const body = (await response.json()) as { message?: string };
+    throw new Error(body.message ?? "The membership could not be ended.");
+  }
+  revalidatePath(`/admin/members/${memberId}`);
+  revalidatePath("/admin/members");
+  revalidatePath("/admin/departments");
+}

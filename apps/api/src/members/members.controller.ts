@@ -4,6 +4,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   ParseUUIDPipe,
   Body,
   Query,
@@ -20,6 +21,7 @@ import {
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { SetPrimaryDepartmentDto } from './dto/set-primary-department.dto';
 
 @Controller('members')
 export class MembersController {
@@ -98,6 +100,25 @@ export class MembersController {
       success: true,
       message: 'Member archived.',
       data: null,
+    };
+  }
+
+  @Put(':memberId/primary-department')
+  @UseGuards(AdminGuard)
+  async setPrimaryDepartment(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() body: SetPrimaryDepartmentDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Primary department updated.',
+      data: await this.service.setPrimaryDepartment({
+        memberId,
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        ...body,
+      }),
     };
   }
 }

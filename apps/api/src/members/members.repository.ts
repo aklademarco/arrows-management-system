@@ -1,10 +1,22 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  isNull,
+  lte,
+  or,
+} from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   auditLogs,
@@ -512,6 +524,161 @@ export class MembersRepository {
           archivedAt: now.toISOString(),
         },
       });
+    });
+  }
+
+  async setPrimaryDepartment(input: {
+    memberId: string;
+    churchId: string;
+    actorUserId: string;
+    departmentMembershipId: string | null;
+    effectiveOn?: string;
+    reason: string;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const today = new Date().toISOString().slice(0, 10);
+      const effectiveOn = input.effectiveOn ?? today;
+      if (effectiveOn < today) {
+        throw new BadRequestException(
+          'The primary department effective date cannot be in the past.',
+        );
+      }
+      const [member] = await transaction
+        .select({ id: memberProfiles.id })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(memberProfiles.id, input.memberId),
+            eq(users.churchId, input.churchId),
+            sql`${memberProfiles.membershipStatus} <> 'ARCHIVED'`,
+          ),
+        )
+        .limit(1);
+      if (!member) {
+        throw new NotFoundException('Member not found.');
+      }
+
+      let targetMembership:
+        | { id: string; joinedAt: string; leftAt: string | null }
+        | undefined;
+      if (input.departmentMembershipId) {
+        [targetMembership] = await transaction
+          .select({
+            id: departmentMembers.id,
+            joinedAt: departmentMembers.joinedAt,
+            leftAt: departmentMembers.leftAt,
+          })
+          .from(departmentMembers)
+          .innerJoin(
+            departments,
+            and(
+              eq(departments.id, departmentMembers.departmentId),
+              eq(departments.churchId, input.churchId),
+            ),
+          )
+          .where(
+            and(
+              eq(departmentMembers.id, input.departmentMembershipId),
+              eq(departmentMembers.memberId, member.id),
+              lte(departmentMembers.joinedAt, effectiveOn),
+              or(
+                isNull(departmentMembers.leftAt),
+                gt(departmentMembers.leftAt, effectiveOn),
+              ),
+            ),
+          )
+          .limit(1)
+          .for('update');
+        if (!targetMembership) {
+          throw new BadRequestException(
+            'The selected membership is not active on the effective date.',
+          );
+        }
+      }
+
+      const relevantAssignments = await transaction
+        .select({
+          id: primaryDepartmentAssignments.id,
+          departmentMembershipId:
+            primaryDepartmentAssignments.departmentMembershipId,
+          startsAt: primaryDepartmentAssignments.startsAt,
+          endsAt: primaryDepartmentAssignments.endsAt,
+        })
+        .from(primaryDepartmentAssignments)
+        .where(
+          and(
+            eq(primaryDepartmentAssignments.memberId, member.id),
+            or(
+              isNull(primaryDepartmentAssignments.endsAt),
+              gt(primaryDepartmentAssignments.endsAt, effectiveOn),
+            ),
+          ),
+        )
+        .for('update');
+      const current = relevantAssignments.find(
+        (assignment) =>
+          assignment.startsAt <= effectiveOn &&
+          (assignment.endsAt === null || assignment.endsAt > effectiveOn),
+      );
+      const future = relevantAssignments.find(
+        (assignment) => assignment.startsAt > effectiveOn,
+      );
+      if (future) {
+        throw new ConflictException(
+          'A future primary assignment must be resolved before this change.',
+        );
+      }
+      if (
+        current?.departmentMembershipId ===
+          (targetMembership?.id ?? undefined) ||
+        (!current && !targetMembership)
+      ) {
+        return {
+          departmentMembershipId: targetMembership?.id ?? null,
+          effectiveOn,
+        };
+      }
+
+      const now = new Date();
+      if (current) {
+        await transaction
+          .update(primaryDepartmentAssignments)
+          .set({
+            endsAt: effectiveOn,
+            endedBy: input.actorUserId,
+            endReason: input.reason,
+            updatedAt: now,
+          })
+          .where(eq(primaryDepartmentAssignments.id, current.id));
+      }
+      if (targetMembership) {
+        await transaction.insert(primaryDepartmentAssignments).values({
+          memberId: member.id,
+          departmentMembershipId: targetMembership.id,
+          startsAt: effectiveOn,
+          assignedBy: input.actorUserId,
+        });
+      }
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'PRIMARY_DEPARTMENT_CHANGED',
+        entityType: 'MEMBER_PROFILE',
+        entityId: member.id,
+        previousData: {
+          departmentMembershipId: current?.departmentMembershipId ?? null,
+        },
+        newData: {
+          departmentMembershipId: targetMembership?.id ?? null,
+          effectiveOn,
+          reason: input.reason,
+        },
+      });
+      return {
+        departmentMembershipId: targetMembership?.id ?? null,
+        effectiveOn,
+      };
     });
   }
 }

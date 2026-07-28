@@ -2,7 +2,12 @@ import Link from "next/link";
 import { FiArrowLeft, FiMail, FiPhone } from "react-icons/fi";
 import { reactivateUser, suspendUser } from "../../registrations/actions";
 import { getAdminResource } from "../../registrations/admin-api";
-import { addMemberToDepartment, archiveMember, updateMember } from "../actions";
+import {
+  addMemberToDepartment,
+  archiveMember,
+  endDepartmentMembership,
+  updateMember,
+} from "../actions";
 
 type MemberProfile = {
   id: string;
@@ -18,6 +23,7 @@ type MemberProfile = {
   createdAt: string;
   departmentMemberships: Array<{
     id: string;
+    departmentId: string;
     departmentName: string;
     joinedAt: string;
     leftAt: string | null;
@@ -97,6 +103,67 @@ export default async function MemberProfilePage({
                   <span className="text-sm font-semibold">
                     {membership.isActive ? "Active" : "Historical"}
                   </span>
+                  {membership.isActive ? (
+                    <details className="w-full border-t border-slate-100 pt-3">
+                      <summary className="cursor-pointer text-sm font-bold text-red-700">
+                        End membership
+                      </summary>
+                      <form
+                        action={endDepartmentMembership}
+                        className="mt-3 grid gap-3 md:grid-cols-2"
+                      >
+                        <input
+                          name="memberId"
+                          type="hidden"
+                          value={member.id}
+                        />
+                        <input
+                          name="departmentId"
+                          type="hidden"
+                          value={membership.departmentId}
+                        />
+                        <input
+                          name="membershipId"
+                          type="hidden"
+                          value={membership.id}
+                        />
+                        <input
+                          className="h-10 rounded-lg border border-slate-300 px-3"
+                          name="leftAt"
+                          type="date"
+                        />
+                        <input
+                          className="h-10 rounded-lg border border-slate-300 px-3"
+                          minLength={3}
+                          name="reason"
+                          placeholder="Reason"
+                          required
+                        />
+                        {membership.isPrimary ? (
+                          <select
+                            className="h-10 rounded-lg border border-slate-300 bg-white px-3"
+                            name="replacementPrimaryMembershipId"
+                          >
+                            <option value="">No replacement primary</option>
+                            {member.departmentMemberships
+                              .filter(
+                                (candidate) =>
+                                  candidate.isActive &&
+                                  candidate.id !== membership.id,
+                              )
+                              .map((candidate) => (
+                                <option key={candidate.id} value={candidate.id}>
+                                  {candidate.departmentName}
+                                </option>
+                              ))}
+                          </select>
+                        ) : null}
+                        <button className="h-10 rounded-lg bg-red-700 px-4 font-bold text-white">
+                          End membership
+                        </button>
+                      </form>
+                    </details>
+                  ) : null}
                 </div>
               ))}
             </div>
