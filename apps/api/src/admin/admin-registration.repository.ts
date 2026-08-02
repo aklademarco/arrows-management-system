@@ -6,16 +6,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  and,
-  asc,
-  count,
-  eq,
-  ilike,
-  inArray,
-  isNotNull,
-  or,
-} from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, or } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   accountReviews,
@@ -39,7 +30,6 @@ export class AdminRegistrationRepository {
     const filters = [
       eq(users.accountStatus, 'PENDING_APPROVAL'),
       eq(users.churchId, churchId),
-      isNotNull(users.emailVerifiedAt),
     ];
     if (query.requestedDepartmentId) {
       filters.push(

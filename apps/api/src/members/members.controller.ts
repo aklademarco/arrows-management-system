@@ -27,6 +27,16 @@ import { SetPrimaryDepartmentDto } from './dto/set-primary-department.dto';
 export class MembersController {
   constructor(private readonly service: MembersService) {}
 
+  @Get('me')
+  @UseGuards(AuthenticatedGuard)
+  async findOwnProfile(@AuthenticatedUser() user: AuthenticatedPrincipal) {
+    return {
+      success: true,
+      message: 'Member profile retrieved.',
+      data: await this.service.findOwnProfile(user),
+    };
+  }
+
   @Patch('me')
   @UseGuards(AuthenticatedGuard)
   async updateOwnProfile(

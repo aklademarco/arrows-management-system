@@ -17,6 +17,10 @@ export class MembersService {
     return this.repository.findById(memberId, churchId);
   }
 
+  findOwnProfile(user: AuthenticatedPrincipal) {
+    return this.repository.findOwnProfile(user.id, user.churchId);
+  }
+
   updateOwnProfile(user: AuthenticatedPrincipal, updates: UpdateOwnProfileDto) {
     if (Object.values(updates).every((value) => value === undefined)) {
       throw new BadRequestException('Provide at least one profile field.');

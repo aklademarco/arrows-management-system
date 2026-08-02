@@ -98,13 +98,15 @@ export class EmailVerificationRepository {
         .limit(1)
         .for('update');
 
-      if (
-        !match ||
-        match.usedAt ||
-        match.revokedAt ||
-        match.emailVerifiedAt ||
-        match.expiresAt <= now
-      ) {
+      if (!match || match.revokedAt || match.expiresAt <= now) {
+        throw new BadRequestException(
+          'This verification link is invalid or has expired.',
+        );
+      }
+      if (match.usedAt && match.emailVerifiedAt) {
+        return;
+      }
+      if (match.usedAt || match.emailVerifiedAt) {
         throw new BadRequestException(
           'This verification link is invalid or has expired.',
         );

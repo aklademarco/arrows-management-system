@@ -35,6 +35,26 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 export class MembersRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
+  async findOwnProfile(userId: string, churchId: string) {
+    const [member] = await this.database
+      .select({
+        id: memberProfiles.id,
+        firstName: memberProfiles.firstName,
+        lastName: memberProfiles.lastName,
+        otherNames: memberProfiles.otherNames,
+        membershipStatus: memberProfiles.membershipStatus,
+        email: users.email,
+      })
+      .from(memberProfiles)
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .where(and(eq(users.id, userId), eq(users.churchId, churchId)))
+      .limit(1);
+    if (!member) {
+      throw new NotFoundException('Member profile not found.');
+    }
+    return member;
+  }
+
   async list(query: ListMembersDto, churchId: string) {
     const filters = [eq(users.churchId, churchId)];
     if (query.accountStatus) {

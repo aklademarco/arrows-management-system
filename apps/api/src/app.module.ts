@@ -8,6 +8,8 @@ import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
 import { MembersModule } from './members/members.module';
 import { DepartmentsModule } from './departments/departments.module';
+import { AttendanceModule } from './attendance/attendance.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { DepartmentsModule } from './departments/departments.module';
     AdminModule,
     MembersModule,
     DepartmentsModule,
+    AttendanceModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -24,7 +24,7 @@ type Registration = {
   otherNames: string | null;
   requestedDepartmentId: string | null;
   requestedDepartmentName: string | null;
-  emailVerifiedAt: string;
+  emailVerifiedAt: string | null;
   createdAt: string;
 };
 
@@ -107,7 +107,7 @@ export default async function RegistrationsPage({
               Registration approvals
             </h1>
             <p className="mt-2 text-slate-600">
-              Review verified accounts before granting member access.
+              Review registrations and track email verification before granting member access.
             </p>
           </div>
           <div className="inline-flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -173,7 +173,7 @@ export default async function RegistrationsPage({
               />
               <h2 className="mt-4 text-xl font-bold">All caught up</h2>
               <p className="mt-2 text-slate-600">
-                There are no verified registrations awaiting review.
+                There are no registrations awaiting review.
               </p>
             </div>
           </section>
@@ -212,8 +212,8 @@ export default async function RegistrationsPage({
                       </p>
                     </div>
                   </div>
-                  <span className="h-fit rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800">
-                    Email verified
+                  <span className={`h-fit rounded-full px-3 py-1 text-xs font-bold ${registration.emailVerifiedAt ? "bg-green-50 text-green-800" : "bg-amber-50 text-amber-800"}`}>
+                    {registration.emailVerifiedAt ? "Email verified" : "Awaiting email verification"}
                   </span>
                 </div>
                 <Link
@@ -223,7 +223,12 @@ export default async function RegistrationsPage({
                   View registration details
                 </Link>
 
-                <div className="mt-5 grid gap-4 border-t border-slate-100 pt-5 lg:grid-cols-2">
+                {!registration.emailVerifiedAt ? (
+                  <p className="mt-5 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                    Review controls will become available after the member verifies their email address.
+                  </p>
+                ) : null}
+                <div className={`mt-5 grid gap-4 border-t border-slate-100 pt-5 lg:grid-cols-2 ${registration.emailVerifiedAt ? "" : "pointer-events-none opacity-50"}`} aria-disabled={!registration.emailVerifiedAt}>
                   <form action={approveRegistration} className="grid gap-3">
                     <input
                       name="userId"
@@ -280,7 +285,7 @@ export default async function RegistrationsPage({
                       <button
                         className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#240046] px-4 font-bold text-white hover:bg-[#17002e] disabled:cursor-not-allowed disabled:bg-slate-300"
                         type="submit"
-                        disabled={departmentOptions.length === 0}
+                        disabled={departmentOptions.length === 0 || !registration.emailVerifiedAt}
                       >
                         <FiCheck aria-hidden="true" />
                         Approve
@@ -303,6 +308,7 @@ export default async function RegistrationsPage({
                     <button
                       className="inline-flex h-11 items-center gap-2 rounded-lg border border-red-200 px-4 font-bold text-red-700 hover:bg-red-50"
                       type="submit"
+                      disabled={!registration.emailVerifiedAt}
                     >
                       <FiX aria-hidden="true" />
                       Reject

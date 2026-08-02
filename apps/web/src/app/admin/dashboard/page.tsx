@@ -2,6 +2,8 @@ import Link from "next/link";
 import {
   FiArrowRight,
   FiClock,
+  FiMapPin,
+  FiCalendar,
   FiGrid,
   FiLogOut,
   FiUsers,
@@ -20,6 +22,14 @@ export default async function AdminDashboardPage() {
   ]);
 
   const cards = [
+    {
+      title: "Events",
+      description: "Schedule attendance windows and configure location-based check-in.",
+      href: "/admin/events",
+      count: 0,
+      countLabel: "event scheduling",
+      icon: FiCalendar,
+    },
     {
       title: "Members",
       description:
@@ -46,6 +56,15 @@ export default async function AdminDashboardPage() {
       count: departments.filter((department) => department.isActive).length,
       countLabel: "departments",
       icon: FiGrid,
+    },
+    {
+      title: "Church geofence",
+      description:
+        "Capture the church compound location and preview its attendance boundary.",
+      href: "/admin/geofence",
+      count: 50,
+      countLabel: "metre draft radius",
+      icon: FiMapPin,
     },
   ];
 

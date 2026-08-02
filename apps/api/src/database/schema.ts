@@ -12,6 +12,7 @@ import {
   varchar,
   text,
   integer,
+  numeric,
   jsonb,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -29,6 +30,28 @@ export const membershipStatus = pgEnum('membership_status', [
   'INACTIVE',
   'ON_LEAVE',
   'ARCHIVED',
+]);
+
+export const eventStatus = pgEnum('event_status', [
+  'DRAFT',
+  'SCHEDULED',
+  'ACTIVE',
+  'CANCELLED',
+  'COMPLETED',
+]);
+
+export const attendanceStatus = pgEnum('attendance_status', [
+  'EARLY',
+  'ON_TIME',
+  'LATE',
+  'ABSENT',
+  'EXCUSED',
+]);
+
+export const attendanceMethod = pgEnum('attendance_method', [
+  'GEOLOCATION',
+  'MANUAL',
+  'SYSTEM',
 ]);
 
 export const accountActionTokenType = pgEnum('account_action_token_type', [
@@ -200,6 +223,98 @@ export const memberProfiles = pgTable('member_profiles', {
     .notNull()
     .defaultNow(),
 });
+
+export const events = pgTable(
+  'events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    name: varchar('name', { length: 180 }).notNull(),
+    eventType: varchar('event_type', { length: 80 }).notNull(),
+    description: text('description'),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    attendanceOpensAt: timestamp('attendance_opens_at', {
+      withTimezone: true,
+    }).notNull(),
+    attendanceClosesAt: timestamp('attendance_closes_at', {
+      withTimezone: true,
+    }).notNull(),
+    earlyUntil: timestamp('early_until', { withTimezone: true }),
+    lateAfter: timestamp('late_after', { withTimezone: true }).notNull(),
+    locationName: varchar('location_name', { length: 180 }),
+    latitude: numeric('latitude', { precision: 9, scale: 6 }).notNull(),
+    longitude: numeric('longitude', { precision: 9, scale: 6 }).notNull(),
+    geofenceRadiusMeters: integer('geofence_radius_meters').notNull(),
+    maximumAccuracyMeters: integer('maximum_accuracy_meters')
+      .notNull()
+      .default(50),
+    status: eventStatus('status').notNull().default('DRAFT'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('events_status_start_idx').on(table.status, table.startsAt),
+    index('events_attendance_window_idx').on(
+      table.attendanceOpensAt,
+      table.attendanceClosesAt,
+    ),
+  ],
+);
+
+export const attendanceRecords = pgTable(
+  'attendance_records',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    status: attendanceStatus('status').notNull(),
+    method: attendanceMethod('method').notNull(),
+    checkedInAt: timestamp('checked_in_at', { withTimezone: true }).notNull(),
+    latitude: numeric('latitude', { precision: 9, scale: 6 }).notNull(),
+    longitude: numeric('longitude', { precision: 9, scale: 6 }).notNull(),
+    accuracyMeters: numeric('accuracy_meters', {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    distanceMeters: numeric('distance_meters', {
+      precision: 10,
+      scale: 2,
+    }).notNull(),
+    withinGeofence: boolean('within_geofence').notNull(),
+    pointsAwarded: integer('points_awarded').notNull().default(10),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('attendance_event_member_unique').on(
+      table.eventId,
+      table.memberId,
+    ),
+    index('attendance_member_checked_in_idx').on(
+      table.memberId,
+      table.checkedInAt,
+    ),
+    index('attendance_event_status_idx').on(table.eventId, table.status),
+  ],
+);
 
 export const departmentMembers = pgTable(
   'department_members',
