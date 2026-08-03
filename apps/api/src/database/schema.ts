@@ -255,6 +255,9 @@ export const events = pgTable(
     createdBy: uuid('created_by')
       .notNull()
       .references(() => users.id),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    cancelledBy: uuid('cancelled_by').references(() => users.id),
+    cancellationReason: text('cancellation_reason'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -284,17 +287,20 @@ export const attendanceRecords = pgTable(
     status: attendanceStatus('status').notNull(),
     method: attendanceMethod('method').notNull(),
     checkedInAt: timestamp('checked_in_at', { withTimezone: true }).notNull(),
-    latitude: numeric('latitude', { precision: 9, scale: 6 }).notNull(),
-    longitude: numeric('longitude', { precision: 9, scale: 6 }).notNull(),
+    latitude: numeric('latitude', { precision: 9, scale: 6 }),
+    longitude: numeric('longitude', { precision: 9, scale: 6 }),
     accuracyMeters: numeric('accuracy_meters', {
       precision: 10,
       scale: 2,
-    }).notNull(),
+    }),
     distanceMeters: numeric('distance_meters', {
       precision: 10,
       scale: 2,
-    }).notNull(),
-    withinGeofence: boolean('within_geofence').notNull(),
+    }),
+    withinGeofence: boolean('within_geofence'),
+    markedBy: uuid('marked_by').references(() => users.id),
+    manualReason: text('manual_reason'),
+    reviewNote: text('review_note'),
     pointsAwarded: integer('points_awarded').notNull().default(10),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()

@@ -2,8 +2,11 @@ import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import distance from '@turf/distance';
 import { point } from '@turf/helpers';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
+import type { AdminPrincipal } from '../auth/admin.guard';
 import { events } from '../database/schema';
 import { CheckInDto } from './dto/check-in.dto';
+import { CorrectAttendanceDto } from './dto/correct-attendance.dto';
+import { ManualAttendanceDto } from './dto/manual-attendance.dto';
 import { AttendanceRepository } from './attendance.repository';
 import { Inject } from '@nestjs/common';
 import { DATABASE, type Database } from '../database/database.module';
@@ -26,6 +29,26 @@ export class AttendanceService {
       user.churchId,
       new Date(),
     );
+  }
+
+  listOwnAttendance(user: AuthenticatedPrincipal) {
+    return this.repository.listOwnAttendance(user.id, user.churchId);
+  }
+
+  eventRoster(eventId: string, admin: AdminPrincipal) {
+    return this.repository.eventRoster(eventId, admin.churchId);
+  }
+
+  markManual(dto: ManualAttendanceDto, admin: AdminPrincipal) {
+    return this.repository.markManual(dto, admin);
+  }
+
+  correct(
+    attendanceId: string,
+    dto: CorrectAttendanceDto,
+    admin: AdminPrincipal,
+  ) {
+    return this.repository.correct(attendanceId, dto, admin);
   }
 
   async checkIn(user: AuthenticatedPrincipal, dto: CheckInDto) {
