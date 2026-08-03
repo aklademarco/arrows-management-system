@@ -51,6 +51,10 @@ export class AttendanceService {
     return this.repository.correct(attendanceId, dto, admin);
   }
 
+  finalizeEvent(eventId: string, admin: AdminPrincipal) {
+    return this.repository.finalizeEvent(eventId, admin, new Date());
+  }
+
   async checkIn(user: AuthenticatedPrincipal, dto: CheckInDto) {
     const now = new Date();
     const [event] = await this.database

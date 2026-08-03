@@ -92,6 +92,19 @@ export class AttendanceController {
     };
   }
 
+  @Post('attendance/events/:eventId/finalize')
+  @UseGuards(AdminGuard)
+  async finalizeEvent(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Attendance finalized.',
+      data: await this.service.finalizeEvent(eventId, admin),
+    };
+  }
+
   @Post('attendance/check-in')
   async checkIn(
     @AuthenticatedUser() user: AuthenticatedPrincipal,

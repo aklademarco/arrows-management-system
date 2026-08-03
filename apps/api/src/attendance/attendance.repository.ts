@@ -137,7 +137,12 @@ export class AttendanceRepository {
 
   async eventRoster(eventId: string, churchId: string) {
     const [event] = await this.database
-      .select({ id: events.id, name: events.name, status: events.status })
+      .select({
+        id: events.id,
+        name: events.name,
+        status: events.status,
+        attendanceFinalizedAt: events.attendanceFinalizedAt,
+      })
       .from(events)
       .where(and(eq(events.id, eventId), eq(events.churchId, churchId)))
       .limit(1);
@@ -307,6 +312,113 @@ export class AttendanceRepository {
         metadata: { reviewNote: dto.reviewNote.trim() },
       });
       return record;
+    });
+  }
+
+  async finalizeEvent(eventId: string, admin: AdminPrincipal, now: Date) {
+    return this.database.transaction(async (transaction) => {
+      const [event] = await transaction
+        .select({
+          id: events.id,
+          name: events.name,
+          status: events.status,
+          attendanceClosesAt: events.attendanceClosesAt,
+          attendanceFinalizedAt: events.attendanceFinalizedAt,
+        })
+        .from(events)
+        .where(and(eq(events.id, eventId), eq(events.churchId, admin.churchId)))
+        .limit(1)
+        .for('update');
+      if (!event) throw new NotFoundException('Event not found.');
+      if (event.status === 'CANCELLED')
+        throw new ConflictException('Cancelled events cannot be finalized.');
+      if (event.attendanceClosesAt > now)
+        throw new ConflictException(
+          'Attendance cannot be finalized before the attendance window closes.',
+        );
+      if (event.attendanceFinalizedAt) {
+        const existing = await transaction
+          .select({ id: attendanceRecords.id })
+          .from(attendanceRecords)
+          .where(eq(attendanceRecords.eventId, eventId));
+        return {
+          event,
+          alreadyFinalized: true,
+          eligibleMembers: existing.length,
+          existingRecords: existing.length,
+          absentRecordsCreated: 0,
+        };
+      }
+
+      const eligibleMembers = await transaction
+        .select({ id: memberProfiles.id })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(users.churchId, admin.churchId),
+            eq(users.accountStatus, 'ACTIVE'),
+            eq(memberProfiles.membershipStatus, 'ACTIVE'),
+          ),
+        );
+      const existing = await transaction
+        .select({ memberId: attendanceRecords.memberId })
+        .from(attendanceRecords)
+        .where(eq(attendanceRecords.eventId, eventId));
+      const existingMemberIds = new Set(
+        existing.map((record) => record.memberId),
+      );
+      const missingMembers = eligibleMembers.filter(
+        (member) => !existingMemberIds.has(member.id),
+      );
+
+      const inserted =
+        missingMembers.length === 0
+          ? []
+          : await transaction
+              .insert(attendanceRecords)
+              .values(
+                missingMembers.map((member) => ({
+                  eventId,
+                  memberId: member.id,
+                  status: 'ABSENT' as const,
+                  method: 'SYSTEM' as const,
+                  pointsAwarded: 0,
+                })),
+              )
+              .returning({ id: attendanceRecords.id });
+
+      const [finalizedEvent] = await transaction
+        .update(events)
+        .set({
+          status: 'COMPLETED',
+          attendanceFinalizedAt: now,
+          attendanceFinalizedBy: admin.id,
+          updatedAt: now,
+        })
+        .where(eq(events.id, eventId))
+        .returning();
+      await transaction.insert(auditLogs).values({
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        action: 'ATTENDANCE_FINALIZED',
+        entityType: 'EVENT',
+        entityId: eventId,
+        previousData: { status: event.status },
+        newData: { status: 'COMPLETED' },
+        metadata: {
+          eligibleMembers: eligibleMembers.length,
+          existingRecords: existing.length,
+          absentRecordsCreated: inserted.length,
+        },
+      });
+      return {
+        event: finalizedEvent,
+        alreadyFinalized: false,
+        eligibleMembers: eligibleMembers.length,
+        existingRecords: existing.length,
+        absentRecordsCreated: inserted.length,
+      };
     });
   }
 

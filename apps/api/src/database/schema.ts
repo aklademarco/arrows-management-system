@@ -258,6 +258,12 @@ export const events = pgTable(
     cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
     cancelledBy: uuid('cancelled_by').references(() => users.id),
     cancellationReason: text('cancellation_reason'),
+    attendanceFinalizedAt: timestamp('attendance_finalized_at', {
+      withTimezone: true,
+    }),
+    attendanceFinalizedBy: uuid('attendance_finalized_by').references(
+      () => users.id,
+    ),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -286,7 +292,7 @@ export const attendanceRecords = pgTable(
       .references(() => memberProfiles.id),
     status: attendanceStatus('status').notNull(),
     method: attendanceMethod('method').notNull(),
-    checkedInAt: timestamp('checked_in_at', { withTimezone: true }).notNull(),
+    checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
     latitude: numeric('latitude', { precision: 9, scale: 6 }),
     longitude: numeric('longitude', { precision: 9, scale: 6 }),
     accuracyMeters: numeric('accuracy_meters', {
