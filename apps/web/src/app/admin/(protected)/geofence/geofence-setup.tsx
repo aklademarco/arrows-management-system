@@ -7,7 +7,7 @@ import {
   distanceInMeters,
   isWithinGeofence,
   type Coordinates,
-} from "../../../lib/geofence";
+} from "../../../../lib/geofence";
 
 const GeofenceMap = dynamic(() => import("./geofence-map"), {
   ssr: false,

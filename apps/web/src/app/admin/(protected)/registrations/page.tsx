@@ -2,14 +2,12 @@ import Link from "next/link";
 import {
   FiCheck,
   FiClock,
-  FiLogOut,
   FiMail,
   FiSearch,
   FiUserCheck,
   FiX,
 } from "react-icons/fi";
 import {
-  adminLogout,
   approveRegistration,
   rejectRegistration,
 } from "./actions";
@@ -76,28 +74,8 @@ export default async function RegistrationsPage({
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <div>
-            <Link className="font-bold text-[#240046]" href="/admin/dashboard">
-              ACMS
-            </Link>
-            <p className="text-sm text-slate-500">Administration</p>
-          </div>
-          <form action={adminLogout}>
-            <button
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-              type="submit"
-            >
-              <FiLogOut aria-hidden="true" />
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-5 py-10">
+    <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
+      <div className="mx-auto max-w-7xl">
         <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">

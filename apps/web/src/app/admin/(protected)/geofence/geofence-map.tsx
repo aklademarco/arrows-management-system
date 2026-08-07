@@ -9,7 +9,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import { useEffect } from "react";
-import type { Coordinates } from "../../../lib/geofence";
+import type { Coordinates } from "../../../../lib/geofence";
 
 type GeofenceMapProps = {
   center: Coordinates;

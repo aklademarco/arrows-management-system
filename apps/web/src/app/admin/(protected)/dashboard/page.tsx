@@ -5,10 +5,8 @@ import {
   FiMapPin,
   FiCalendar,
   FiGrid,
-  FiLogOut,
   FiUsers,
 } from "react-icons/fi";
-import { adminLogout } from "../registrations/actions";
 import { getAdminResource } from "../registrations/admin-api";
 
 type CountPage = { total: number };
@@ -69,26 +67,8 @@ export default async function AdminDashboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <div>
-            <p className="font-bold text-[#240046]">ACMS</p>
-            <p className="text-sm text-slate-500">Administration dashboard</p>
-          </div>
-          <form action={adminLogout}>
-            <button
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100"
-              type="submit"
-            >
-              <FiLogOut aria-hidden="true" />
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-5 py-10">
+    <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
+      <div className="mx-auto max-w-7xl">
         <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">
           Overview
         </p>
