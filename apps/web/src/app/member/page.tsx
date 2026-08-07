@@ -17,6 +17,7 @@ import type {
   UpcomingEvent,
 } from "./member-types";
 import CheckInButton from "./check-in-button";
+import { CheckInHero } from "./check-in-hero";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GH", {
   dateStyle: "medium",
@@ -78,14 +79,10 @@ export default async function MemberPage() {
         </header>
 
         <section className="mt-7 grid gap-5 lg:grid-cols-[1.18fr_0.82fr]">
-          <article className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#240046] via-[#4c1677] to-[#7928a8] p-6 text-white shadow-[0_24px_60px_rgba(76,22,119,0.25)] sm:p-8">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1 text-xs font-extrabold text-purple-100"><FiMapPin aria-hidden="true" /> Live attendance</span>
-                <h2 className="mt-5 text-2xl font-black tracking-[-0.03em]">Ready to check in?</h2>
-                <p className="mt-2 max-w-md text-sm leading-6 text-purple-100">Allow precise location when an attendance window is open. ACMS verifies your position securely.</p>
-              </div>
-              <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-lime-300 text-2xl text-[#240046] shadow-lg"><FiZap aria-hidden="true" /></span>
+          <CheckInHero>
+            <div>
+              <h2 className="text-2xl font-black tracking-[-0.03em]">Ready to check in?</h2>
+              <p className="mt-2 max-w-md text-sm leading-6 text-purple-100">Allow precise location when an attendance window is open. ACMS verifies your position securely.</p>
             </div>
 
             {events.length === 0 ? (
@@ -113,7 +110,7 @@ export default async function MemberPage() {
                 })}
               </div>
             )}
-          </article>
+          </CheckInHero>
 
           <article className="rounded-[2rem] border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.08)] sm:p-8">
             <div className="flex items-center justify-between">

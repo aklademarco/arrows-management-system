@@ -22,6 +22,7 @@ import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { SetPrimaryDepartmentDto } from './dto/set-primary-department.dto';
+import { UpdateCoverPhotoDto } from './dto/update-cover-photo.dto';
 
 @Controller('members')
 export class MembersController {
@@ -47,6 +48,21 @@ export class MembersController {
       success: true,
       message: 'Profile updated.',
       data: await this.service.updateOwnProfile(user, body),
+    };
+  }
+
+  @Patch('me/cover-photo')
+  @UseGuards(AuthenticatedGuard)
+  async updateCoverPhoto(
+    @Body() body: UpdateCoverPhotoDto,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: body.coverPhotoUrl
+        ? 'Cover photo updated.'
+        : 'Cover photo removed.',
+      data: await this.service.updateCoverPhoto(user, body.coverPhotoUrl),
     };
   }
 

@@ -1,12 +1,17 @@
 import Link from "next/link";
+import Image from "next/image";
 import { FiLogOut } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { PortalNavigation } from "@/components/portal-navigation";
 import { memberLogout } from "../login/actions";
+import { getMemberProfile } from "./member-api";
+import type { MemberProfile } from "./member-types";
 
-export default function MemberLayout({
+export default async function MemberLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const member = await getMemberProfile<MemberProfile>();
+  const memberName = `${member.firstName} ${member.lastName}`;
   return (
     <div className="min-h-screen bg-[#f8f7fb] text-slate-950">
       <header className="sticky top-0 z-20 border-b border-purple-100/80 bg-[#f8f7fb]/90 backdrop-blur lg:hidden">
@@ -34,12 +39,14 @@ export default function MemberLayout({
             </span>
           </Link>
 
-          <div className="mt-8 rounded-3xl bg-gradient-to-br from-[#2d0750] to-[#6b21a8] p-5 text-white shadow-[0_18px_45px_rgba(36,0,70,0.18)]">
+          <div className="relative isolate mt-8 overflow-hidden rounded-3xl p-5 text-white shadow-[0_18px_45px_rgba(36,0,70,0.18)]">
+            {member.coverPhotoUrl ? <Image alt="" aria-hidden="true" className="-z-20 object-cover object-center" fill sizes="288px" src={member.coverPhotoUrl} unoptimized /> : <span className="absolute inset-0 -z-20 bg-gradient-to-br from-[#4c1677] to-[#8b3bc0]" />}
+            <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgba(70,18,110,0.78),rgba(107,33,168,0.64))]" />
             <div className="flex items-center gap-3">
-              <ProfileAvatar name="Member" size="md" />
+              <ProfileAvatar name={memberName} size="md" />
               <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold">Your profile</p>
-                <p className="text-xs text-purple-200">Active member</p>
+                <p className="truncate text-sm font-extrabold">{memberName}</p>
+                <p className="text-xs capitalize text-purple-200">{member.membershipStatus.toLowerCase()} member</p>
               </div>
             </div>
             <Link className="mt-4 inline-flex text-xs font-bold text-lime-300 hover:text-white" href="/member/profile">View profile →</Link>

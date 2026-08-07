@@ -9,6 +9,7 @@ import { getMemberProfile } from "../member-api";
 import { updateOwnProfile } from "../profile-actions";
 import type { MemberProfile } from "../member-types";
 import { ProfilePhotoPicker } from "./profile-photo-picker";
+import { CoverPhotoPicker } from "./cover-photo-picker";
 
 export default async function MemberProfilePage({
   searchParams,
@@ -42,6 +43,7 @@ export default async function MemberProfilePage({
         <section className="mt-7 rounded-[2rem] border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)] sm:p-8">
           <ProfilePhotoPicker name={memberName} />
         </section>
+        <CoverPhotoPicker currentCover={member.coverPhotoUrl} />
 
         <form action={updateOwnProfile} className="mt-5 grid gap-6 rounded-[2rem] border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)] sm:p-8">
           <div>

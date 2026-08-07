@@ -78,6 +78,7 @@ export class MembersRepository {
         firstName: memberProfiles.firstName,
         lastName: memberProfiles.lastName,
         otherNames: memberProfiles.otherNames,
+        coverPhotoUrl: memberProfiles.coverPhotoUrl,
         membershipStatus: memberProfiles.membershipStatus,
         email: users.email,
         phone: users.phone,
@@ -90,6 +91,47 @@ export class MembersRepository {
       throw new NotFoundException('Member profile not found.');
     }
     return member;
+  }
+
+  async updateCoverPhoto(input: {
+    userId: string;
+    churchId: string;
+    coverPhotoUrl: string | null;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const [member] = await transaction
+        .select({
+          id: memberProfiles.id,
+          coverPhotoUrl: memberProfiles.coverPhotoUrl,
+        })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(eq(users.id, input.userId), eq(users.churchId, input.churchId)),
+        )
+        .limit(1)
+        .for('update');
+      if (!member) throw new NotFoundException('Member profile not found.');
+      const [updated] = await transaction
+        .update(memberProfiles)
+        .set({ coverPhotoUrl: input.coverPhotoUrl, updatedAt: new Date() })
+        .where(eq(memberProfiles.id, member.id))
+        .returning({
+          id: memberProfiles.id,
+          coverPhotoUrl: memberProfiles.coverPhotoUrl,
+        });
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.userId,
+        action: input.coverPhotoUrl
+          ? 'MEMBER_COVER_PHOTO_UPDATED'
+          : 'MEMBER_COVER_PHOTO_REMOVED',
+        entityType: 'MEMBER_PROFILE',
+        entityId: member.id,
+        metadata: { hadPreviousCover: member.coverPhotoUrl !== null },
+      });
+      return updated;
+    });
   }
 
   async list(

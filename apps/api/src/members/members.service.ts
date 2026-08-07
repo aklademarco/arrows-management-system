@@ -17,7 +17,11 @@ export class MembersService {
 
   async list(query: ListMembersDto, viewer: AuthenticatedPrincipal) {
     const restrictToDepartmentIds = await this.resolveReadScope(viewer);
-    return this.repository.list(query, viewer.churchId, restrictToDepartmentIds);
+    return this.repository.list(
+      query,
+      viewer.churchId,
+      restrictToDepartmentIds,
+    );
   }
 
   async findById(memberId: string, viewer: AuthenticatedPrincipal) {
@@ -64,6 +68,25 @@ export class MembersService {
       userId: user.id,
       churchId: user.churchId,
       updates,
+    });
+  }
+
+  updateCoverPhoto(user: AuthenticatedPrincipal, coverPhotoUrl: string | null) {
+    if (coverPhotoUrl) {
+      const match =
+        /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(
+          coverPhotoUrl,
+        );
+      if (!match || Buffer.byteLength(match[2], 'base64') > 650_000) {
+        throw new BadRequestException(
+          'Cover photo must be a JPEG, PNG, or WebP image no larger than 650 KB.',
+        );
+      }
+    }
+    return this.repository.updateCoverPhoto({
+      userId: user.id,
+      churchId: user.churchId,
+      coverPhotoUrl,
     });
   }
 

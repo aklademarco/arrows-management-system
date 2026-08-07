@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { AdminUser } from '../auth/admin-user.decorator';
@@ -14,6 +15,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { CancelEventDto } from './dto/cancel-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
+import { ListEventsDto } from './dto/list-events.dto';
 
 @Controller('events')
 @UseGuards(AdminGuard)
@@ -21,11 +23,14 @@ export class EventsController {
   constructor(private readonly service: EventsService) {}
 
   @Get()
-  async list(@AdminUser() admin: AdminPrincipal) {
+  async list(
+    @Query() query: ListEventsDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
     return {
       success: true,
       message: 'Events retrieved.',
-      data: await this.service.list(admin),
+      data: await this.service.list(query, admin),
     };
   }
 

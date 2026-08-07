@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FiArrowLeft, FiCalendar, FiMapPin } from "react-icons/fi";
+import { FiArrowLeft, FiCalendar, FiFilter, FiMapPin, FiX } from "react-icons/fi";
 import { getAdminResource } from "../registrations/admin-api";
 import { createEvent } from "./actions";
 
@@ -14,8 +14,14 @@ type Event = {
   locationName: string | null;
 };
 
-export default async function EventsPage() {
-  const events = await getAdminResource<Event[]>("/events");
+export default async function EventsPage({ searchParams }: { searchParams: Promise<{ status?: string; from?: string; to?: string }> }) {
+  const parameters = await searchParams;
+  const query = new URLSearchParams();
+  if (parameters.status) query.set("status", parameters.status);
+  if (parameters.from) query.set("from", parameters.from);
+  if (parameters.to) query.set("to", parameters.to);
+  const events = await getAdminResource<Event[]>(`/events?${query.toString()}`);
+  const hasFilters = query.size > 0;
 
   return (
     <main className="min-h-screen bg-[#090a0d] px-5 py-8 text-slate-100">
@@ -166,8 +172,20 @@ export default async function EventsPage() {
         </section>
 
         <section className="mt-8">
-          <h2 className="text-xl font-bold">Scheduled events</h2>
-          <div className="mt-4 divide-y divide-white/10 border-y border-white/10 bg-[#111318]">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div><h2 className="text-xl font-bold">Event directory</h2><p className="mt-1 text-sm text-slate-400">{events.length} matching event{events.length === 1 ? "" : "s"}</p></div>
+          </div>
+          <form className="mt-4 grid gap-3 rounded-xl border border-white/10 bg-[#111318] p-4 md:grid-cols-[13rem_1fr_1fr_auto_auto]">
+            <select className="h-11 rounded-lg border border-white/15 px-3" defaultValue={parameters.status ?? ""} name="status">
+              <option value="">All statuses</option>
+              <option value="DRAFT">Draft</option><option value="SCHEDULED">Scheduled</option><option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option>
+            </select>
+            <label className="grid gap-1 text-xs font-semibold text-slate-400"><span>From</span><input className="h-11 rounded-lg border border-white/15 px-3" defaultValue={parameters.from} name="from" type="date" /></label>
+            <label className="grid gap-1 text-xs font-semibold text-slate-400"><span>To</span><input className="h-11 rounded-lg border border-white/15 px-3" defaultValue={parameters.to} name="to" type="date" /></label>
+            <button className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-lg bg-slate-100 px-4 font-bold text-slate-950 hover:bg-white"><FiFilter /> Filter</button>
+            {hasFilters ? <Link className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-lg border border-white/10 px-4 text-sm font-semibold text-slate-300 hover:border-white/20" href="/admin/events"><FiX /> Clear</Link> : null}
+          </form>
+          {events.length === 0 ? <div className="mt-4 grid min-h-48 place-items-center rounded-xl border border-dashed border-white/15 bg-[#111318] text-center"><div><FiCalendar className="mx-auto text-4xl text-violet-400" /><p className="mt-3 font-bold">No events match these filters</p></div></div> : <div className="mt-4 divide-y divide-white/10 border-y border-white/10 bg-[#111318]">
             {events.map((event) => (
               <article
                 className="grid gap-3 px-5 py-5 md:grid-cols-[1fr_auto]"
@@ -195,12 +213,12 @@ export default async function EventsPage() {
                     Manage event
                   </Link>
                 </div>
-                <span className="h-fit bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-400">
+                <span className={`h-fit rounded-full border px-3 py-1 text-xs font-bold ${event.status === "CANCELLED" ? "border-rose-400/20 bg-rose-400/10 text-rose-300" : event.status === "COMPLETED" ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : event.status === "ACTIVE" ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300" : "border-violet-400/20 bg-violet-400/10 text-violet-300"}`}>
                   {event.status}
                 </span>
               </article>
             ))}
-          </div>
+          </div>}
         </section>
       </div>
     </main>

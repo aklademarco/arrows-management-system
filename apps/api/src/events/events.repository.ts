@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lt } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   absenceRequests,
@@ -16,16 +16,28 @@ import {
 } from '../database/schema';
 import type { CreateEventDto } from './dto/create-event.dto';
 import type { UpdateEventDto } from './dto/update-event.dto';
+import type { ListEventsDto } from './dto/list-events.dto';
 
 @Injectable()
 export class EventsRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  list(churchId: string) {
+  list(churchId: string, query: ListEventsDto = {}) {
+    const filters = [eq(events.churchId, churchId)];
+    if (query.status) filters.push(eq(events.status, query.status));
+    if (query.from)
+      filters.push(
+        gte(events.startsAt, new Date(`${query.from}T00:00:00.000Z`)),
+      );
+    if (query.to) {
+      const exclusiveEnd = new Date(`${query.to}T00:00:00.000Z`);
+      exclusiveEnd.setUTCDate(exclusiveEnd.getUTCDate() + 1);
+      filters.push(lt(events.startsAt, exclusiveEnd));
+    }
     return this.database
       .select()
       .from(events)
-      .where(eq(events.churchId, churchId))
+      .where(and(...filters))
       .orderBy(desc(events.startsAt));
   }
 

@@ -525,7 +525,7 @@ Allow administrators to schedule attendance-enabled events.
 - [x] Update event.
 - [x] Cancel event.
 - [x] List events.
-- [ ] Filter events by date and status.
+- [x] Filter events by date and status.
 - [x] Assign required departments.
 - [x] Validate event timing.
 - [x] Configure location.

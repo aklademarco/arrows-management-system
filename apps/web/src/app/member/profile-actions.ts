@@ -53,3 +53,24 @@ export async function updateOwnProfile(formData: FormData) {
   revalidatePath("/member/profile");
   redirect("/member/profile?updated=1");
 }
+
+export async function updateCoverPhoto(coverPhotoUrl: string | null) {
+  const token = (await cookies()).get("acms_member_session")?.value;
+  if (!token) redirect("/login");
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const response = await fetch(`${apiUrl}/members/me/cover-photo`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ coverPhotoUrl }),
+    cache: "no-store",
+  });
+  if (response.status === 401 || response.status === 403) redirect("/login");
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { message?: string | string[] } | null;
+    throw new Error(Array.isArray(body?.message) ? body.message.join(" ") : (body?.message ?? "Cover photo could not be updated."));
+  }
+  revalidatePath("/member", "layout");
+}

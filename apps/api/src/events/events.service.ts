@@ -8,13 +8,19 @@ import type { CreateEventDto } from './dto/create-event.dto';
 import type { CancelEventDto } from './dto/cancel-event.dto';
 import type { UpdateEventDto } from './dto/update-event.dto';
 import { EventsRepository } from './events.repository';
+import type { ListEventsDto } from './dto/list-events.dto';
 
 @Injectable()
 export class EventsService {
   constructor(private readonly repository: EventsRepository) {}
 
-  list(admin: AdminPrincipal) {
-    return this.repository.list(admin.churchId);
+  list(query: ListEventsDto, admin: AdminPrincipal) {
+    if (query.from && query.to && query.to < query.from) {
+      throw new BadRequestException(
+        'The event filter end date cannot precede its start date.',
+      );
+    }
+    return this.repository.list(admin.churchId, query);
   }
 
   findById(eventId: string, admin: AdminPrincipal) {
