@@ -21,6 +21,12 @@ export default function MemberLoginPage() {
         >
           Forgot your password?
         </Link>
+        <Link
+          className="ml-4 mt-4 inline-flex text-sm font-semibold text-[#6b21a8]"
+          href="/account-status"
+        >
+          Check approval status
+        </Link>
         <div className="mt-6 flex justify-between gap-4 text-sm font-semibold text-[#6b21a8]">
           <Link href="/">Church home</Link>
           <Link href="/register">Create account</Link>

@@ -13,6 +13,7 @@ describe('LoginService', () => {
         churchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
         email: 'admin@example.com',
         passwordHash: await hash('StrongPassword123!'),
+        emailVerifiedAt: new Date(),
         accountStatus: 'ACTIVE',
         failedLoginAttempts: 0,
         lockedUntil: null,
@@ -53,6 +54,7 @@ describe('LoginService', () => {
         churchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
         email: 'admin@example.com',
         passwordHash: await hash('StrongPassword123!'),
+        emailVerifiedAt: new Date(),
         accountStatus: 'ACTIVE',
         failedLoginAttempts: 0,
         lockedUntil: null,
@@ -77,5 +79,34 @@ describe('LoginService', () => {
       1,
       null,
     );
+  });
+
+  it('returns approval status only after validating the password', async () => {
+    const repository = {
+      findByEmail: jest.fn().mockResolvedValue({
+        id: 'pending',
+        churchId: 'church',
+        email: 'member@example.com',
+        passwordHash: await hash('StrongPassword123!'),
+        emailVerifiedAt: new Date(),
+        accountStatus: 'PENDING_APPROVAL',
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        roles: ['MEMBER'],
+      }),
+      recordSuccess: jest.fn(),
+    } as unknown as LoginRepository;
+    const result = await new LoginService(
+      repository,
+      {} as AccessTokenService,
+      {} as RefreshTokenRepository,
+    ).accountStatus({
+      email: 'member@example.com',
+      password: 'StrongPassword123!',
+    });
+    expect(result).toEqual({
+      accountStatus: 'PENDING_APPROVAL',
+      emailVerified: true,
+    });
   });
 });

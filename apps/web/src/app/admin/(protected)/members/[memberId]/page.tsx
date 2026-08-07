@@ -4,6 +4,7 @@ import { reactivateUser, suspendUser } from "../../registrations/actions";
 import { getAdminResource } from "../../registrations/admin-api";
 import {
   addMemberToDepartment,
+  adjustMemberPoints,
   archiveMember,
   endDepartmentMembership,
   setPrimaryDepartment,
@@ -33,6 +34,13 @@ type MemberProfile = {
   }>;
 };
 type Department = { id: string; name: string; isActive: boolean };
+type PointAdjustment = {
+  id: string;
+  points: number;
+  reason: string;
+  occurredAt: string;
+  voidedAt: string | null;
+};
 
 export default async function MemberProfilePage({
   params,
@@ -40,9 +48,12 @@ export default async function MemberProfilePage({
   params: Promise<{ memberId: string }>;
 }) {
   const { memberId } = await params;
-  const [member, departments] = await Promise.all([
+  const [member, departments, adjustments] = await Promise.all([
     getAdminResource<MemberProfile>(`/members/${memberId}`),
     getAdminResource<Department[]>("/departments"),
+    getAdminResource<PointAdjustment[]>(
+      `/leaderboards/members/${memberId}/adjustments`,
+    ),
   ]);
   const name = [member.firstName, member.otherNames, member.lastName]
     .filter(Boolean)
@@ -79,6 +90,90 @@ export default async function MemberProfilePage({
             </div>
           </div>
         </header>
+
+        <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold">Leaderboard points</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Award or deduct secondary points without changing attendance
+                scores.
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-slate-500">
+              Audited ledger
+            </span>
+          </div>
+          <form
+            action={adjustMemberPoints}
+            className="mt-5 grid gap-3 md:grid-cols-[10rem_1fr_auto]"
+          >
+            <input name="memberId" type="hidden" value={member.id} />
+            <label className="grid gap-1.5 text-xs font-semibold text-slate-400">
+              Points
+              <input
+                className="h-11 rounded-lg border border-white/15 bg-[#090a0d] px-3 text-slate-100"
+                max={1000}
+                min={-1000}
+                name="points"
+                placeholder="e.g. 10 or -5"
+                required
+                type="number"
+              />
+            </label>
+            <label className="grid gap-1.5 text-xs font-semibold text-slate-400">
+              Reason
+              <input
+                className="h-11 rounded-lg border border-white/15 bg-[#090a0d] px-3 text-slate-100"
+                maxLength={180}
+                minLength={3}
+                name="reason"
+                placeholder="Why are the points changing?"
+                required
+              />
+            </label>
+            <button className="mt-auto h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500">
+              Record adjustment
+            </button>
+          </form>
+          {adjustments.length > 0 ? (
+            <div className="mt-5 divide-y divide-white/[0.07] border-t border-white/[0.07]">
+              {adjustments.map((entry) => (
+                <div
+                  className="flex items-start justify-between gap-4 py-3"
+                  key={entry.id}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-slate-200">
+                      {entry.reason}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {new Intl.DateTimeFormat("en-GH", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                        timeZone: "Africa/Accra",
+                      }).format(new Date(entry.occurredAt))}
+                    </p>
+                  </div>
+                  <span
+                    className={
+                      entry.points > 0
+                        ? "rounded-md bg-emerald-400/10 px-2 py-1 text-sm font-bold text-emerald-300"
+                        : "rounded-md bg-rose-400/10 px-2 py-1 text-sm font-bold text-rose-300"
+                    }
+                  >
+                    {entry.points > 0 ? "+" : ""}
+                    {entry.points} pts
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-5 border-t border-white/[0.07] pt-4 text-sm text-slate-500">
+              No manual point adjustments yet.
+            </p>
+          )}
+        </section>
 
         <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
           <h2 className="text-xl font-bold">Department history</h2>

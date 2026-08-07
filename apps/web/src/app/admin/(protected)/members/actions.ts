@@ -7,6 +7,50 @@ import { z } from "zod";
 
 const memberIdSchema = z.uuid();
 
+export async function adjustMemberPoints(formData: FormData) {
+  const memberId = memberIdSchema.parse(formData.get("memberId"));
+  const points = z.coerce
+    .number()
+    .int()
+    .min(-1000)
+    .max(1000)
+    .refine((value) => value !== 0)
+    .parse(formData.get("points"));
+  const reason = z
+    .string()
+    .trim()
+    .min(3)
+    .max(180)
+    .parse(formData.get("reason"));
+  const token = (await cookies()).get("acms_admin_session")?.value;
+  if (!token) redirect("/admin/login");
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const response = await fetch(
+    `${apiUrl}/leaderboards/members/${memberId}/adjustments`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ points, reason }),
+      cache: "no-store",
+    },
+  );
+  if (response.status === 401 || response.status === 403)
+    redirect("/admin/login");
+  if (!response.ok) {
+    const body = (await response.json()) as { message?: string | string[] };
+    throw new Error(
+      Array.isArray(body.message)
+        ? body.message.join(" ")
+        : (body.message ?? "The point adjustment could not be recorded."),
+    );
+  }
+  revalidatePath(`/admin/members/${memberId}`);
+  revalidatePath("/member/leaderboard");
+}
+
 export async function updateMember(formData: FormData) {
   const memberId = memberIdSchema.parse(formData.get("memberId"));
   const token = (await cookies()).get("acms_admin_session")?.value;

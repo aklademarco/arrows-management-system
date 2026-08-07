@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, gte, isNull, lt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lt, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   attendanceRecords,
+  auditLogs,
   departmentMembers,
   departments,
   events,
@@ -115,5 +116,83 @@ export class LeaderboardsRepository {
         ),
       )
       .orderBy(asc(departments.name), asc(events.startsAt));
+  }
+
+  async createAdjustment(input: {
+    memberId: string;
+    churchId: string;
+    actorUserId: string;
+    points: number;
+    reason: string;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const [member] = await transaction
+        .select({ id: memberProfiles.id })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(memberProfiles.id, input.memberId),
+            eq(users.churchId, input.churchId),
+          ),
+        )
+        .limit(1);
+      if (!member) return null;
+      const now = new Date();
+      const [entry] = await transaction
+        .insert(leaderboardEntries)
+        .values({
+          subjectType: 'MEMBER',
+          memberId: member.id,
+          points: input.points,
+          reason: input.reason,
+          occurredAt: now,
+        })
+        .returning({
+          id: leaderboardEntries.id,
+          points: leaderboardEntries.points,
+          reason: leaderboardEntries.reason,
+          occurredAt: leaderboardEntries.occurredAt,
+        });
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'LEADERBOARD_POINTS_ADJUSTED',
+        entityType: 'MEMBER',
+        entityId: member.id,
+        newData: {
+          ledgerEntryId: entry.id,
+          points: entry.points,
+          reason: entry.reason,
+        },
+      });
+      return entry;
+    });
+  }
+
+  memberAdjustments(memberId: string, churchId: string) {
+    return this.database
+      .select({
+        id: leaderboardEntries.id,
+        points: leaderboardEntries.points,
+        reason: leaderboardEntries.reason,
+        occurredAt: leaderboardEntries.occurredAt,
+        voidedAt: leaderboardEntries.voidedAt,
+      })
+      .from(leaderboardEntries)
+      .innerJoin(
+        memberProfiles,
+        eq(memberProfiles.id, leaderboardEntries.memberId),
+      )
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .where(
+        and(
+          eq(leaderboardEntries.memberId, memberId),
+          eq(users.churchId, churchId),
+          isNull(leaderboardEntries.eventId),
+        ),
+      )
+      .orderBy(desc(leaderboardEntries.occurredAt))
+      .limit(20);
   }
 }

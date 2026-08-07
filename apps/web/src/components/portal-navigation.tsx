@@ -10,6 +10,7 @@ import {
   FiAward,
   FiBarChart2,
   FiMapPin,
+  FiShield,
   FiUser,
   FiUserCheck,
   FiUsers,
@@ -33,16 +34,28 @@ const adminNavigation = [
   { href: "/admin/reports", label: "Reports", icon: FiBarChart2 },
   { href: "/admin/geofence", label: "Geofence", icon: FiMapPin },
 ];
+const superAdminNavigation = {
+  href: "/admin/audit-logs",
+  label: "Audit logs",
+  icon: FiShield,
+};
 
 export function PortalNavigation({
   portal,
   mobile = false,
+  showAuditLogs = false,
 }: {
   portal: "member" | "admin";
   mobile?: boolean;
+  showAuditLogs?: boolean;
 }) {
   const pathname = usePathname();
-  const navigation = portal === "member" ? memberNavigation : adminNavigation;
+  const navigation =
+    portal === "member"
+      ? memberNavigation
+      : showAuditLogs
+        ? [...adminNavigation, superAdminNavigation]
+        : adminNavigation;
 
   return (
     <nav

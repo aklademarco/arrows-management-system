@@ -8,6 +8,7 @@ export type LoginAccount = {
   churchId: string;
   email: string;
   passwordHash: string;
+  emailVerifiedAt: Date | null;
   accountStatus:
     'PENDING_APPROVAL' | 'ACTIVE' | 'REJECTED' | 'SUSPENDED' | 'ARCHIVED';
   failedLoginAttempts: number;
@@ -26,6 +27,7 @@ export class LoginRepository {
         churchId: users.churchId,
         email: users.email,
         passwordHash: users.passwordHash,
+        emailVerifiedAt: users.emailVerifiedAt,
         accountStatus: users.accountStatus,
         failedLoginAttempts: users.failedLoginAttempts,
         lockedUntil: users.lockedUntil,

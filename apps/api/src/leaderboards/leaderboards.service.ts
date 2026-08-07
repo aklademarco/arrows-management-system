@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type { AdminPrincipal } from '../auth/admin.guard';
+import type { CreatePointsAdjustmentDto } from './dto/create-points-adjustment.dto';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import type { LeaderboardQueryDto } from './dto/leaderboard-query.dto';
 import { LeaderboardsRepository } from './leaderboards.repository';
@@ -192,5 +198,27 @@ export class LeaderboardsService {
       minimumQualifyingEvents: 3,
       items: items.slice(0, query.limit),
     };
+  }
+
+  async adjustMemberPoints(
+    memberId: string,
+    body: CreatePointsAdjustmentDto,
+    admin: AdminPrincipal,
+  ) {
+    if (body.points === 0)
+      throw new BadRequestException('Point adjustment cannot be zero.');
+    const entry = await this.repository.createAdjustment({
+      memberId,
+      churchId: admin.churchId,
+      actorUserId: admin.id,
+      points: body.points,
+      reason: body.reason.trim(),
+    });
+    if (!entry) throw new NotFoundException('Member not found.');
+    return entry;
+  }
+
+  memberAdjustments(memberId: string, admin: AdminPrincipal) {
+    return this.repository.memberAdjustments(memberId, admin.churchId);
   }
 }

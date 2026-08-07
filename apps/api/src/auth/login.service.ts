@@ -85,4 +85,25 @@ export class LoginService {
       },
     };
   }
+
+  async accountStatus(dto: LoginDto) {
+    const account = await this.repository.findByEmail(dto.email);
+    const now = new Date();
+    if (!account || (account.lockedUntil && account.lockedUntil > now))
+      throw new UnauthorizedException('Invalid email or password.');
+    if (!(await verify(account.passwordHash, dto.password))) {
+      const attempts = account.failedLoginAttempts + 1;
+      await this.repository.recordFailure(
+        account.id,
+        attempts,
+        attempts >= 5 ? new Date(now.getTime() + 15 * 60 * 1000) : null,
+      );
+      throw new UnauthorizedException('Invalid email or password.');
+    }
+    await this.repository.recordSuccess(account.id, now);
+    return {
+      accountStatus: account.accountStatus,
+      emailVerified: account.emailVerifiedAt !== null,
+    };
+  }
 }

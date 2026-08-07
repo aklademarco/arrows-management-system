@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { FiAlertCircle, FiCheckCircle, FiMail } from "react-icons/fi";
-import {
-  confirmEmail,
-  type EmailVerificationState,
-} from "./actions";
+import { confirmEmail, type EmailVerificationState } from "./actions";
 
 const initialState: EmailVerificationState = { success: false, message: "" };
 
@@ -32,9 +29,9 @@ export function VerificationForm({ token }: { token?: string }) {
         </p>
         <Link
           className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-[#240046] px-6 font-bold text-white transition hover:bg-[#17002e]"
-          href="/"
+          href="/account-status"
         >
-          Return to home
+          Check approval status
         </Link>
       </div>
     );

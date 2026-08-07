@@ -95,9 +95,9 @@ export function RegistrationForm() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             className="inline-flex h-12 items-center justify-center rounded-xl bg-[#240046] px-6 font-bold text-white transition hover:bg-[#17002e]"
-            href="/"
+            href="/account-status"
           >
-            Return to home
+            Check approval status
           </Link>
           <Link
             className="inline-flex h-12 items-center justify-center rounded-xl border border-[#240046] px-6 font-bold text-[#240046] transition hover:bg-[#faf5ff]"
@@ -119,31 +119,79 @@ export function RegistrationForm() {
         Enter your details exactly as you use them at church.
       </p>
       <form action={formAction} className="grid gap-5" noValidate>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="firstName" label="First name" autoComplete="given-name" required error={state.errors?.firstName} />
-        <Field id="lastName" label="Last name" autoComplete="family-name" required error={state.errors?.lastName} />
-      </div>
-      <Field id="otherNames" label="Other names (optional)" autoComplete="additional-name" error={state.errors?.otherNames} />
-      <Field id="email" label="Email address" type="email" autoComplete="email" required error={state.errors?.email} />
-      <Field id="phone" label="Phone number (optional)" type="tel" autoComplete="tel" error={state.errors?.phone} />
-      <Field id="password" label="Password" type="password" autoComplete="new-password" required error={state.errors?.password} />
-      <Field id="confirmPassword" label="Confirm password" type="password" autoComplete="new-password" required error={state.errors?.confirmPassword} />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            id="firstName"
+            label="First name"
+            autoComplete="given-name"
+            required
+            error={state.errors?.firstName}
+          />
+          <Field
+            id="lastName"
+            label="Last name"
+            autoComplete="family-name"
+            required
+            error={state.errors?.lastName}
+          />
+        </div>
+        <Field
+          id="otherNames"
+          label="Other names (optional)"
+          autoComplete="additional-name"
+          error={state.errors?.otherNames}
+        />
+        <Field
+          id="email"
+          label="Email address"
+          type="email"
+          autoComplete="email"
+          required
+          error={state.errors?.email}
+        />
+        <Field
+          id="phone"
+          label="Phone number (optional)"
+          type="tel"
+          autoComplete="tel"
+          error={state.errors?.phone}
+        />
+        <Field
+          id="password"
+          label="Password"
+          type="password"
+          autoComplete="new-password"
+          required
+          error={state.errors?.password}
+        />
+        <Field
+          id="confirmPassword"
+          label="Confirm password"
+          type="password"
+          autoComplete="new-password"
+          required
+          error={state.errors?.confirmPassword}
+        />
 
-      {state.message && (
-        <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">
-          {state.message}
+        {state.message && (
+          <p
+            className="rounded-xl bg-red-50 p-3 text-sm text-red-800"
+            role="alert"
+          >
+            {state.message}
+          </p>
+        )}
+        <button
+          className="mt-2 h-12 rounded-xl bg-[#240046] px-5 font-bold text-white transition hover:bg-[#17002e] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={pending}
+          type="submit"
+        >
+          {pending ? "Submitting…" : "Create account"}
+        </button>
+        <p className="text-center text-sm leading-6 text-slate-600">
+          Your account will need email verification and administrator approval
+          before you can sign in.
         </p>
-      )}
-      <button
-        className="mt-2 h-12 rounded-xl bg-[#240046] px-5 font-bold text-white transition hover:bg-[#17002e] disabled:cursor-not-allowed disabled:opacity-60"
-        disabled={pending}
-        type="submit"
-      >
-        {pending ? "Submitting…" : "Create account"}
-      </button>
-      <p className="text-center text-sm leading-6 text-slate-600">
-        Your account will need email verification and administrator approval before you can sign in.
-      </p>
       </form>
     </>
   );

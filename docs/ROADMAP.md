@@ -650,7 +650,7 @@ Implement transparent and auditable ranking.
 
 - [x] Define Version 1 point values.
 - [x] Store point reasons.
-- [ ] Support positive and negative adjustments.
+- [x] Support positive and negative adjustments.
 - [x] Prevent duplicate event rewards.
 - [x] Recalculate after attendance correction.
 
@@ -728,7 +728,7 @@ Build the complete mobile-first user experience.
 - [x] Registration page.
 - [x] Login page.
 - [x] Password reset.
-- [ ] Approval status page.
+- [x] Approval status page.
 
 ## Member Pages
 
@@ -753,19 +753,19 @@ Build the complete mobile-first user experience.
 - [x] Manual attendance.
 - [x] Absence review.
 - [x] Reports.
-- [ ] Audit logs for Super Administrator.
+- [x] Audit logs for Super Administrator.
 
 ## UX States
 
-- [ ] Loading states.
-- [ ] Empty states.
-- [ ] Permission denied.
-- [ ] Location unavailable.
-- [ ] Poor GPS accuracy.
-- [ ] Outside geofence.
-- [ ] Attendance closed.
-- [ ] Already checked in.
-- [ ] Offline or network failure.
+- [x] Loading states.
+- [x] Empty states.
+- [x] Permission denied.
+- [x] Location unavailable.
+- [x] Poor GPS accuracy.
+- [x] Outside geofence.
+- [x] Attendance closed.
+- [x] Already checked in.
+- [x] Offline or network failure.
 
 ## Deliverables
 

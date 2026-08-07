@@ -13,6 +13,7 @@ import { EventsModule } from './events/events.module';
 import { AbsenceRequestsModule } from './absence-requests/absence-requests.module';
 import { LeaderboardsModule } from './leaderboards/leaderboards.module';
 import { ReportsModule } from './reports/reports.module';
+import { AuditLogsModule } from './audit-logs/audit-logs.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ReportsModule } from './reports/reports.module';
     AbsenceRequestsModule,
     LeaderboardsModule,
     ReportsModule,
+    AuditLogsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

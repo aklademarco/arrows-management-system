@@ -173,6 +173,16 @@ export class AuthController {
     };
   }
 
+  @Post('account-status')
+  @HttpCode(HttpStatus.OK)
+  async accountStatus(@Body() body: LoginDto) {
+    return {
+      success: true,
+      message: 'Account status retrieved.',
+      data: await this.loginService.accountStatus(body),
+    };
+  }
+
   @Post('password-reset/confirm')
   @HttpCode(HttpStatus.OK)
   async confirmPasswordReset(@Body() body: ConfirmPasswordResetDto) {

@@ -147,4 +147,49 @@ describe('LeaderboardsService', () => {
 
     expect(result.items[0]).toMatchObject({ rank: null, qualified: false });
   });
+
+  it('records a non-zero member point adjustment', async () => {
+    const createAdjustment = jest.fn().mockResolvedValue({
+      id: 'entry',
+      points: -5,
+      reason: 'Missed service duty',
+    });
+    const service = new LeaderboardsService({
+      createAdjustment,
+    } as unknown as LeaderboardsRepository);
+    const result = await service.adjustMemberPoints(
+      'member',
+      { points: -5, reason: 'Missed service duty' },
+      {
+        id: 'admin',
+        churchId: 'church',
+        email: 'admin@example.com',
+        roles: ['ADMIN'],
+      },
+    );
+    expect(result.points).toBe(-5);
+    expect(createAdjustment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        memberId: 'member',
+        churchId: 'church',
+        actorUserId: 'admin',
+        points: -5,
+      }),
+    );
+  });
+
+  it('rejects a zero-point adjustment', async () => {
+    await expect(
+      new LeaderboardsService({} as LeaderboardsRepository).adjustMemberPoints(
+        'member',
+        { points: 0, reason: 'No change' },
+        {
+          id: 'admin',
+          churchId: 'church',
+          email: 'admin@example.com',
+          roles: ['ADMIN'],
+        },
+      ),
+    ).rejects.toThrow('Point adjustment cannot be zero.');
+  });
 });
