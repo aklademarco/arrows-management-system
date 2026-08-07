@@ -648,20 +648,20 @@ Implement transparent and auditable ranking.
 
 ### Points Rules
 
-- [ ] Define Version 1 point values.
-- [ ] Store point reasons.
+- [x] Define Version 1 point values.
+- [x] Store point reasons.
 - [ ] Support positive and negative adjustments.
-- [ ] Prevent duplicate event rewards.
-- [ ] Recalculate after attendance correction.
+- [x] Prevent duplicate event rewards.
+- [x] Recalculate after attendance correction.
 
 ### Individual Leaderboard
 
-- [ ] Weekly ranking.
-- [ ] Monthly ranking.
-- [ ] Quarterly ranking.
-- [ ] Yearly ranking.
-- [ ] Department filter.
-- [ ] Attendance streak calculation.
+- [x] Weekly ranking.
+- [x] Monthly ranking.
+- [x] Quarterly ranking.
+- [x] Yearly ranking.
+- [x] Department filter.
+- [x] Attendance streak calculation.
 
 ### Department Leaderboard
 
@@ -738,7 +738,7 @@ Build the complete mobile-first user experience.
 - [x] Check-in confirmation.
 - [x] Attendance history.
 - [x] Absence request form.
-- [ ] Individual leaderboard.
+- [x] Individual leaderboard.
 - [ ] Department leaderboard.
 - [x] Profile page.
 

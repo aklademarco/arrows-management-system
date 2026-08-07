@@ -72,6 +72,11 @@ export const absenceRequestStatus = pgEnum('absence_request_status', [
   'CANCELLED',
 ]);
 
+export const leaderboardSubjectType = pgEnum('leaderboard_subject_type', [
+  'MEMBER',
+  'DEPARTMENT',
+]);
+
 export const reviewDecision = pgEnum('review_decision', [
   'APPROVED',
   'REJECTED',
@@ -408,6 +413,44 @@ export const absenceRequests = pgTable(
     check(
       'absence_requests_reason_not_blank',
       sql`char_length(btrim(${table.reason})) > 0`,
+    ),
+  ],
+);
+
+export const leaderboardEntries = pgTable(
+  'leaderboard_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    subjectType: leaderboardSubjectType('subject_type').notNull(),
+    memberId: uuid('member_id').references(() => memberProfiles.id),
+    departmentId: uuid('department_id').references(() => departments.id),
+    eventId: uuid('event_id').references(() => events.id),
+    points: integer('points').notNull(),
+    reason: varchar('reason', { length: 180 }).notNull(),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    voidedAt: timestamp('voided_at', { withTimezone: true }),
+    voidedBy: uuid('voided_by').references(() => users.id),
+    voidReason: text('void_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('leaderboard_entries_member_period_idx').on(
+      table.memberId,
+      table.occurredAt,
+    ),
+    index('leaderboard_entries_department_period_idx').on(
+      table.departmentId,
+      table.occurredAt,
+    ),
+    check(
+      'leaderboard_entries_one_subject',
+      sql`(${table.subjectType} = 'MEMBER' and ${table.memberId} is not null and ${table.departmentId} is null) or (${table.subjectType} = 'DEPARTMENT' and ${table.departmentId} is not null and ${table.memberId} is null)`,
+    ),
+    check(
+      'leaderboard_entries_void_metadata',
+      sql`(${table.voidedAt} is null and ${table.voidedBy} is null and ${table.voidReason} is null) or (${table.voidedAt} is not null and ${table.voidReason} is not null and char_length(btrim(${table.voidReason})) > 0)`,
     ),
   ],
 );
