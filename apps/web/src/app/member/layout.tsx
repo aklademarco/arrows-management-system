@@ -1,16 +1,19 @@
 import Link from "next/link";
 import Image from "next/image";
-import { FiLogOut } from "react-icons/fi";
+import { FiBell, FiLogOut } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { PortalNavigation } from "@/components/portal-navigation";
 import { memberLogout } from "../login/actions";
-import { getMemberProfile } from "./member-api";
+import { getMemberProfile, getMemberResource } from "./member-api";
 import type { MemberProfile } from "./member-types";
 
 export default async function MemberLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const member = await getMemberProfile<MemberProfile>();
+  const [member, unread] = await Promise.all([
+    getMemberProfile<MemberProfile>(),
+    getMemberResource<{ count: number }>("/notifications/unread-count"),
+  ]);
   const memberName = `${member.firstName} ${member.lastName}`;
   return (
     <div className="min-h-screen bg-[#f8f7fb] text-slate-950">
@@ -29,13 +32,12 @@ export default async function MemberLayout({
               </span>
             </span>
           </Link>
-          <Link aria-label="Open profile" href="/member/profile">
-            <ProfileAvatar
-              imageUrl={member.profilePhotoUrl}
-              name={memberName}
-              size="sm"
-            />
-          </Link>
+          <div className="flex items-center gap-3">
+            <NotificationLink count={unread.count} compact />
+            <Link aria-label="Open profile" href="/member/profile">
+              <ProfileAvatar imageUrl={member.profilePhotoUrl} name={memberName} size="sm" />
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -99,6 +101,7 @@ export default async function MemberLayout({
               Today
             </p>
             <PortalNavigation portal="member" />
+            <NotificationLink count={unread.count} />
           </div>
 
           <div className="mt-auto rounded-2xl border border-purple-100 bg-purple-50/70 p-4">
@@ -126,5 +129,23 @@ export default async function MemberLayout({
         <PortalNavigation mobile portal="member" />
       </div>
     </div>
+  );
+}
+
+function NotificationLink({ count, compact = false }: { count: number; compact?: boolean }) {
+  return (
+    <Link
+      aria-label={count > 0 ? `Notifications, ${count} unread` : "Notifications"}
+      className={compact ? "relative grid size-10 place-items-center rounded-xl bg-white text-slate-600 shadow-sm" : "relative mt-1 flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-600 transition hover:bg-purple-50 hover:text-[#6b21a8]"}
+      href="/member/notifications"
+    >
+      <FiBell aria-hidden="true" className="text-lg" />
+      {!compact && <span>Notifications</span>}
+      {count > 0 && (
+        <span className={compact ? "absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-lime-400 px-1 text-[10px] font-black text-[#240046]" : "ml-auto grid min-h-5 min-w-5 place-items-center rounded-full bg-[#6b21a8] px-1 text-[10px] font-black text-white"}>
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </Link>
   );
 }

@@ -77,6 +77,36 @@ export const leaderboardSubjectType = pgEnum('leaderboard_subject_type', [
   'DEPARTMENT',
 ]);
 
+export const ministryContentType = pgEnum('ministry_content_type', [
+  'PUBLICITY_FLYER',
+  'SONG_LIST',
+]);
+export const ministryContentStatus = pgEnum('ministry_content_status', [
+  'DRAFT',
+  'SENT',
+  'ACKNOWLEDGED',
+  'COMPLETED',
+  'CANCELLED',
+]);
+export const messageAudience = pgEnum('message_audience', [
+  'CHURCH',
+  'DEPARTMENT',
+]);
+export const smsDeliveryStatus = pgEnum('sms_delivery_status', [
+  'NOT_REQUESTED',
+  'QUEUED',
+  'SENT',
+  'DELIVERED',
+  'FAILED',
+]);
+export const liturgyItemStatus = pgEnum('liturgy_item_status', [
+  'PENDING',
+  'ACTIVE',
+  'PAUSED',
+  'COMPLETED',
+  'SKIPPED',
+]);
+
 export const reviewDecision = pgEnum('review_decision', [
   'APPROVED',
   'REJECTED',
@@ -590,6 +620,247 @@ export const departmentLeaders = pgTable(
     ),
   ],
 );
+
+export const ministryContent = pgTable('ministry_content', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  churchId: uuid('church_id')
+    .notNull()
+    .references(() => churches.id),
+  senderUserId: uuid('sender_user_id')
+    .notNull()
+    .references(() => users.id),
+  eventId: uuid('event_id').references(() => events.id),
+  targetDepartmentId: uuid('target_department_id')
+    .notNull()
+    .references(() => departments.id),
+  type: ministryContentType('type').notNull(),
+  status: ministryContentStatus('status').notNull().default('DRAFT'),
+  title: varchar('title', { length: 180 }).notNull(),
+  instructions: text('instructions'),
+  deadlineAt: timestamp('deadline_at', { withTimezone: true }),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  acknowledgedAt: timestamp('acknowledged_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const ministryAttachments = pgTable('ministry_attachments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  contentId: uuid('content_id')
+    .notNull()
+    .references(() => ministryContent.id),
+  cloudinaryUrl: text('cloudinary_url').notNull(),
+  cloudinaryPublicId: varchar('cloudinary_public_id', {
+    length: 255,
+  }).notNull(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const ministrySongItems = pgTable('ministry_song_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  contentId: uuid('content_id')
+    .notNull()
+    .references(() => ministryContent.id),
+  position: integer('position').notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  lyrics: text('lyrics'),
+  musicalKey: varchar('musical_key', { length: 30 }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  churchId: uuid('church_id')
+    .notNull()
+    .references(() => churches.id),
+  recipientUserId: uuid('recipient_user_id')
+    .notNull()
+    .references(() => users.id),
+  actorUserId: uuid('actor_user_id').references(() => users.id),
+  type: varchar('type', { length: 100 }).notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  body: text('body').notNull(),
+  link: text('link'),
+  ministryContentId: uuid('ministry_content_id').references(
+    () => ministryContent.id,
+  ),
+  readAt: timestamp('read_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const leadershipMessages = pgTable('leadership_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  churchId: uuid('church_id')
+    .notNull()
+    .references(() => churches.id),
+  senderUserId: uuid('sender_user_id')
+    .notNull()
+    .references(() => users.id),
+  audience: messageAudience('audience').notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  body: text('body').notNull(),
+  smsRequested: boolean('sms_requested').notNull().default(false),
+  sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const leadershipMessageDepartments = pgTable(
+  'leadership_message_departments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => leadershipMessages.id),
+    departmentId: uuid('department_id')
+      .notNull()
+      .references(() => departments.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+export const leadershipMessageRecipients = pgTable(
+  'leadership_message_recipients',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    messageId: uuid('message_id')
+      .notNull()
+      .references(() => leadershipMessages.id),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => users.id),
+    phoneSnapshot: varchar('phone_snapshot', { length: 30 }),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    smsStatus: smsDeliveryStatus('sms_status')
+      .notNull()
+      .default('NOT_REQUESTED'),
+    smsProviderId: varchar('sms_provider_id', { length: 255 }),
+    smsAttemptedAt: timestamp('sms_attempted_at', { withTimezone: true }),
+    smsDeliveredAt: timestamp('sms_delivered_at', { withTimezone: true }),
+    smsFailureReason: text('sms_failure_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+);
+
+export const liturgyTemplates = pgTable('liturgy_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  churchId: uuid('church_id')
+    .notNull()
+    .references(() => churches.id),
+  name: varchar('name', { length: 180 }).notNull(),
+  description: text('description'),
+  isDefault: boolean('is_default').notNull().default(false),
+  isActive: boolean('is_active').notNull().default(true),
+  createdBy: uuid('created_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const liturgyTemplateItems = pgTable('liturgy_template_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  templateId: uuid('template_id')
+    .notNull()
+    .references(() => liturgyTemplates.id),
+  position: integer('position').notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  plannedOffsetMinutes: integer('planned_offset_minutes').notNull(),
+  plannedDurationMinutes: integer('planned_duration_minutes').notNull(),
+  ownerLabel: varchar('owner_label', { length: 120 }),
+  notes: text('notes'),
+  showOnProjection: boolean('show_on_projection').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const eventLiturgies = pgTable('event_liturgies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id')
+    .notNull()
+    .unique()
+    .references(() => events.id),
+  sourceTemplateId: uuid('source_template_id').references(
+    () => liturgyTemplates.id,
+  ),
+  preacherName: varchar('preacher_name', { length: 180 }),
+  sermonTitle: varchar('sermon_title', { length: 255 }),
+  preacherImageUrl: text('preacher_image_url'),
+  preacherImagePublicId: varchar('preacher_image_public_id', { length: 255 }),
+  projectionEnabled: boolean('projection_enabled').notNull().default(true),
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  createdBy: uuid('created_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const eventLiturgyItems = pgTable('event_liturgy_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  liturgyId: uuid('liturgy_id')
+    .notNull()
+    .references(() => eventLiturgies.id),
+  position: integer('position').notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  plannedStartAt: timestamp('planned_start_at', {
+    withTimezone: true,
+  }).notNull(),
+  plannedDurationMinutes: integer('planned_duration_minutes').notNull(),
+  ownerLabel: varchar('owner_label', { length: 120 }),
+  notes: text('notes'),
+  showOnProjection: boolean('show_on_projection').notNull().default(true),
+  status: liturgyItemStatus('status').notNull().default('PENDING'),
+  actualStartedAt: timestamp('actual_started_at', { withTimezone: true }),
+  pausedAt: timestamp('paused_at', { withTimezone: true }),
+  accumulatedPauseSeconds: integer('accumulated_pause_seconds')
+    .notNull()
+    .default(0),
+  actualCompletedAt: timestamp('actual_completed_at', { withTimezone: true }),
+  skippedAt: timestamp('skipped_at', { withTimezone: true }),
+  timingUpdatedBy: uuid('timing_updated_by').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 export const refreshTokens = pgTable(
   'refresh_tokens',

@@ -14,6 +14,7 @@ import { AbsenceRequestsModule } from './absence-requests/absence-requests.modul
 import { LeaderboardsModule } from './leaderboards/leaderboards.module';
 import { ReportsModule } from './reports/reports.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     LeaderboardsModule,
     ReportsModule,
     AuditLogsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
