@@ -22,7 +22,10 @@ export class CreateAbsenceRequestDto {
   eventId?: string;
 
   @IsOptional()
-  @IsISO8601({ strict: true }, { message: 'startsOn must be a YYYY-MM-DD date.' })
+  @IsISO8601(
+    { strict: true },
+    { message: 'startsOn must be a YYYY-MM-DD date.' },
+  )
   startsOn?: string;
 
   @IsOptional()

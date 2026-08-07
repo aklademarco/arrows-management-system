@@ -1,8 +1,4 @@
-import {
-  HttpException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import { AbsenceRequestsRepository } from './absence-requests.repository';
 import type { CreateAbsenceRequestDto } from './dto/create-absence-request.dto';
@@ -61,6 +57,23 @@ export class AbsenceRequestsService {
     );
     if (!memberId) throw new NotFoundException('Member profile not found.');
     return this.repository.listOwn(memberId);
+  }
+
+  async listReviewable(user: AuthenticatedPrincipal) {
+    const requests = await this.repository.listForChurch(user.churchId);
+    if (isAdmin(user)) return requests;
+
+    const visible = [];
+    for (const request of requests) {
+      try {
+        await this.assertReviewScope(user, request, new Date());
+        visible.push(request);
+      } catch (error) {
+        if (error instanceof NotFoundException) continue;
+        throw error;
+      }
+    }
+    return visible;
   }
 
   async review(

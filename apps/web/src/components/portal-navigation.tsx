@@ -6,6 +6,7 @@ import {
   FiCalendar,
   FiGrid,
   FiHome,
+  FiFileText,
   FiMapPin,
   FiUser,
   FiUserCheck,
@@ -15,6 +16,7 @@ import {
 const memberNavigation = [
   { href: "/member", label: "Home", icon: FiHome },
   { href: "/member/attendance", label: "Activity", icon: FiCalendar },
+  { href: "/member/absences", label: "Absences", icon: FiFileText },
   { href: "/member/profile", label: "Profile", icon: FiUser },
 ];
 
@@ -24,6 +26,7 @@ const adminNavigation = [
   { href: "/admin/registrations", label: "Approvals", icon: FiUserCheck },
   { href: "/admin/departments", label: "Departments", icon: FiGrid },
   { href: "/admin/events", label: "Events", icon: FiCalendar },
+  { href: "/admin/absences", label: "Absences", icon: FiFileText },
   { href: "/admin/geofence", label: "Geofence", icon: FiMapPin },
 ];
 
@@ -40,7 +43,7 @@ export function PortalNavigation({
   return (
     <nav
       aria-label={portal === "member" ? "Member portal" : "Administration"}
-      className={mobile ? "grid grid-cols-3" : "grid gap-1"}
+      className={mobile ? "grid grid-cols-4" : "grid gap-1"}
     >
       {navigation.map(({ href, label, icon: Icon }) => {
         const active =

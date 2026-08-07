@@ -399,26 +399,26 @@ Implement secure registration and session management.
 - [x] Credential verification.
 - [x] Account status handling.
 - [x] Access token generation.
-- [ ] Refresh token generation.
-- [ ] Refresh token hashing.
+- [x] Refresh token generation.
+- [x] Refresh token hashing.
 - [x] Last-login tracking.
 - [x] Failed-login tracking.
 - [x] Temporary account lockout.
 
 ### Sessions
 
-- [ ] Token refresh.
-- [ ] Refresh-token rotation.
-- [ ] Logout.
-- [ ] Session revocation.
-- [ ] Current-user endpoint.
+- [x] Token refresh.
+- [x] Refresh-token rotation.
+- [x] Logout.
+- [x] Session revocation.
+- [x] Current-user endpoint.
 
 ### Password Reset
 
-- [ ] Reset request.
-- [ ] Secure reset token.
-- [ ] Reset confirmation.
-- [ ] Invalidate old sessions after reset.
+- [x] Reset request.
+- [x] Secure reset token.
+- [x] Reset confirmation.
+- [x] Invalidate old sessions after reset.
 
 ## Deliverables
 
@@ -499,7 +499,7 @@ Implement core church workforce management.
 - [x] Set or clear primary department through dated assignment periods.
 - [x] Assign department leader.
 - [x] End leadership assignment.
-- [ ] Restrict leader visibility by department.
+- [x] Restrict leader visibility by department.
 
 ## Deliverables
 
@@ -521,19 +521,19 @@ Allow administrators to schedule attendance-enabled events.
 
 ## Tasks
 
-- [ ] Create event.
-- [ ] Update event.
-- [ ] Cancel event.
-- [ ] List events.
+- [x] Create event.
+- [x] Update event.
+- [x] Cancel event.
+- [x] List events.
 - [ ] Filter events by date and status.
-- [ ] Assign required departments.
-- [ ] Validate event timing.
-- [ ] Configure location.
-- [ ] Configure geofence radius.
-- [ ] Configure maximum GPS accuracy.
-- [ ] Detect active events.
-- [ ] Restrict active events by member eligibility.
-- [ ] Handle overlapping eligible events.
+- [x] Assign required departments.
+- [x] Validate event timing.
+- [x] Configure location.
+- [x] Configure geofence radius.
+- [x] Configure maximum GPS accuracy.
+- [x] Detect active events.
+- [x] Restrict active events by member eligibility.
+- [x] Handle overlapping eligible events.
 
 ## Deliverables
 
@@ -557,36 +557,36 @@ Implement the primary attendance workflow.
 
 ### Location Verification
 
-- [ ] Validate latitude.
-- [ ] Validate longitude.
-- [ ] Validate reported accuracy.
-- [ ] Implement Haversine distance calculation.
-- [ ] Compare distance with geofence radius.
-- [ ] Reject poor accuracy.
-- [ ] Reject outside-geofence attempts.
+- [x] Validate latitude.
+- [x] Validate longitude.
+- [x] Validate reported accuracy.
+- [x] Implement Haversine distance calculation.
+- [x] Compare distance with geofence radius.
+- [x] Reject poor accuracy.
+- [x] Reject outside-geofence attempts.
 
 ### Attendance Rules
 
-- [ ] Verify active account.
-- [ ] Verify event window.
-- [ ] Verify event eligibility.
-- [ ] Prevent duplicate check-in.
-- [ ] Calculate early status.
-- [ ] Calculate on-time status.
-- [ ] Calculate late status.
-- [ ] Use server time.
-- [ ] Record attendance evidence.
-- [ ] Award points transactionally.
+- [x] Verify active account.
+- [x] Verify event window.
+- [x] Verify event eligibility.
+- [x] Prevent duplicate check-in.
+- [x] Calculate early status.
+- [x] Calculate on-time status.
+- [x] Calculate late status.
+- [x] Use server time.
+- [x] Record attendance evidence.
+- [x] Award points transactionally.
 
 ### Manual Attendance
 
-- [ ] Record manual attendance.
-- [ ] Require authorized role.
-- [ ] Require reason.
-- [ ] Record actor.
-- [ ] Create audit log.
-- [ ] Correct attendance.
-- [ ] Adjust leaderboard ledger.
+- [x] Record manual attendance.
+- [x] Require authorized role.
+- [x] Require reason.
+- [x] Record actor.
+- [x] Create audit log.
+- [x] Correct attendance.
+- [x] Adjust leaderboard ledger.
 
 ## Deliverables
 
@@ -614,17 +614,17 @@ Support fair absence handling.
 
 ## Tasks
 
-- [ ] Submit event-specific absence.
-- [ ] Submit date-range absence.
-- [ ] List own requests.
-- [ ] List department requests.
-- [ ] Approve request.
-- [ ] Reject request.
-- [ ] Request clarification.
+- [x] Submit event-specific absence.
+- [x] Submit date-range absence.
+- [x] List own requests.
+- [x] List department requests.
+- [x] Approve request.
+- [x] Reject request.
+- [x] Request clarification.
 - [ ] Cancel pending request.
-- [ ] Apply excused status where appropriate.
-- [ ] Exclude approved absence from penalties.
-- [ ] Record review audit log.
+- [x] Apply excused status where appropriate.
+- [x] Exclude approved absence from penalties.
+- [x] Record review audit log.
 
 ## Deliverables
 
@@ -724,34 +724,34 @@ Build the complete mobile-first user experience.
 
 ## Public Pages
 
-- [ ] Landing page.
-- [ ] Registration page.
-- [ ] Login page.
+- [x] Landing page.
+- [x] Registration page.
+- [x] Login page.
 - [ ] Password reset.
 - [ ] Approval status page.
 
 ## Member Pages
 
-- [ ] Dashboard.
-- [ ] Active attendance event.
-- [ ] Location permission flow.
-- [ ] Check-in confirmation.
-- [ ] Attendance history.
-- [ ] Absence request form.
+- [x] Dashboard.
+- [x] Active attendance event.
+- [x] Location permission flow.
+- [x] Check-in confirmation.
+- [x] Attendance history.
+- [x] Absence request form.
 - [ ] Individual leaderboard.
 - [ ] Department leaderboard.
-- [ ] Profile page.
+- [x] Profile page.
 
 ## Admin Pages
 
 - [x] Admin dashboard.
-- [ ] Pending registrations.
-- [ ] Member management.
-- [ ] Department management.
-- [ ] Event management.
-- [ ] Live event attendance.
-- [ ] Manual attendance.
-- [ ] Absence review.
+- [x] Pending registrations.
+- [x] Member management.
+- [x] Department management.
+- [x] Event management.
+- [x] Live event attendance.
+- [x] Manual attendance.
+- [x] Absence review.
 - [ ] Reports.
 - [ ] Audit logs for Super Administrator.
 

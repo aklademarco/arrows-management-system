@@ -43,6 +43,15 @@ export class AbsenceRequestsController {
     };
   }
 
+  @Get('reviewable')
+  async listReviewable(@AuthenticatedUser() user: AuthenticatedPrincipal) {
+    return {
+      success: true,
+      message: 'Reviewable absence requests retrieved.',
+      data: await this.service.listReviewable(user),
+    };
+  }
+
   @Patch(':requestId/review')
   async review(
     @Param('requestId', ParseUUIDPipe) requestId: string,

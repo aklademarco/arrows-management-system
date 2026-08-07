@@ -27,10 +27,6 @@ import { eligibleEventCondition } from '../events/event-eligibility';
 // absence must never overwrite one of these.
 const PROTECTED_STATUSES = ['EARLY', 'ON_TIME', 'LATE'] as const;
 
-function todayString(now: Date): string {
-  return now.toISOString().slice(0, 10);
-}
-
 @Injectable()
 export class AbsenceRequestsRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
@@ -73,7 +69,10 @@ export class AbsenceRequestsRepository {
         .select({ id: events.id, status: events.status })
         .from(events)
         .where(
-          and(eq(events.id, input.eventId), eq(events.churchId, input.churchId)),
+          and(
+            eq(events.id, input.eventId),
+            eq(events.churchId, input.churchId),
+          ),
         )
         .limit(1);
       if (!event) throw new NotFoundException('Event not found.');
@@ -139,6 +138,39 @@ export class AbsenceRequestsRepository {
       .limit(100);
   }
 
+  async listForChurch(churchId: string) {
+    return this.database
+      .select({
+        id: absenceRequests.id,
+        memberId: absenceRequests.memberId,
+        memberFirstName: memberProfiles.firstName,
+        memberLastName: memberProfiles.lastName,
+        eventId: absenceRequests.eventId,
+        eventName: events.name,
+        eventStartsAt: events.startsAt,
+        startsOn: absenceRequests.startsOn,
+        endsOn: absenceRequests.endsOn,
+        reason: absenceRequests.reason,
+        details: absenceRequests.details,
+        status: absenceRequests.status,
+        reviewNote: absenceRequests.reviewNote,
+        createdAt: absenceRequests.createdAt,
+      })
+      .from(absenceRequests)
+      .innerJoin(
+        memberProfiles,
+        eq(memberProfiles.id, absenceRequests.memberId),
+      )
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .leftJoin(events, eq(events.id, absenceRequests.eventId))
+      .where(eq(users.churchId, churchId))
+      .orderBy(
+        sql`case when ${absenceRequests.status} in ('PENDING', 'NEEDS_CLARIFICATION') then 0 else 1 end`,
+        sql`${absenceRequests.createdAt} desc`,
+      )
+      .limit(100);
+  }
+
   /**
    * Load a request within the reviewer's church. Returns null when the request
    * does not exist or belongs to another church, which the service maps to a
@@ -161,7 +193,9 @@ export class AbsenceRequestsRepository {
         eq(memberProfiles.id, absenceRequests.memberId),
       )
       .innerJoin(users, eq(users.id, memberProfiles.userId))
-      .where(and(eq(absenceRequests.id, requestId), eq(users.churchId, churchId)))
+      .where(
+        and(eq(absenceRequests.id, requestId), eq(users.churchId, churchId)),
+      )
       .limit(1);
     return request ?? null;
   }
@@ -179,7 +213,10 @@ export class AbsenceRequestsRepository {
         memberProfiles,
         eq(memberProfiles.id, departmentLeaders.memberId),
       )
-      .innerJoin(departments, eq(departments.id, departmentLeaders.departmentId))
+      .innerJoin(
+        departments,
+        eq(departments.id, departmentLeaders.departmentId),
+      )
       .where(
         and(
           eq(memberProfiles.userId, userId),
