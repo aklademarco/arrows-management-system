@@ -1,0 +1,179 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { and, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { DATABASE, type Database } from '../database/database.module';
+import {
+  departmentLeaders,
+  departmentMembers,
+  departments,
+  memberProfiles,
+  ministryAttachments,
+  ministryContent,
+  notifications,
+  users,
+} from '../database/schema';
+import type { CreatePublicityFlyerDto } from './dto/create-publicity-flyer.dto';
+
+@Injectable()
+export class MinistryContentRepository {
+  constructor(@Inject(DATABASE) private readonly database: Database) {}
+
+  private activeMembership(today: string) {
+    return and(
+      lte(departmentMembers.joinedAt, today),
+      or(isNull(departmentMembers.leftAt), gt(departmentMembers.leftAt, today)),
+    );
+  }
+
+  async getAccess(userId: string, churchId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    const [publicityLeadership, [mediaDepartment]] = await Promise.all([
+      this.database
+        .select({ id: departmentLeaders.id })
+        .from(departmentLeaders)
+        .innerJoin(
+          memberProfiles,
+          eq(memberProfiles.id, departmentLeaders.memberId),
+        )
+        .innerJoin(
+          departments,
+          eq(departments.id, departmentLeaders.departmentId),
+        )
+        .where(
+          and(
+            eq(memberProfiles.userId, userId),
+            eq(departments.churchId, churchId),
+            sql`lower(${departments.name}) like '%publicity%'`,
+            isNull(departmentLeaders.revokedAt),
+            lte(departmentLeaders.startsAt, today),
+            or(
+              isNull(departmentLeaders.endsAt),
+              sql`${departmentLeaders.endsAt} >= ${today}`,
+            ),
+          ),
+        )
+        .limit(1),
+      this.database
+        .select({ id: departments.id, name: departments.name })
+        .from(departments)
+        .where(
+          and(
+            eq(departments.churchId, churchId),
+            eq(departments.isActive, true),
+            sql`lower(${departments.name}) like '%media%'`,
+          ),
+        )
+        .limit(1),
+    ]);
+    return { canSubmitFlyer: publicityLeadership.length > 0, mediaDepartment };
+  }
+
+  async createFlyer(
+    input: CreatePublicityFlyerDto & {
+      churchId: string;
+      senderUserId: string;
+      targetDepartmentId: string;
+    },
+  ) {
+    const today = new Date().toISOString().slice(0, 10);
+    return this.database.transaction(async (transaction) => {
+      const [content] = await transaction
+        .insert(ministryContent)
+        .values({
+          churchId: input.churchId,
+          senderUserId: input.senderUserId,
+          eventId: input.eventId,
+          targetDepartmentId: input.targetDepartmentId,
+          type: 'PUBLICITY_FLYER',
+          status: 'SENT',
+          title: input.title,
+          instructions: input.instructions,
+          deadlineAt: input.deadlineAt ? new Date(input.deadlineAt) : undefined,
+          sentAt: new Date(),
+        })
+        .returning();
+      const [attachment] = await transaction
+        .insert(ministryAttachments)
+        .values({
+          contentId: content.id,
+          cloudinaryUrl: input.cloudinaryUrl,
+          cloudinaryPublicId: input.cloudinaryPublicId,
+          fileName: input.fileName,
+          mimeType: input.mimeType,
+        })
+        .returning();
+      const recipients = await transaction
+        .selectDistinct({ userId: memberProfiles.userId })
+        .from(departmentMembers)
+        .innerJoin(
+          memberProfiles,
+          eq(memberProfiles.id, departmentMembers.memberId),
+        )
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(departmentMembers.departmentId, input.targetDepartmentId),
+            this.activeMembership(today),
+            eq(users.accountStatus, 'ACTIVE'),
+          ),
+        );
+      if (recipients.length > 0)
+        await transaction.insert(notifications).values(
+          recipients.map(({ userId }) => ({
+            churchId: input.churchId,
+            recipientUserId: userId,
+            actorUserId: input.senderUserId,
+            type: 'PUBLICITY_FLYER',
+            title: `New flyer: ${input.title}`,
+            body:
+              input.instructions ||
+              'A new announcement flyer is ready for the Media team.',
+            link: '/member/media-hub',
+            ministryContentId: content.id,
+          })),
+        );
+      return { ...content, attachment, recipientCount: recipients.length };
+    });
+  }
+
+  async list(userId: string, churchId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    const memberships = this.database
+      .select({ departmentId: departmentMembers.departmentId })
+      .from(departmentMembers)
+      .innerJoin(
+        memberProfiles,
+        eq(memberProfiles.id, departmentMembers.memberId),
+      )
+      .where(
+        and(eq(memberProfiles.userId, userId), this.activeMembership(today)),
+      );
+    return this.database
+      .select({
+        id: ministryContent.id,
+        title: ministryContent.title,
+        instructions: ministryContent.instructions,
+        status: ministryContent.status,
+        deadlineAt: ministryContent.deadlineAt,
+        sentAt: ministryContent.sentAt,
+        createdAt: ministryContent.createdAt,
+        attachmentUrl: ministryAttachments.cloudinaryUrl,
+        fileName: ministryAttachments.fileName,
+      })
+      .from(ministryContent)
+      .innerJoin(
+        ministryAttachments,
+        eq(ministryAttachments.contentId, ministryContent.id),
+      )
+      .where(
+        and(
+          eq(ministryContent.churchId, churchId),
+          eq(ministryContent.type, 'PUBLICITY_FLYER'),
+          or(
+            eq(ministryContent.senderUserId, userId),
+            inArray(ministryContent.targetDepartmentId, memberships),
+          ),
+        ),
+      )
+      .orderBy(desc(ministryContent.createdAt));
+  }
+}

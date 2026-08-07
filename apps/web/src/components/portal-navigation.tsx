@@ -14,6 +14,7 @@ import {
   FiUser,
   FiUserCheck,
   FiUsers,
+  FiImage,
 } from "react-icons/fi";
 
 const memberNavigation = [
@@ -21,6 +22,7 @@ const memberNavigation = [
   { href: "/member/attendance", label: "Activity", icon: FiCalendar },
   { href: "/member/absences", label: "Absences", icon: FiFileText },
   { href: "/member/leaderboard", label: "Ranks", icon: FiAward },
+  { href: "/member/media-hub", label: "Media hub", icon: FiImage },
   { href: "/member/profile", label: "Profile", icon: FiUser },
 ];
 
@@ -52,7 +54,9 @@ export function PortalNavigation({
   const pathname = usePathname();
   const navigation =
     portal === "member"
-      ? memberNavigation
+      ? mobile
+        ? memberNavigation.filter((item) => item.href !== "/member/media-hub")
+        : memberNavigation
       : showAuditLogs
         ? [...adminNavigation, superAdminNavigation]
         : adminNavigation;
