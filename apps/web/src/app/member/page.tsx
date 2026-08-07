@@ -2,47 +2,12 @@ import {
   FiCalendar,
   FiCheckCircle,
   FiClock,
-  FiLogOut,
   FiMapPin,
 } from "react-icons/fi";
-import { memberLogout } from "../login/actions";
-import { getMemberProfile } from "./member-api";
 import { getMemberResource } from "./member-api";
+import { getMemberProfile } from "./member-api";
+import type { ActiveEvent, Attendance, MemberProfile, UpcomingEvent } from "./member-types";
 import CheckInButton from "./check-in-button";
-
-type MemberProfile = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  membershipStatus: string;
-};
-type ActiveEvent = {
-  id: string;
-  name: string;
-  locationName: string | null;
-  attendanceClosesAt: string;
-};
-type UpcomingEvent = {
-  id: string;
-  name: string;
-  startsAt: string;
-  endsAt: string;
-  attendanceOpensAt: string;
-  locationName: string | null;
-};
-type Attendance = {
-  id: string;
-  eventId: string;
-  eventName: string;
-  eventStartsAt: string;
-  locationName: string | null;
-  status: string;
-  method: string;
-  checkedInAt: string | null;
-  distanceMeters: number | null;
-  accuracyMeters: number | null;
-  pointsAwarded: number;
-};
 
 export default async function MemberPage() {
   const [member, events, upcomingEvents, attendanceHistory] = await Promise.all(
@@ -55,20 +20,6 @@ export default async function MemberPage() {
   );
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <div>
-            <p className="font-bold text-[#240046]">ACMS</p>
-            <p className="text-sm text-slate-500">Member portal</p>
-          </div>
-          <form action={memberLogout}>
-            <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-600">
-              <FiLogOut aria-hidden="true" />
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
       <div className="mx-auto max-w-6xl px-5 py-10">
         <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">
           Welcome back

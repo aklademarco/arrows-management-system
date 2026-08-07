@@ -80,6 +80,7 @@ export class MembersRepository {
         otherNames: memberProfiles.otherNames,
         membershipStatus: memberProfiles.membershipStatus,
         email: users.email,
+        phone: users.phone,
       })
       .from(memberProfiles)
       .innerJoin(users, eq(users.id, memberProfiles.userId))
