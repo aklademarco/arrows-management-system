@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { type ReactNode, useState, useTransition } from "react";
 import { FiCamera, FiTrash2 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -40,8 +40,10 @@ async function optimizeCover(file: File): Promise<string> {
 
 export function CoverPhotoPicker({
   currentCover,
+  children,
 }: {
   currentCover?: string | null;
+  children: ReactNode;
 }) {
   const [preview, setPreview] = useState(currentCover ?? null);
   const [message, setMessage] = useState<string | null>(null);
@@ -83,8 +85,8 @@ export function CoverPhotoPicker({
     });
 
   return (
-    <section className="mt-5 overflow-hidden rounded-[2rem] border border-purple-100 bg-white shadow-[0_18px_45px_rgba(70,40,100,0.07)]">
-      <div className="relative h-48 bg-gradient-to-br from-[#4c1677] to-[#8b3bc0]">
+    <section className="mt-7 overflow-hidden rounded-[2rem] border border-purple-100 bg-white shadow-[0_18px_45px_rgba(70,40,100,0.07)]">
+      <div className="relative h-52 bg-gradient-to-br from-[#7e32b5] to-[#b56ae0] sm:h-64">
         {preview ? (
           <Image
             alt="Your cover preview"
@@ -95,9 +97,9 @@ export function CoverPhotoPicker({
             unoptimized
           />
         ) : null}
-        <div className="absolute inset-0 bg-purple-950/25" />
-        <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-extrabold text-slate-900 shadow-lg">
+        <div className="absolute inset-0 bg-black/10" />
+        <div className="absolute right-4 top-4 flex flex-wrap justify-end gap-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-extrabold text-white shadow-lg backdrop-blur">
             <FiCamera /> {pending ? "Saving…" : "Choose cover"}
             <input
               accept="image/jpeg,image/png,image/webp"
@@ -123,7 +125,7 @@ export function CoverPhotoPicker({
           </label>
           {preview ? (
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-black/55 px-4 py-2 text-sm font-extrabold text-white backdrop-blur"
+              className="inline-flex items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-extrabold text-white backdrop-blur"
               disabled={pending}
               onClick={remove}
               type="button"
@@ -133,13 +135,10 @@ export function CoverPhotoPicker({
           ) : null}
         </div>
       </div>
-      <div className="p-5">
-        <h2 className="font-extrabold">Profile cover</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Choose a wide photo. It will be cropped and optimized automatically.
-        </p>
+      <div className="relative px-6 pb-6 sm:px-8 sm:pb-8">
+        {children}
         {message ? (
-          <p className="mt-2 text-sm font-bold text-[#6b21a8]" role="status">
+          <p className="mt-3 text-sm font-bold text-[#6b21a8]" role="status">
             {message}
           </p>
         ) : null}

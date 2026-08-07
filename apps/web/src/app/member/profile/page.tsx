@@ -48,13 +48,13 @@ export default async function MemberProfilePage({
           </p>
         ) : null}
 
-        <section className="mt-7 rounded-[2rem] border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)] sm:p-8">
+        <CoverPhotoPicker currentCover={member.coverPhotoUrl}>
           <ProfilePhotoPicker
+            compact
             currentPhoto={member.profilePhotoUrl}
             name={memberName}
           />
-        </section>
-        <CoverPhotoPicker currentCover={member.coverPhotoUrl} />
+        </CoverPhotoPicker>
 
         <form
           action={updateOwnProfile}

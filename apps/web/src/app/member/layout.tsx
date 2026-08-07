@@ -57,43 +57,40 @@ export default async function MemberLayout({
             </span>
           </Link>
 
-          <div className="relative isolate mt-8 overflow-hidden rounded-3xl p-5 text-white shadow-[0_18px_45px_rgba(36,0,70,0.18)]">
-            {member.coverPhotoUrl ? (
-              <Image
-                alt=""
-                aria-hidden="true"
-                className="-z-20 object-cover object-center"
-                fill
-                sizes="288px"
-                src={member.coverPhotoUrl}
-                unoptimized
-              />
-            ) : (
-              <span className="absolute inset-0 -z-20 bg-gradient-to-br from-[#4c1677] to-[#8b3bc0]" />
-            )}
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgba(70,18,110,0.78),rgba(107,33,168,0.64))]"
-            />
-            <div className="flex items-center gap-3">
-              <ProfileAvatar
-                imageUrl={member.profilePhotoUrl}
-                name={memberName}
-                size="md"
-              />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold">{memberName}</p>
-                <p className="text-xs capitalize text-purple-200">
-                  {member.membershipStatus.toLowerCase()} member
-                </p>
-              </div>
+          <div className="mt-7 overflow-hidden rounded-3xl border border-purple-100 bg-white shadow-[0_14px_35px_rgba(36,0,70,0.1)]">
+            <div className="relative h-24 overflow-hidden bg-gradient-to-br from-[#7e32b5] to-[#b56ae0]">
+              {member.coverPhotoUrl ? (
+                <Image
+                  alt={`${memberName} cover photo`}
+                  className="object-cover object-center"
+                  fill
+                  sizes="248px"
+                  src={member.coverPhotoUrl}
+                  unoptimized
+                />
+              ) : null}
             </div>
-            <Link
-              className="mt-4 inline-flex text-xs font-bold text-lime-300 hover:text-white"
-              href="/member/profile"
-            >
-              View profile →
-            </Link>
+            <div className="px-5 pb-5">
+              <div className="-mt-7 w-fit rounded-full bg-white p-1">
+                <ProfileAvatar
+                  imageUrl={member.profilePhotoUrl}
+                  name={memberName}
+                  size="lg"
+                />
+              </div>
+              <p className="mt-3 truncate text-sm font-black text-slate-950">
+                {memberName}
+              </p>
+              <p className="mt-0.5 text-xs font-semibold capitalize text-slate-400">
+                {member.membershipStatus.toLowerCase()} member
+              </p>
+              <Link
+                className="mt-3 inline-flex text-xs font-extrabold text-[#6b21a8] hover:text-[#240046]"
+                href="/member/profile"
+              >
+                View profile →
+              </Link>
+            </div>
           </div>
 
           <div className="mt-7">

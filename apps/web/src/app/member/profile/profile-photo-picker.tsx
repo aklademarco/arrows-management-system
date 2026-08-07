@@ -35,9 +35,11 @@ async function optimizeProfile(file: File): Promise<string> {
 export function ProfilePhotoPicker({
   name,
   currentPhoto,
+  compact = false,
 }: {
   name: string;
   currentPhoto?: string | null;
+  compact?: boolean;
 }) {
   const [preview, setPreview] = useState(currentPhoto ?? null),
     [message, setMessage] = useState<string | null>(null),
@@ -75,59 +77,64 @@ export function ProfilePhotoPicker({
         );
       }
     });
+  const choosePhoto = async (file?: File) => {
+    if (!file) return;
+    try {
+      setMessage("Preparing photo…");
+      upload(await optimizeProfile(file));
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Photo could not be processed.",
+      );
+    }
+  };
   return (
-    <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-      <div className="relative">
+    <div className={compact ? "relative flex flex-col sm:flex-row sm:items-end sm:justify-between" : "flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left"}>
+      <div className={compact ? "relative -mt-14 w-fit rounded-full bg-white p-1.5 sm:-mt-16" : "relative"}>
         {preview ? (
           <Image
             alt={`${name} profile photo`}
-            className="size-24 rounded-full object-cover ring-4 ring-purple-100"
-            height={96}
+            className={compact ? "size-28 rounded-full object-cover ring-4 ring-white sm:size-32" : "size-24 rounded-full object-cover ring-4 ring-purple-100"}
+            height={128}
             src={preview}
             unoptimized
-            width={96}
+            width={128}
           />
         ) : (
           <ProfileAvatar name={name} size="xl" />
         )}
-        <span className="absolute bottom-0 right-0 grid size-8 place-items-center rounded-full border-2 border-white bg-slate-950 text-white">
-          <FiCamera />
-        </span>
+        <label
+          aria-label="Change profile photo"
+          className="absolute bottom-0 right-0 grid size-9 cursor-pointer place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-md transition hover:scale-105 hover:bg-[#6b21a8]"
+          title="Change profile photo"
+        >
+          <FiCamera aria-hidden="true" />
+          <input
+            accept="image/png,image/jpeg,image/webp"
+            className="sr-only"
+            disabled={pending}
+            onChange={async (event) => {
+              await choosePhoto(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+            type="file"
+          />
+        </label>
       </div>
-      <div className="flex-1">
-        <p className="font-extrabold">Profile photo</p>
-        <p className="mt-1 text-sm leading-6 text-slate-500">
+      <div className={compact ? "mt-4 sm:ml-5 sm:mt-4 sm:flex sm:flex-1 sm:items-center sm:justify-between" : "flex-1"}>
+        <div className={compact ? "hidden" : ""}>
+          <p className="font-extrabold">Profile photo</p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">
           Choose a clear square photo. It is cropped automatically and stored
           securely in Cloudinary.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <label className="inline-flex cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700">
-            {pending ? "Saving…" : "Choose photo"}
-            <input
-              accept="image/png,image/jpeg,image/webp"
-              className="sr-only"
-              disabled={pending}
-              onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                try {
-                  setMessage("Preparing photo…");
-                  upload(await optimizeProfile(file));
-                } catch (error) {
-                  setMessage(
-                    error instanceof Error
-                      ? error.message
-                      : "Photo could not be processed.",
-                  );
-                }
-                event.target.value = "";
-              }}
-              type="file"
-            />
-          </label>
+          </p>
+        </div>
+        <div className={compact ? "flex flex-wrap gap-2 sm:ml-auto" : "mt-3 flex flex-wrap gap-2"}>
           {preview ? (
             <button
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-red-600"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-red-600"
               disabled={pending}
               onClick={remove}
               type="button"
