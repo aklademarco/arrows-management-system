@@ -135,12 +135,43 @@ export class MembersRepository {
     });
   }
 
-  async updateProfilePhoto(input: { userId: string; churchId: string; profilePhotoUrl: string | null }) {
+  async updateProfilePhoto(input: {
+    userId: string;
+    churchId: string;
+    profilePhotoUrl: string | null;
+  }) {
     return this.database.transaction(async (transaction) => {
-      const [member] = await transaction.select({ id: memberProfiles.id, profilePhotoUrl: memberProfiles.profilePhotoUrl }).from(memberProfiles).innerJoin(users, eq(users.id, memberProfiles.userId)).where(and(eq(users.id, input.userId), eq(users.churchId, input.churchId))).limit(1).for('update');
+      const [member] = await transaction
+        .select({
+          id: memberProfiles.id,
+          profilePhotoUrl: memberProfiles.profilePhotoUrl,
+        })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(eq(users.id, input.userId), eq(users.churchId, input.churchId)),
+        )
+        .limit(1)
+        .for('update');
       if (!member) throw new NotFoundException('Member profile not found.');
-      const [updated] = await transaction.update(memberProfiles).set({ profilePhotoUrl: input.profilePhotoUrl, updatedAt: new Date() }).where(eq(memberProfiles.id, member.id)).returning({ id: memberProfiles.id, profilePhotoUrl: memberProfiles.profilePhotoUrl });
-      await transaction.insert(auditLogs).values({ churchId: input.churchId, actorUserId: input.userId, action: input.profilePhotoUrl ? 'MEMBER_PROFILE_PHOTO_UPDATED' : 'MEMBER_PROFILE_PHOTO_REMOVED', entityType: 'MEMBER_PROFILE', entityId: member.id, metadata: { hadPreviousPhoto: member.profilePhotoUrl !== null } });
+      const [updated] = await transaction
+        .update(memberProfiles)
+        .set({ profilePhotoUrl: input.profilePhotoUrl, updatedAt: new Date() })
+        .where(eq(memberProfiles.id, member.id))
+        .returning({
+          id: memberProfiles.id,
+          profilePhotoUrl: memberProfiles.profilePhotoUrl,
+        });
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.userId,
+        action: input.profilePhotoUrl
+          ? 'MEMBER_PROFILE_PHOTO_UPDATED'
+          : 'MEMBER_PROFILE_PHOTO_REMOVED',
+        entityType: 'MEMBER_PROFILE',
+        entityId: member.id,
+        metadata: { hadPreviousPhoto: member.profilePhotoUrl !== null },
+      });
       return updated;
     });
   }

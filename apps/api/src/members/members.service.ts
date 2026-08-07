@@ -80,16 +80,28 @@ export class MembersService {
     });
   }
 
-  updateProfilePhoto(user: AuthenticatedPrincipal, profilePhotoUrl: string | null) {
+  updateProfilePhoto(
+    user: AuthenticatedPrincipal,
+    profilePhotoUrl: string | null,
+  ) {
     this.validateCloudinaryUrl(profilePhotoUrl);
-    return this.repository.updateProfilePhoto({ userId: user.id, churchId: user.churchId, profilePhotoUrl });
+    return this.repository.updateProfilePhoto({
+      userId: user.id,
+      churchId: user.churchId,
+      profilePhotoUrl,
+    });
   }
 
   private validateCloudinaryUrl(value: string | null) {
     if (!value) return;
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    if (!cloudName || !value.startsWith(`https://res.cloudinary.com/${cloudName}/image/upload/`))
-      throw new BadRequestException('Photo must be uploaded through the configured Cloudinary account.');
+    if (
+      !cloudName ||
+      !value.startsWith(`https://res.cloudinary.com/${cloudName}/image/upload/`)
+    )
+      throw new BadRequestException(
+        'Photo must be uploaded through the configured Cloudinary account.',
+      );
   }
 
   updateMember(input: {

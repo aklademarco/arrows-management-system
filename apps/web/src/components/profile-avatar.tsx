@@ -1,9 +1,11 @@
+import Image from "next/image";
 import { FiUser } from "react-icons/fi";
 
 type ProfileAvatarProps = {
   name?: string;
   size?: "sm" | "md" | "lg" | "xl";
   variant?: "member" | "admin";
+  imageUrl?: string | null;
 };
 
 const sizes = {
@@ -17,6 +19,7 @@ export function ProfileAvatar({
   name,
   size = "md",
   variant = "member",
+  imageUrl,
 }: ProfileAvatarProps) {
   const initials = name
     ?.split(/\s+/)
@@ -35,7 +38,18 @@ export function ProfileAvatar({
       className={`relative grid shrink-0 place-items-center rounded-full font-extrabold ring-4 ${sizes[size]} ${palette}`}
       role="img"
     >
-      {initials || <FiUser aria-hidden="true" />}
+      {imageUrl ? (
+        <Image
+          alt=""
+          className="rounded-full object-cover"
+          fill
+          sizes="96px"
+          src={imageUrl}
+          unoptimized
+        />
+      ) : (
+        initials || <FiUser aria-hidden="true" />
+      )}
       <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white bg-emerald-500" />
     </span>
   );

@@ -69,8 +69,17 @@ export class MembersController {
 
   @Patch('me/profile-photo')
   @UseGuards(AuthenticatedGuard)
-  async updateProfilePhoto(@Body() body: UpdateProfilePhotoDto, @AuthenticatedUser() user: AuthenticatedPrincipal) {
-    return { success: true, message: body.profilePhotoUrl ? 'Profile photo updated.' : 'Profile photo removed.', data: await this.service.updateProfilePhoto(user, body.profilePhotoUrl) };
+  async updateProfilePhoto(
+    @Body() body: UpdateProfilePhotoDto,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: body.profilePhotoUrl
+        ? 'Profile photo updated.'
+        : 'Profile photo removed.',
+      data: await this.service.updateProfilePhoto(user, body.profilePhotoUrl),
+    };
   }
 
   @Get()

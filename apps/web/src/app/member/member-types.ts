@@ -5,6 +5,7 @@ export type MemberProfile = {
   email: string;
   phone?: string | null;
   membershipStatus: string;
+  profilePhotoUrl?: string | null;
   coverPhotoUrl?: string | null;
 };
 

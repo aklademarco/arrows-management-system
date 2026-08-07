@@ -17,14 +17,24 @@ export default async function MemberLayout({
       <header className="sticky top-0 z-20 border-b border-purple-100/80 bg-[#f8f7fb]/90 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-5 py-3">
           <Link className="flex items-center gap-2" href="/member">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#6b21a8] font-black text-white">A</span>
+            <span className="grid size-9 place-items-center rounded-xl bg-[#6b21a8] font-black text-white">
+              A
+            </span>
             <span>
-              <span className="block text-sm font-black leading-none text-[#240046]">ACMS</span>
-              <span className="text-xs font-semibold text-slate-400">Your church rhythm</span>
+              <span className="block text-sm font-black leading-none text-[#240046]">
+                ACMS
+              </span>
+              <span className="text-xs font-semibold text-slate-400">
+                Your church rhythm
+              </span>
             </span>
           </Link>
           <Link aria-label="Open profile" href="/member/profile">
-            <ProfileAvatar name="Member" size="sm" />
+            <ProfileAvatar
+              imageUrl={member.profilePhotoUrl}
+              name={memberName}
+              size="sm"
+            />
           </Link>
         </div>
       </header>
@@ -32,37 +42,78 @@ export default async function MemberLayout({
       <div className="mx-auto flex max-w-[1500px]">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-purple-100 bg-white px-5 py-6 lg:flex">
           <Link className="flex items-center gap-3 px-2" href="/member">
-            <span className="grid size-11 place-items-center rounded-2xl bg-[#6b21a8] text-lg font-black text-white shadow-[0_8px_24px_rgba(107,33,168,0.25)]">A</span>
+            <span className="grid size-11 place-items-center rounded-2xl bg-[#6b21a8] text-lg font-black text-white shadow-[0_8px_24px_rgba(107,33,168,0.25)]">
+              A
+            </span>
             <span>
-              <span className="block font-black tracking-tight text-[#240046]">Arrows ACMS</span>
-              <span className="text-xs font-semibold text-slate-400">Member experience</span>
+              <span className="block font-black tracking-tight text-[#240046]">
+                Arrows ACMS
+              </span>
+              <span className="text-xs font-semibold text-slate-400">
+                Member experience
+              </span>
             </span>
           </Link>
 
           <div className="relative isolate mt-8 overflow-hidden rounded-3xl p-5 text-white shadow-[0_18px_45px_rgba(36,0,70,0.18)]">
-            {member.coverPhotoUrl ? <Image alt="" aria-hidden="true" className="-z-20 object-cover object-center" fill sizes="288px" src={member.coverPhotoUrl} unoptimized /> : <span className="absolute inset-0 -z-20 bg-gradient-to-br from-[#4c1677] to-[#8b3bc0]" />}
-            <span aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgba(70,18,110,0.78),rgba(107,33,168,0.64))]" />
+            {member.coverPhotoUrl ? (
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="-z-20 object-cover object-center"
+                fill
+                sizes="288px"
+                src={member.coverPhotoUrl}
+                unoptimized
+              />
+            ) : (
+              <span className="absolute inset-0 -z-20 bg-gradient-to-br from-[#4c1677] to-[#8b3bc0]" />
+            )}
+            <span
+              aria-hidden="true"
+              className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgba(70,18,110,0.78),rgba(107,33,168,0.64))]"
+            />
             <div className="flex items-center gap-3">
-              <ProfileAvatar name={memberName} size="md" />
+              <ProfileAvatar
+                imageUrl={member.profilePhotoUrl}
+                name={memberName}
+                size="md"
+              />
               <div className="min-w-0">
                 <p className="truncate text-sm font-extrabold">{memberName}</p>
-                <p className="text-xs capitalize text-purple-200">{member.membershipStatus.toLowerCase()} member</p>
+                <p className="text-xs capitalize text-purple-200">
+                  {member.membershipStatus.toLowerCase()} member
+                </p>
               </div>
             </div>
-            <Link className="mt-4 inline-flex text-xs font-bold text-lime-300 hover:text-white" href="/member/profile">View profile →</Link>
+            <Link
+              className="mt-4 inline-flex text-xs font-bold text-lime-300 hover:text-white"
+              href="/member/profile"
+            >
+              View profile →
+            </Link>
           </div>
 
           <div className="mt-7">
-            <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">Today</p>
+            <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+              Today
+            </p>
             <PortalNavigation portal="member" />
           </div>
 
           <div className="mt-auto rounded-2xl border border-purple-100 bg-purple-50/70 p-4">
-            <p className="text-sm font-extrabold text-[#5b148d]">Stay connected</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Check in, review your activity, and keep your profile current.</p>
+            <p className="text-sm font-extrabold text-[#5b148d]">
+              Stay connected
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Check in, review your activity, and keep your profile current.
+            </p>
           </div>
           <form action={memberLogout} className="mt-4">
-            <button className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-950" type="submit">
+            <button
+              className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+              type="submit"
+            >
               <FiLogOut aria-hidden="true" /> Sign out
             </button>
           </form>

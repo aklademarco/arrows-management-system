@@ -90,7 +90,11 @@ export default async function MemberPage() {
             className="hidden items-center gap-3 rounded-2xl border border-purple-100 bg-white p-2 pr-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:flex"
             href="/member/profile"
           >
-            <ProfileAvatar name={memberName} size="md" />
+            <ProfileAvatar
+              imageUrl={member.profilePhotoUrl}
+              name={memberName}
+              size="md"
+            />
             <span>
               <span className="block text-sm font-extrabold">{memberName}</span>
               <span className="block text-xs font-semibold capitalize text-slate-400">
