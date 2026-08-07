@@ -694,14 +694,14 @@ Provide useful operational reporting.
 - [x] Attendance summary.
 - [x] Attendance by event.
 - [x] Attendance by member.
-- [ ] Attendance by department.
-- [ ] Punctuality report.
-- [ ] Repeated absence report.
-- [ ] Manual attendance report.
-- [ ] Pending registration report.
+- [x] Attendance by department.
+- [x] Punctuality report.
+- [x] Repeated absence report.
+- [x] Manual attendance report.
+- [x] Pending registration report.
 - [x] Date filtering.
 - [x] Department filtering.
-- [ ] CSV export.
+- [x] CSV export.
 - [ ] Department leader report restrictions.
 
 ## Deliverables

@@ -62,6 +62,54 @@ describe('ReportsService', () => {
           punctualityStatus: null,
         },
       ]),
+      departmentAttendance: jest.fn().mockResolvedValue([
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'one',
+          memberId: 'm1',
+          status: 'ON_TIME',
+          method: 'GEOLOCATION',
+          punctualityStatus: 'ON_TIME',
+        },
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'one',
+          memberId: 'm2',
+          status: 'LATE',
+          method: 'MANUAL',
+          punctualityStatus: 'LATE',
+        },
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'one',
+          memberId: 'm3',
+          status: 'ABSENT',
+          method: 'SYSTEM',
+          punctualityStatus: null,
+        },
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'one',
+          memberId: 'm4',
+          status: 'EXCUSED',
+          method: 'SYSTEM',
+          punctualityStatus: null,
+        },
+      ]),
+      pendingRegistrations: jest.fn().mockResolvedValue([
+        {
+          userId: 'pending',
+          displayName: 'Adwoa Boateng',
+          email: 'adwoa@example.com',
+          requestedDepartmentName: 'Media',
+          emailVerifiedAt: new Date('2026-08-01T12:00:00Z'),
+          registeredAt: new Date('2026-08-01T10:00:00Z'),
+        },
+      ]),
     } as unknown as ReportsRepository;
     const result = await new ReportsService(repository).attendanceSummary(
       { from: '2026-08-01', to: '2026-08-31' },
@@ -94,11 +142,27 @@ describe('ReportsService', () => {
         }),
       ]),
     );
+    expect(result.departments[0]).toMatchObject({
+      departmentName: 'Media',
+      events: 1,
+      attendanceRate: 66.67,
+      punctualityRate: 50,
+    });
+    expect(result.manualAttendance[0]).toMatchObject({
+      displayName: 'Kojo Asare',
+      eventName: 'Service',
+    });
+    expect(result.pendingRegistrations[0]).toMatchObject({
+      displayName: 'Adwoa Boateng',
+      emailVerified: true,
+    });
   });
 
   it('rejects report ranges longer than one year', async () => {
     const repository = {
       attendance: jest.fn(),
+      departmentAttendance: jest.fn(),
+      pendingRegistrations: jest.fn(),
     } as unknown as ReportsRepository;
     await expect(
       new ReportsService(repository).attendanceSummary(

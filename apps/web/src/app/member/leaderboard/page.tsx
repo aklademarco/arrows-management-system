@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { FiAward, FiFilter, FiStar, FiTrendingUp } from "react-icons/fi";
+import { FiAward, FiFilter, FiStar } from "react-icons/fi";
+import { MemberStreak } from "@/components/member-streak";
 import { getMemberResource } from "../member-api";
 
 type LeaderboardItem = {
@@ -148,10 +149,12 @@ export default async function LeaderboardPage({
                     <span>{item.attendanceRate}% attendance</span>
                     <span>{item.punctualityRate ?? "—"}% punctuality</span>
                   </div>
-                  <div className="mt-2 flex gap-3 text-xs font-extrabold">
-                    <span className="inline-flex items-center gap-1 text-orange-600">
-                      <FiTrendingUp /> {item.currentAttendanceStreak} streak
-                    </span>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-extrabold">
+                    <MemberStreak
+                      compact
+                      current={item.currentAttendanceStreak}
+                      longest={item.longestAttendanceStreak}
+                    />
                     <span className="inline-flex items-center gap-1 text-[#6b21a8]">
                       <FiStar /> {item.secondaryPoints} pts
                     </span>

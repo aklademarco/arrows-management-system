@@ -32,12 +32,17 @@ export class ReportsService {
     admin: AdminPrincipal,
   ) {
     const range = reportRange(query);
-    const rows = await this.repository.attendance({
+    const input = {
       churchId: admin.churchId,
       startsAt: range.start,
       endsAt: range.end,
       departmentId: query.departmentId,
-    });
+    };
+    const [rows, departmentRows, pendingRegistrations] = await Promise.all([
+      this.repository.attendance(input),
+      this.repository.departmentAttendance(input),
+      this.repository.pendingRegistrations(admin.churchId),
+    ]);
     const scored = rows.filter((row) => row.status !== 'EXCUSED');
     const attended = scored.filter((row) => attendedStatuses.has(row.status));
     const punctual = attended.filter(
@@ -105,6 +110,40 @@ export class ReportsService {
       if (row.method === 'MANUAL') member.manual += 1;
       members.set(row.memberId, member);
     }
+    const departments = new Map<
+      string,
+      {
+        departmentId: string;
+        departmentName: string;
+        records: number;
+        attended: number;
+        absent: number;
+        excused: number;
+        punctual: number;
+        events: Set<string>;
+      }
+    >();
+    for (const row of departmentRows) {
+      const department = departments.get(row.departmentId) ?? {
+        departmentId: row.departmentId,
+        departmentName: row.departmentName,
+        records: 0,
+        attended: 0,
+        absent: 0,
+        excused: 0,
+        punctual: 0,
+        events: new Set<string>(),
+      };
+      department.records += 1;
+      department.events.add(row.eventId);
+      if (attendedStatuses.has(row.status)) {
+        department.attended += 1;
+        if ((row.punctualityStatus ?? row.status) !== 'LATE')
+          department.punctual += 1;
+      } else if (row.status === 'ABSENT') department.absent += 1;
+      else if (row.status === 'EXCUSED') department.excused += 1;
+      departments.set(row.departmentId, department);
+    }
     return {
       from: range.from,
       to: range.to,
@@ -143,6 +182,96 @@ export class ReportsService {
             b.absent - a.absent ||
             a.displayName.localeCompare(b.displayName),
         ),
+      departments: [...departments.values()]
+        .map((department) => {
+          const expected = department.records - department.excused;
+          return {
+            departmentId: department.departmentId,
+            departmentName: department.departmentName,
+            events: department.events.size,
+            records: department.records,
+            attended: department.attended,
+            absent: department.absent,
+            excused: department.excused,
+            attendanceRate: expected
+              ? round((department.attended / expected) * 100)
+              : 0,
+            punctualityRate: department.attended
+              ? round((department.punctual / department.attended) * 100)
+              : 0,
+          };
+        })
+        .sort(
+          (a, b) =>
+            b.attendanceRate - a.attendanceRate ||
+            b.punctualityRate - a.punctualityRate ||
+            a.departmentName.localeCompare(b.departmentName),
+        ),
+      repeatedAbsences: [...members.values()]
+        .filter((member) => member.absent >= 2)
+        .sort(
+          (a, b) =>
+            b.absent - a.absent || a.displayName.localeCompare(b.displayName),
+        )
+        .map((member) => ({
+          memberId: member.memberId,
+          displayName: member.displayName,
+          absences: member.absent,
+          attended: member.attended,
+          excused: member.excused,
+        })),
+      manualAttendance: rows
+        .filter((row) => row.method === 'MANUAL')
+        .map((row) => ({
+          attendanceId: row.attendanceId,
+          memberId: row.memberId,
+          displayName: `${row.firstName} ${row.lastName}`,
+          eventName: row.eventName,
+          eventStartsAt: row.eventStartsAt.toISOString(),
+          status: row.status,
+          checkedInAt: row.checkedInAt?.toISOString() ?? null,
+          reason: row.manualReason,
+        })),
+      pendingRegistrations: pendingRegistrations.map((registration) => ({
+        ...registration,
+        emailVerified: registration.emailVerifiedAt !== null,
+        emailVerifiedAt: registration.emailVerifiedAt?.toISOString() ?? null,
+        registeredAt: registration.registeredAt.toISOString(),
+      })),
+    };
+  }
+
+  async attendanceCsv(query: AttendanceReportQueryDto, admin: AdminPrincipal) {
+    const report = await this.attendanceSummary(query, admin);
+    const escape = (value: string | number | null) => {
+      const text = String(value ?? '');
+      return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    };
+    const lines = [
+      [
+        'Member',
+        'Records',
+        'Attended',
+        'Absent',
+        'Excused',
+        'Attendance rate',
+        'Punctuality rate',
+        'Manual',
+      ],
+      ...report.members.map((member) => [
+        member.displayName,
+        member.records,
+        member.attended,
+        member.absent,
+        member.excused,
+        member.attendanceRate,
+        member.punctualityRate,
+        member.manual,
+      ]),
+    ];
+    return {
+      filename: `attendance-${report.from}-to-${report.to}.csv`,
+      content: lines.map((line) => line.map(escape).join(',')).join('\n'),
     };
   }
 }
