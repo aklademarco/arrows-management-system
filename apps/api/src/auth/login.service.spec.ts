@@ -1,11 +1,11 @@
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { hash } from 'argon2';
+import { AccessTokenService } from './access-token.service';
 import { LoginRepository } from './login.repository';
 import { LoginService } from './login.service';
+import { RefreshTokenRepository } from './refresh-token.repository';
 
 describe('LoginService', () => {
-  it('returns a signed access token for a valid active account', async () => {
+  it('issues an access token and a refresh session for a valid active account', async () => {
     const recordSuccess = jest.fn().mockResolvedValue(undefined);
     const repository = {
       findByEmail: jest.fn().mockResolvedValue({
@@ -20,15 +20,18 @@ describe('LoginService', () => {
       }),
       recordSuccess,
     } as unknown as LoginRepository;
-    const jwt = {
-      signAsync: jest.fn().mockResolvedValue('signed-access-token'),
-    } as unknown as JwtService;
-    const config = {
-      get: jest.fn((key: string) =>
-        key === 'JWT_ACCESS_SECRET' ? 'test-secret' : '900',
-      ),
-    } as unknown as ConfigService;
-    const service = new LoginService(repository, jwt, config);
+    const accessTokens = {
+      sign: jest.fn().mockResolvedValue('signed-access-token'),
+      refreshTtlSeconds: jest.fn().mockReturnValue(2592000),
+    } as unknown as AccessTokenService;
+    const refreshExpiresAt = new Date('2026-09-06T00:00:00.000Z');
+    const refreshTokens = {
+      issue: jest.fn().mockResolvedValue({
+        token: 'opaque-refresh-token',
+        expiresAt: refreshExpiresAt,
+      }),
+    } as unknown as RefreshTokenRepository;
+    const service = new LoginService(repository, accessTokens, refreshTokens);
 
     const result = await service.login({
       email: 'admin@example.com',
@@ -36,6 +39,8 @@ describe('LoginService', () => {
     });
 
     expect(result.accessToken).toBe('signed-access-token');
+    expect(result.refreshToken).toBe('opaque-refresh-token');
+    expect(result.refreshExpiresAt).toBe(refreshExpiresAt);
     expect(result.user.roles).toEqual(['SUPER_ADMIN']);
     expect(recordSuccess).toHaveBeenCalled();
   });
@@ -57,8 +62,8 @@ describe('LoginService', () => {
     } as unknown as LoginRepository;
     const service = new LoginService(
       repository,
-      {} as JwtService,
-      {} as ConfigService,
+      {} as AccessTokenService,
+      {} as RefreshTokenRepository,
     );
 
     await expect(

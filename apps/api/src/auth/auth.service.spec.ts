@@ -24,6 +24,7 @@ describe('AuthService', () => {
       {} as unknown as EmailVerificationRepository;
     const emailDelivery = {
       sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+      sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
     } satisfies EmailDelivery;
     const service = new AuthService(
       repository,
@@ -80,6 +81,7 @@ describe('AuthService', () => {
     } as unknown as EmailVerificationRepository;
     const emailDelivery = {
       sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+      sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
     } satisfies EmailDelivery;
     const service = new AuthService(
       {} as RegistrationRepository,
@@ -116,6 +118,7 @@ describe('AuthService', () => {
       {} as ConfigService,
       {
         sendVerificationEmail: jest.fn(),
+        sendPasswordResetEmail: jest.fn(),
       },
     );
 

@@ -5,33 +5,33 @@ import {
   accountActionTokens,
   auditLogs,
   memberProfiles,
+  refreshTokens,
   users,
 } from '../database/schema';
 
-type VerificationCandidate = {
+type ResetCandidate = {
   id: string;
   email: string;
   firstName: string;
-  emailVerifiedAt: Date | null;
+  accountStatus: string;
 };
 
 @Injectable()
-export class EmailVerificationRepository {
+export class PasswordResetRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  async findCandidate(email: string): Promise<VerificationCandidate | null> {
+  async findCandidate(email: string): Promise<ResetCandidate | null> {
     const [candidate] = await this.database
       .select({
         id: users.id,
         email: users.email,
         firstName: memberProfiles.firstName,
-        emailVerifiedAt: users.emailVerifiedAt,
+        accountStatus: users.accountStatus,
       })
       .from(users)
       .innerJoin(memberProfiles, eq(memberProfiles.userId, users.id))
       .where(eq(users.email, email))
       .limit(1);
-
     return candidate ?? null;
   }
 
@@ -43,11 +43,10 @@ export class EmailVerificationRepository {
       .where(
         and(
           eq(accountActionTokens.userId, userId),
-          eq(accountActionTokens.type, 'EMAIL_VERIFICATION'),
+          eq(accountActionTokens.type, 'PASSWORD_RESET'),
           gte(accountActionTokens.createdAt, oneHourAgo),
         ),
       );
-
     return Number(result.value) < 3;
   }
 
@@ -65,15 +64,14 @@ export class EmailVerificationRepository {
         .where(
           and(
             eq(accountActionTokens.userId, input.userId),
-            eq(accountActionTokens.type, 'EMAIL_VERIFICATION'),
+            eq(accountActionTokens.type, 'PASSWORD_RESET'),
             isNull(accountActionTokens.usedAt),
             isNull(accountActionTokens.revokedAt),
           ),
         );
-
       await transaction.insert(accountActionTokens).values({
         userId: input.userId,
-        type: 'EMAIL_VERIFICATION',
+        type: 'PASSWORD_RESET',
         tokenHash: input.tokenHash,
         expiresAt: input.expiresAt,
         requestedIp: input.requestedIp,
@@ -81,7 +79,17 @@ export class EmailVerificationRepository {
     });
   }
 
-  async consumeToken(tokenHash: string, now: Date): Promise<void> {
+  /**
+   * Consumes a password-reset token and applies the new password in one
+   * transaction: the token row is locked, the password hash is replaced, the
+   * lockout is cleared, sibling reset tokens are revoked, every refresh session
+   * is revoked, and a sensitive-value-free audit event is recorded.
+   */
+  async consumeToken(
+    tokenHash: string,
+    newPasswordHash: string,
+    now: Date,
+  ): Promise<void> {
     await this.database.transaction(async (transaction) => {
       const [match] = await transaction
         .select({
@@ -91,36 +99,37 @@ export class EmailVerificationRepository {
           expiresAt: accountActionTokens.expiresAt,
           usedAt: accountActionTokens.usedAt,
           revokedAt: accountActionTokens.revokedAt,
-          emailVerifiedAt: users.emailVerifiedAt,
         })
         .from(accountActionTokens)
         .innerJoin(users, eq(users.id, accountActionTokens.userId))
         .where(
           and(
             eq(accountActionTokens.tokenHash, tokenHash),
-            eq(accountActionTokens.type, 'EMAIL_VERIFICATION'),
+            eq(accountActionTokens.type, 'PASSWORD_RESET'),
           ),
         )
         .limit(1)
         .for('update');
 
-      if (!match || match.revokedAt || match.expiresAt <= now) {
+      if (
+        !match ||
+        match.revokedAt ||
+        match.usedAt ||
+        match.expiresAt <= now
+      ) {
         throw new BadRequestException(
-          'This verification link is invalid or has expired.',
-        );
-      }
-      if (match.usedAt && match.emailVerifiedAt) {
-        return;
-      }
-      if (match.usedAt || match.emailVerifiedAt) {
-        throw new BadRequestException(
-          'This verification link is invalid or has expired.',
+          'This password-reset link is invalid or has expired.',
         );
       }
 
       await transaction
         .update(users)
-        .set({ emailVerifiedAt: now, updatedAt: now })
+        .set({
+          passwordHash: newPasswordHash,
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          updatedAt: now,
+        })
         .where(eq(users.id, match.userId));
 
       await transaction
@@ -134,17 +143,27 @@ export class EmailVerificationRepository {
         .where(
           and(
             eq(accountActionTokens.userId, match.userId),
-            eq(accountActionTokens.type, 'EMAIL_VERIFICATION'),
+            eq(accountActionTokens.type, 'PASSWORD_RESET'),
             ne(accountActionTokens.id, match.tokenId),
             isNull(accountActionTokens.usedAt),
             isNull(accountActionTokens.revokedAt),
           ),
         );
 
+      await transaction
+        .update(refreshTokens)
+        .set({ revokedAt: now })
+        .where(
+          and(
+            eq(refreshTokens.userId, match.userId),
+            isNull(refreshTokens.revokedAt),
+          ),
+        );
+
       await transaction.insert(auditLogs).values({
         churchId: match.churchId,
         actorUserId: match.userId,
-        action: 'EMAIL_VERIFICATION_COMPLETED',
+        action: 'PASSWORD_RESET_COMPLETED',
         entityType: 'USER',
         entityId: match.userId,
       });

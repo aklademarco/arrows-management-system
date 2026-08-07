@@ -6,8 +6,14 @@ import { AuthService } from './auth.service';
 import { EmailVerificationRepository } from './email-verification.repository';
 import { RegistrationRepository } from './registration.repository';
 import { AdminGuard } from './admin.guard';
+import { AccessTokenService } from './access-token.service';
+import { CurrentUserRepository } from './current-user.repository';
 import { LoginRepository } from './login.repository';
 import { LoginService } from './login.service';
+import { PasswordResetRepository } from './password-reset.repository';
+import { PasswordResetService } from './password-reset.service';
+import { RefreshTokenRepository } from './refresh-token.repository';
+import { SessionService } from './session.service';
 import { AuthenticatedGuard } from './authenticated.guard';
 
 @Module({
@@ -19,6 +25,12 @@ import { AuthenticatedGuard } from './authenticated.guard';
     EmailVerificationRepository,
     LoginRepository,
     LoginService,
+    AccessTokenService,
+    RefreshTokenRepository,
+    SessionService,
+    CurrentUserRepository,
+    PasswordResetRepository,
+    PasswordResetService,
     AdminGuard,
     AuthenticatedGuard,
   ],

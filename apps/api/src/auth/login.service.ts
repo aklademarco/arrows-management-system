@@ -1,24 +1,41 @@
 import {
   ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { verify } from 'argon2';
+import { AccessTokenService } from './access-token.service';
 import { LoginDto } from './dto/login.dto';
 import { LoginRepository } from './login.repository';
+import {
+  RefreshTokenRepository,
+  type RefreshTokenContext,
+} from './refresh-token.repository';
+
+export type LoginResult = {
+  accessToken: string;
+  refreshToken: string;
+  refreshExpiresAt: Date;
+  user: {
+    id: string;
+    email: string;
+    accountStatus: string;
+    roles: string[];
+  };
+};
 
 @Injectable()
 export class LoginService {
   constructor(
     private readonly repository: LoginRepository,
-    private readonly jwt: JwtService,
-    private readonly config: ConfigService,
+    private readonly accessTokens: AccessTokenService,
+    private readonly refreshTokens: RefreshTokenRepository,
   ) {}
 
-  async login(dto: LoginDto) {
+  async login(
+    dto: LoginDto,
+    context: RefreshTokenContext = {},
+  ): Promise<LoginResult> {
     const account = await this.repository.findByEmail(dto.email);
     const now = new Date();
     if (!account) {
@@ -44,23 +61,22 @@ export class LoginService {
       );
     }
 
-    const secret = this.config.get<string>('JWT_ACCESS_SECRET');
-    if (!secret) {
-      throw new InternalServerErrorException(
-        'Access-token signing is not configured.',
-      );
-    }
     await this.repository.recordSuccess(account.id, now);
-    const expiresIn = Number(
-      this.config.get<string>('ACCESS_TOKEN_TTL_SECONDS') ?? 900,
-    );
-    const accessToken = await this.jwt.signAsync(
-      { sub: account.id, email: account.email },
-      { secret, expiresIn },
+    const accessToken = await this.accessTokens.sign({
+      id: account.id,
+      email: account.email,
+    });
+    const issued = await this.refreshTokens.issue(
+      account.id,
+      this.accessTokens.refreshTtlSeconds(),
+      context,
+      now,
     );
 
     return {
       accessToken,
+      refreshToken: issued.token,
+      refreshExpiresAt: issued.expiresAt,
       user: {
         id: account.id,
         email: account.email,

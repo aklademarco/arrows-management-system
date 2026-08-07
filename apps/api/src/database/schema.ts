@@ -463,6 +463,28 @@ export const departmentLeaders = pgTable(
   ],
 );
 
+export const refreshTokens = pgTable(
+  'refresh_tokens',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    tokenHash: text('token_hash').notNull().unique(),
+    deviceName: varchar('device_name', { length: 180 }),
+    ipAddress: inet('ip_address'),
+    userAgent: text('user_agent'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('refresh_tokens_user_active_idx').on(table.userId, table.revokedAt),
+  ],
+);
+
 export const accountActionTokens = pgTable(
   'account_action_tokens',
   {
