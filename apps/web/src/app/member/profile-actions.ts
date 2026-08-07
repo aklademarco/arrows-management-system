@@ -144,6 +144,7 @@ export async function uploadMemberPhoto(
     );
   }
   revalidatePath("/member", "layout");
+  revalidatePath("/member/profile");
   return uploaded.secure_url;
 }
 
@@ -200,4 +201,5 @@ export async function removeMemberPhoto(kind: "profile" | "cover") {
   if (!response.ok)
     throw new Error("The saved photo reference could not be removed.");
   revalidatePath("/member", "layout");
+  revalidatePath("/member/profile");
 }
