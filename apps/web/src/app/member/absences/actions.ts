@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 async function submitAbsence(payload: Record<string, string | undefined>) {
   const token = (await cookies()).get("acms_member_session")?.value;
@@ -40,4 +41,30 @@ export async function submitDateRangeAbsence(formData: FormData) {
     reason: String(formData.get("reason") ?? "").trim(),
     details: String(formData.get("details") ?? "").trim() || undefined,
   });
+}
+
+export async function cancelAbsence(formData: FormData) {
+  const requestId = z.uuid().parse(formData.get("requestId"));
+  const token = (await cookies()).get("acms_member_session")?.value;
+  if (!token) redirect("/login");
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const response = await fetch(
+    `${apiUrl}/absence-requests/${requestId}/cancel`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  if (response.status === 401 || response.status === 403) redirect("/login");
+  if (!response.ok) {
+    const body = (await response.json()) as { message?: string | string[] };
+    throw new Error(
+      Array.isArray(body.message)
+        ? body.message.join(" ")
+        : (body.message ?? "Absence request could not be cancelled."),
+    );
+  }
+  revalidatePath("/member/absences");
+  revalidatePath("/admin/absences");
 }

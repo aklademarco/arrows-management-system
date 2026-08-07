@@ -621,7 +621,7 @@ Support fair absence handling.
 - [x] Approve request.
 - [x] Reject request.
 - [x] Request clarification.
-- [ ] Cancel pending request.
+- [x] Cancel pending request.
 - [x] Apply excused status where appropriate.
 - [x] Exclude approved absence from penalties.
 - [x] Record review audit log.

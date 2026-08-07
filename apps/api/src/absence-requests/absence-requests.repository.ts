@@ -171,6 +171,49 @@ export class AbsenceRequestsRepository {
       .limit(100);
   }
 
+  async cancel(
+    requestId: string,
+    memberId: string,
+    actor: AuthenticatedPrincipal,
+  ) {
+    return this.database.transaction(async (transaction) => {
+      const [request] = await transaction
+        .select({ id: absenceRequests.id, status: absenceRequests.status })
+        .from(absenceRequests)
+        .where(
+          and(
+            eq(absenceRequests.id, requestId),
+            eq(absenceRequests.memberId, memberId),
+          ),
+        )
+        .limit(1)
+        .for('update');
+      if (!request) throw new NotFoundException('Absence request not found.');
+      if (request.status === 'CANCELLED') return request;
+      if (request.status !== 'PENDING')
+        throw new ConflictException(
+          'Only a pending absence request can be cancelled.',
+        );
+
+      const now = new Date();
+      const [cancelled] = await transaction
+        .update(absenceRequests)
+        .set({ status: 'CANCELLED', updatedAt: now })
+        .where(eq(absenceRequests.id, request.id))
+        .returning();
+      await transaction.insert(auditLogs).values({
+        churchId: actor.churchId,
+        actorUserId: actor.id,
+        action: 'ABSENCE_REQUEST_CANCELLED',
+        entityType: 'ABSENCE_REQUEST',
+        entityId: request.id,
+        previousData: { status: request.status },
+        newData: { status: 'CANCELLED' },
+      });
+      return cancelled;
+    });
+  }
+
   /**
    * Load a request within the reviewer's church. Returns null when the request
    * does not exist or belongs to another church, which the service maps to a

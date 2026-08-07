@@ -1,7 +1,7 @@
 import { FiCalendar, FiCheckCircle, FiClock, FiFileText } from "react-icons/fi";
 import { getMemberResource } from "../member-api";
 import type { UpcomingEvent } from "../member-types";
-import { submitDateRangeAbsence, submitEventAbsence } from "./actions";
+import { cancelAbsence, submitDateRangeAbsence, submitEventAbsence } from "./actions";
 
 type AbsenceRequest = {
   id: string;
@@ -61,7 +61,7 @@ export default async function MemberAbsencesPage() {
 
         <section className="mt-7 rounded-[2rem] border border-purple-100 bg-white p-6 sm:p-8">
           <div className="flex items-center gap-3"><FiFileText className="text-[#6b21a8]" aria-hidden="true" /><h2 className="text-2xl font-black">Your requests</h2></div>
-          {requests.length === 0 ? <p className="mt-6 rounded-2xl bg-purple-50 p-6 text-sm text-slate-500">You have not submitted an absence request.</p> : <div className="mt-5 divide-y divide-slate-100">{requests.map((request) => <article className="grid gap-3 py-5 first:pt-0 sm:grid-cols-[1fr_auto]" key={request.id}><div><h3 className="font-extrabold">{request.eventName ?? `${request.startsOn} to ${request.endsOn}`}</h3><p className="mt-1 text-sm text-slate-500">{request.reason}</p>{request.reviewNote ? <p className="mt-2 text-sm font-semibold text-slate-600">Leader note: {request.reviewNote}</p> : null}</div><div className="sm:text-right"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${statusStyle(request.status)}`}>{request.status.replaceAll("_", " ")}</span>{request.status === "APPROVED" ? <FiCheckCircle className="ml-auto mt-2 text-emerald-600" aria-hidden="true" /> : null}</div></article>)}</div>}
+          {requests.length === 0 ? <p className="mt-6 rounded-2xl bg-purple-50 p-6 text-sm text-slate-500">You have not submitted an absence request.</p> : <div className="mt-5 divide-y divide-slate-100">{requests.map((request) => <article className="grid gap-3 py-5 first:pt-0 sm:grid-cols-[1fr_auto]" key={request.id}><div><h3 className="font-extrabold">{request.eventName ?? `${request.startsOn} to ${request.endsOn}`}</h3><p className="mt-1 text-sm text-slate-500">{request.reason}</p>{request.reviewNote ? <p className="mt-2 text-sm font-semibold text-slate-600">Leader note: {request.reviewNote}</p> : null}</div><div className="sm:text-right"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${statusStyle(request.status)}`}>{request.status.replaceAll("_", " ")}</span>{request.status === "APPROVED" ? <FiCheckCircle className="ml-auto mt-2 text-emerald-600" aria-hidden="true" /> : null}{request.status === "PENDING" ? <form action={cancelAbsence} className="mt-3"><input name="requestId" type="hidden" value={request.id} /><button className="text-xs font-extrabold text-rose-600 hover:text-rose-800" type="submit">Cancel request</button></form> : null}</div></article>)}</div>}
         </section>
       </div>
     </main>

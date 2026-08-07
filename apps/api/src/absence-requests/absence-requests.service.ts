@@ -76,6 +76,15 @@ export class AbsenceRequestsService {
     return visible;
   }
 
+  async cancel(requestId: string, user: AuthenticatedPrincipal) {
+    const memberId = await this.repository.findActiveMemberId(
+      user.id,
+      user.churchId,
+    );
+    if (!memberId) throw new NotFoundException('Member profile not found.');
+    return this.repository.cancel(requestId, memberId, user);
+  }
+
   async review(
     requestId: string,
     user: AuthenticatedPrincipal,

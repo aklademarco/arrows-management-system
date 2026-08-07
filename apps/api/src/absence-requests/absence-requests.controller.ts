@@ -52,6 +52,18 @@ export class AbsenceRequestsController {
     };
   }
 
+  @Post(':requestId/cancel')
+  async cancel(
+    @Param('requestId', ParseUUIDPipe) requestId: string,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Absence request cancelled.',
+      data: await this.service.cancel(requestId, user),
+    };
+  }
+
   @Patch(':requestId/review')
   async review(
     @Param('requestId', ParseUUIDPipe) requestId: string,
