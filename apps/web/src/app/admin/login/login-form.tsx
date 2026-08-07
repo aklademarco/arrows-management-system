@@ -13,11 +13,11 @@ export function AdminLoginForm() {
   return (
     <form action={formAction} className="mt-8 grid gap-5" noValidate>
       <div className="grid gap-2">
-        <label className="text-sm font-semibold text-slate-800" htmlFor="email">
+        <label className="text-sm font-medium text-slate-800" htmlFor="email">
           Email address
         </label>
         <input
-          className="h-12 rounded-xl border border-slate-300 px-4 outline-none transition focus:border-[#240046] focus:ring-4 focus:ring-[#eadcff]"
+          className="h-12 rounded-lg border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-slate-950 focus:ring-4 focus:ring-slate-200"
           id="email"
           name="email"
           type="email"
@@ -31,14 +31,14 @@ export function AdminLoginForm() {
       </div>
       <div className="grid gap-2">
         <label
-          className="text-sm font-semibold text-slate-800"
+          className="text-sm font-medium text-slate-800"
           htmlFor="password"
         >
           Password
         </label>
         <div className="relative">
           <input
-            className="h-12 w-full rounded-xl border border-slate-300 px-4 pr-12 outline-none transition focus:border-[#240046] focus:ring-4 focus:ring-[#eadcff]"
+            className="h-12 w-full rounded-lg border border-slate-300 bg-white px-4 pr-12 text-sm outline-none transition focus:border-slate-950 focus:ring-4 focus:ring-slate-200"
             id="password"
             name="password"
             type={passwordVisible ? "text" : "password"}
@@ -47,7 +47,7 @@ export function AdminLoginForm() {
             aria-invalid={Boolean(state.errors?.password)}
           />
           <button
-            className="absolute inset-y-0 right-0 grid w-12 place-items-center text-xl text-slate-500 hover:text-[#240046]"
+            className="absolute inset-y-0 right-0 grid w-12 place-items-center text-lg text-slate-400 hover:text-slate-950"
             type="button"
             aria-label={passwordVisible ? "Hide password" : "Show password"}
             onClick={() => setPasswordVisible((visible) => !visible)}
@@ -64,12 +64,12 @@ export function AdminLoginForm() {
         )}
       </div>
       {state.message && (
-        <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">
+        <p className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700" role="alert">
           {state.message}
         </p>
       )}
       <button
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#240046] px-6 font-bold text-white transition hover:bg-[#17002e] disabled:opacity-60"
+        className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-slate-950 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60"
         disabled={pending}
         type="submit"
       >

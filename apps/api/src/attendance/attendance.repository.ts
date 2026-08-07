@@ -4,10 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, desc, eq, gt, gte, inArray, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, or } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import type { AdminPrincipal } from '../auth/admin.guard';
 import {
+  absenceRequests,
   attendanceRecords,
   auditLogs,
   events,
@@ -386,19 +387,74 @@ export class AttendanceRepository {
         (member) => !existingMemberIds.has(member.id),
       );
 
+      // Members with an approved absence covering this event are excused rather
+      // than marked absent. This materializes the open/future events that were
+      // deferred at approval time. Event-specific requests take precedence over
+      // date-range ones when a member holds both.
+      const missingMemberIds = missingMembers.map((member) => member.id);
+      const coverage =
+        missingMemberIds.length === 0
+          ? []
+          : await transaction
+              .select({
+                memberId: absenceRequests.memberId,
+                requestId: absenceRequests.id,
+                eventId: absenceRequests.eventId,
+              })
+              .from(absenceRequests)
+              .where(
+                and(
+                  eq(absenceRequests.status, 'APPROVED'),
+                  inArray(absenceRequests.memberId, missingMemberIds),
+                  or(
+                    eq(absenceRequests.eventId, eventId),
+                    and(
+                      isNull(absenceRequests.eventId),
+                      lte(
+                        absenceRequests.startsOn,
+                        eventStartDate(event.startsAt),
+                      ),
+                      gte(
+                        absenceRequests.endsOn,
+                        eventStartDate(event.startsAt),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+      const excuseByMember = new Map<string, string>();
+      for (const row of coverage) {
+        const current = excuseByMember.get(row.memberId);
+        // Prefer an event-specific request over a date-range one.
+        if (!current || row.eventId)
+          excuseByMember.set(row.memberId, row.requestId);
+      }
+
       const inserted =
         missingMembers.length === 0
           ? []
           : await transaction
               .insert(attendanceRecords)
               .values(
-                missingMembers.map((member) => ({
-                  eventId,
-                  memberId: member.id,
-                  status: 'ABSENT' as const,
-                  method: 'SYSTEM' as const,
-                  pointsAwarded: 0,
-                })),
+                missingMembers.map((member) => {
+                  const absenceRequestId = excuseByMember.get(member.id);
+                  return absenceRequestId
+                    ? {
+                        eventId,
+                        memberId: member.id,
+                        status: 'EXCUSED' as const,
+                        method: 'SYSTEM' as const,
+                        pointsAwarded: 0,
+                        absenceRequestId,
+                      }
+                    : {
+                        eventId,
+                        memberId: member.id,
+                        status: 'ABSENT' as const,
+                        method: 'SYSTEM' as const,
+                        pointsAwarded: 0,
+                      };
+                }),
               )
               .returning({ id: attendanceRecords.id });
 

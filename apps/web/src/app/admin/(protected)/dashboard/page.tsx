@@ -1,117 +1,96 @@
 import Link from "next/link";
 import {
-  FiArrowRight,
-  FiClock,
-  FiMapPin,
+  FiArrowUpRight,
   FiCalendar,
+  FiCheckCircle,
+  FiClock,
   FiGrid,
+  FiMapPin,
+  FiPlus,
   FiUsers,
 } from "react-icons/fi";
 import { getAdminResource } from "../registrations/admin-api";
 
 type CountPage = { total: number };
 type Department = { id: string; name: string; isActive: boolean };
+type Event = { id: string; status: string };
 
 export default async function AdminDashboardPage() {
-  const [members, registrations, departments] = await Promise.all([
+  const [members, registrations, departments, events] = await Promise.all([
     getAdminResource<CountPage>("/members?limit=1"),
     getAdminResource<CountPage>("/admin/registrations?limit=1"),
     getAdminResource<Department[]>("/departments"),
+    getAdminResource<Event[]>("/events"),
   ]);
-
-  const cards = [
-    {
-      title: "Events",
-      description: "Schedule attendance windows and configure location-based check-in.",
-      href: "/admin/events",
-      count: 0,
-      countLabel: "event scheduling",
-      icon: FiCalendar,
-    },
-    {
-      title: "Members",
-      description:
-        "Search member profiles, review departments, and manage account status.",
-      href: "/admin/members",
-      count: members.total,
-      countLabel: "approved members",
-      icon: FiUsers,
-    },
-    {
-      title: "Registration approvals",
-      description:
-        "Review verified registrations and assign roles and departments.",
-      href: "/admin/registrations",
-      count: registrations.total,
-      countLabel: "awaiting review",
-      icon: FiClock,
-    },
-    {
-      title: "Departments",
-      description:
-        "View the departments currently available for member assignment.",
-      href: "/admin/departments",
-      count: departments.filter((department) => department.isActive).length,
-      countLabel: "departments",
-      icon: FiGrid,
-    },
-    {
-      title: "Church geofence",
-      description:
-        "Capture the church compound location and preview its attendance boundary.",
-      href: "/admin/geofence",
-      count: 50,
-      countLabel: "metre draft radius",
-      icon: FiMapPin,
-    },
+  const activeDepartments = departments.filter((department) => department.isActive);
+  const scheduledEvents = events.filter((event) => event.status === "SCHEDULED");
+  const metrics = [
+    { label: "Active members", value: members.total, detail: "Approved workforce", icon: FiUsers },
+    { label: "Pending approvals", value: registrations.total, detail: "Needs review", icon: FiClock },
+    { label: "Scheduled events", value: scheduledEvents.length, detail: "Attendance-ready", icon: FiCalendar },
+    { label: "Departments", value: activeDepartments.length, detail: "Currently active", icon: FiGrid },
+  ];
+  const workspaceLinks = [
+    { title: "Member directory", description: "Search profiles, manage status, and review department assignments.", href: "/admin/members", icon: FiUsers },
+    { title: "Registration inbox", description: "Approve verified accounts and place members into departments.", href: "/admin/registrations", icon: FiCheckCircle },
+    { title: "Event operations", description: "Schedule events and manage live attendance workflows.", href: "/admin/events", icon: FiCalendar },
+    { title: "Church geofence", description: "Review the location boundary used for secure check-in.", href: "/admin/geofence", icon: FiMapPin },
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
+    <main className="admin-grid-background min-h-[calc(100vh-3.5rem)] bg-[#fafafa] px-4 py-7 text-slate-950 sm:px-6 lg:px-10 lg:py-9">
       <div className="mx-auto max-w-7xl">
-        <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">
-          Overview
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight">
-          Church administration
-        </h1>
-        <p className="mt-2 max-w-2xl text-slate-600">
-          Choose an area below to manage people and church operations.
-        </p>
+        <header className="flex flex-col gap-5 border-b border-slate-200 pb-7 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400"><span>Arrows ACMS</span><span>/</span><span className="text-slate-700">Overview</span></div>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Administration</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">A focused workspace for church people, events, and attendance operations.</p>
+          </div>
+          <Link className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800" href="/admin/events">
+            <FiPlus aria-hidden="true" /> New event
+          </Link>
+        </header>
 
-        <section className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {cards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <Link
-                className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-purple-200 hover:shadow-md"
-                href={card.href}
-                key={card.title}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <span className="grid size-12 place-items-center rounded-xl bg-purple-50 text-2xl text-[#6b21a8]">
-                    <Icon aria-hidden="true" />
-                  </span>
-                  <FiArrowRight
-                    aria-hidden="true"
-                    className="text-slate-400 transition group-hover:translate-x-1 group-hover:text-[#6b21a8]"
-                  />
-                </div>
-                <h2 className="mt-5 text-xl font-bold">{card.title}</h2>
-                <p className="mt-2 min-h-12 text-sm leading-6 text-slate-600">
-                  {card.description}
-                </p>
-                <p className="mt-5 border-t border-slate-100 pt-4">
-                  <span className="text-2xl font-bold text-[#240046]">
-                    {card.count}
-                  </span>{" "}
-                  <span className="text-sm text-slate-500">
-                    {card.countLabel}
-                  </span>
-                </p>
-              </Link>
-            );
-          })}
+        <section aria-label="Administration metrics" className="mt-6 grid overflow-hidden rounded-xl border border-slate-200 bg-white sm:grid-cols-2 xl:grid-cols-4">
+          {metrics.map(({ label, value, detail, icon: Icon }, index) => (
+            <article className={`p-5 ${index > 0 ? "border-t border-slate-200 sm:border-l sm:border-t-0" : ""} ${index === 2 ? "sm:border-l-0 sm:border-t xl:border-l xl:border-t-0" : ""}`} key={label}>
+              <div className="flex items-center justify-between text-slate-400"><p className="text-xs font-semibold uppercase tracking-[0.12em]">{label}</p><Icon aria-hidden="true" /></div>
+              <p className="mt-4 text-3xl font-semibold tracking-[-0.04em]">{value}</p>
+              <p className="mt-1 text-xs text-slate-400">{detail}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div><h2 className="font-semibold">Workspace</h2><p className="mt-0.5 text-xs text-slate-400">Core administration areas</p></div>
+              <span className="text-xs font-medium text-slate-400">{workspaceLinks.length} tools</span>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {workspaceLinks.map(({ title, description, href, icon: Icon }) => (
+                <Link className="group grid gap-4 px-5 py-5 transition hover:bg-slate-50 sm:grid-cols-[auto_1fr_auto] sm:items-center" href={href} key={title}>
+                  <span className="grid size-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm"><Icon aria-hidden="true" /></span>
+                  <span><span className="block text-sm font-semibold">{title}</span><span className="mt-1 block text-sm leading-5 text-slate-500">{description}</span></span>
+                  <FiArrowUpRight aria-hidden="true" className="text-slate-300 transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-950" />
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid content-start gap-6">
+            <article className="rounded-xl border border-slate-200 bg-slate-950 p-5 text-white shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">System status</p>
+              <div className="mt-5 flex items-center gap-3"><span className="size-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,0.12)]" /><div><p className="text-sm font-semibold">Workspace operational</p><p className="mt-0.5 text-xs text-slate-400">Core administration routes are available.</p></div></div>
+              <div className="mt-5 border-t border-white/10 pt-4 text-xs text-slate-400">Data shown here refreshes on every request.</div>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Quick note</p>
+              <h2 className="mt-3 font-semibold">Keep approvals moving</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">There {registrations.total === 1 ? "is" : "are"} currently <strong className="text-slate-950">{registrations.total}</strong> registration{registrations.total === 1 ? "" : "s"} waiting for review.</p>
+              <Link className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-slate-950 hover:underline" href="/admin/registrations">Open inbox <FiArrowUpRight aria-hidden="true" /></Link>
+            </article>
+          </div>
         </section>
       </div>
     </main>

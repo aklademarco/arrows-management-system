@@ -23,8 +23,8 @@ export default function CheckInButton({ eventId }: { eventId: string }) {
 
   return (
     <div className="mt-5">
-      <button className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#240046] px-5 font-bold text-white disabled:bg-slate-400" disabled={pending || result?.success} onClick={captureAndCheckIn} type="button"><FiMapPin aria-hidden="true" />{pending ? "Checking location..." : result?.success ? "Checked in" : "Check in"}</button>
-      {result ? <p className={`mt-3 rounded-lg p-3 text-sm ${result.success ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`} role="status">{result.message}{result.success && result.distanceMeters !== undefined ? ` ${result.status} at ${result.distanceMeters.toFixed(1)} m from the church center.` : ""}</p> : null}
+      <button className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#b7f34a] px-6 font-extrabold text-[#240046] shadow-[0_7px_0_#78a91e] transition active:translate-y-1 active:shadow-[0_3px_0_#78a91e] disabled:translate-y-0 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none" disabled={pending || result?.success} onClick={captureAndCheckIn} type="button"><FiMapPin aria-hidden="true" />{pending ? "Checking location..." : result?.success ? "Checked in" : "Check in now"}</button>
+      {result ? <p className={`mt-4 rounded-2xl p-4 text-sm font-semibold ${result.success ? "bg-emerald-100 text-emerald-800" : "bg-red-50 text-red-700"}`} role="status">{result.message}{result.success && result.distanceMeters !== undefined ? ` ${result.status} at ${result.distanceMeters.toFixed(1)} m from the church center.` : ""}</p> : null}
     </div>
   );
 }

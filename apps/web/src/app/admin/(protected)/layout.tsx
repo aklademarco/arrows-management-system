@@ -1,50 +1,14 @@
 import Link from "next/link";
-import {
-  FiCalendar,
-  FiGrid,
-  FiLogOut,
-  FiMapPin,
-  FiMenu,
-  FiUsers,
-  FiUserCheck,
-} from "react-icons/fi";
+import { FiBell, FiCommand, FiLogOut, FiMenu, FiSearch } from "react-icons/fi";
+import { ProfileAvatar } from "@/components/profile-avatar";
+import { PortalNavigation } from "@/components/portal-navigation";
 import { adminLogout } from "./registrations/actions";
-
-const navigation = [
-  { href: "/admin/dashboard", label: "Overview", icon: FiGrid },
-  { href: "/admin/members", label: "Members", icon: FiUsers },
-  { href: "/admin/registrations", label: "Approvals", icon: FiUserCheck },
-  { href: "/admin/departments", label: "Departments", icon: FiGrid },
-  { href: "/admin/events", label: "Events", icon: FiCalendar },
-  { href: "/admin/geofence", label: "Church geofence", icon: FiMapPin },
-];
-
-function NavigationLinks() {
-  return (
-    <nav aria-label="Administration" className="grid gap-1">
-      {navigation.map(({ href, label, icon: Icon }) => (
-        <Link
-          className="inline-flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-purple-50 hover:text-[#6b21a8]"
-          href={href}
-          key={href}
-        >
-          <Icon aria-hidden="true" className="text-lg" />
-          {label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
 
 function SignOutButton() {
   return (
     <form action={adminLogout}>
-      <button
-        className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"
-        type="submit"
-      >
-        <FiLogOut aria-hidden="true" className="text-lg" />
-        Sign out
+      <button className="inline-flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-950" type="submit">
+        <FiLogOut aria-hidden="true" /> Sign out
       </button>
     </form>
   );
@@ -54,43 +18,63 @@ export default function AdminProtectedLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950">
-      <header className="border-b border-slate-200 bg-white lg:hidden">
-        <div className="flex items-center justify-between px-5 py-4">
-          <Link className="font-bold text-[#240046]" href="/admin/dashboard">
-            ACMS <span className="font-normal text-slate-500">Admin</span>
+    <div className="min-h-screen bg-[#fafafa] text-slate-950">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur lg:hidden">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Link className="flex items-center gap-2 font-semibold" href="/admin/dashboard">
+            <span className="grid size-8 place-items-center rounded-lg bg-slate-950 text-xs font-black text-white">A</span>
+            ACMS Admin
           </Link>
           <details className="relative">
-            <summary className="grid size-11 cursor-pointer list-none place-items-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50">
-              <FiMenu aria-hidden="true" className="text-xl" />
+            <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
+              <FiMenu aria-hidden="true" />
               <span className="sr-only">Open administration navigation</span>
             </summary>
-            <div className="absolute right-0 z-10 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-              <NavigationLinks />
-              <div className="mt-2 border-t border-slate-100 pt-2">
-                <SignOutButton />
-              </div>
+            <div className="absolute right-0 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-2xl">
+              <PortalNavigation portal="admin" />
+              <div className="mt-2 border-t border-slate-100 pt-2"><SignOutButton /></div>
             </div>
           </details>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1440px]">
-        <aside className="hidden min-h-screen w-64 shrink-0 border-r border-slate-200 bg-white px-4 py-6 lg:block">
-          <Link className="block px-3 text-lg font-bold text-[#240046]" href="/admin/dashboard">
-            ACMS <span className="font-normal text-slate-500">Admin</span>
-          </Link>
-          <p className="px-3 pt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Workspace
-          </p>
-          <div className="mt-6">
-            <NavigationLinks />
+      <div className="flex min-h-screen">
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-3 py-4 lg:flex">
+          <div className="flex items-center justify-between px-2 pb-4">
+            <Link className="flex items-center gap-2" href="/admin/dashboard">
+              <span className="grid size-8 place-items-center rounded-lg bg-slate-950 text-xs font-black text-white">A</span>
+              <span className="text-sm font-semibold">Arrows ACMS</span>
+            </Link>
+            <span className="rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">ADMIN</span>
           </div>
-          <div className="mt-6 border-t border-slate-100 pt-4">
+
+          <button className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-left text-sm text-slate-400 shadow-sm hover:bg-slate-50" type="button">
+            <FiSearch aria-hidden="true" /> Search workspace
+            <span className="ml-auto inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-0.5 text-[10px]"><FiCommand aria-hidden="true" />K</span>
+          </button>
+
+          <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Workspace</p>
+          <PortalNavigation portal="admin" />
+
+          <div className="mt-auto border-t border-slate-100 pt-3">
+            <Link className="mb-2 flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50" href="/admin/dashboard">
+              <ProfileAvatar name="Administrator" size="sm" variant="admin" />
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-semibold">Administrator</span>
+                <span className="block text-xs text-slate-400">Church workspace</span>
+              </span>
+            </Link>
             <SignOutButton />
           </div>
         </aside>
-        <div className="min-w-0 flex-1">{children}</div>
+
+        <div className="min-w-0 flex-1">
+          <div className="hidden h-14 items-center justify-end gap-2 border-b border-slate-200 bg-white px-6 lg:flex">
+            <button aria-label="Notifications" className="grid size-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100" type="button"><FiBell aria-hidden="true" /></button>
+            <ProfileAvatar name="Administrator" size="sm" variant="admin" />
+          </div>
+          {children}
+        </div>
       </div>
     </div>
   );

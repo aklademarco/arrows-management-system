@@ -59,6 +59,19 @@ export const accountActionTokenType = pgEnum('account_action_token_type', [
   'PASSWORD_RESET',
 ]);
 
+export const attendancePunctualityStatus = pgEnum(
+  'attendance_punctuality_status',
+  ['EARLY', 'ON_TIME', 'LATE'],
+);
+
+export const absenceRequestStatus = pgEnum('absence_request_status', [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'NEEDS_CLARIFICATION',
+  'CANCELLED',
+]);
+
 export const reviewDecision = pgEnum('review_decision', [
   'APPROVED',
   'REJECTED',
@@ -317,6 +330,10 @@ export const attendanceRecords = pgTable(
       .references(() => memberProfiles.id),
     status: attendanceStatus('status').notNull(),
     method: attendanceMethod('method').notNull(),
+    punctualityStatus: attendancePunctualityStatus('punctuality_status'),
+    absenceRequestId: uuid('absence_request_id').references(
+      () => absenceRequests.id,
+    ),
     checkedInAt: timestamp('checked_in_at', { withTimezone: true }),
     latitude: numeric('latitude', { precision: 9, scale: 6 }),
     longitude: numeric('longitude', { precision: 9, scale: 6 }),
@@ -350,6 +367,47 @@ export const attendanceRecords = pgTable(
       table.checkedInAt,
     ),
     index('attendance_event_status_idx').on(table.eventId, table.status),
+  ],
+);
+
+export const absenceRequests = pgTable(
+  'absence_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    eventId: uuid('event_id').references(() => events.id),
+    startsOn: date('starts_on'),
+    endsOn: date('ends_on'),
+    reason: varchar('reason', { length: 150 }).notNull(),
+    details: text('details'),
+    status: absenceRequestStatus('status').notNull().default('PENDING'),
+    reviewedBy: uuid('reviewed_by').references(() => users.id),
+    reviewNote: text('review_note'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('absence_requests_member_status_idx').on(
+      table.memberId,
+      table.status,
+    ),
+    index('absence_requests_event_idx').on(table.eventId),
+    index('absence_requests_range_idx').on(table.startsOn, table.endsOn),
+    check(
+      'absence_requests_single_mode',
+      sql`(${table.eventId} is not null and ${table.startsOn} is null and ${table.endsOn} is null) or (${table.eventId} is null and ${table.startsOn} is not null and ${table.endsOn} is not null and ${table.endsOn} >= ${table.startsOn})`,
+    ),
+    check(
+      'absence_requests_reason_not_blank',
+      sql`char_length(btrim(${table.reason})) > 0`,
+    ),
   ],
 );
 

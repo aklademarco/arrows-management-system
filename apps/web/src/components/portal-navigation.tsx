@@ -1,0 +1,66 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  FiCalendar,
+  FiGrid,
+  FiHome,
+  FiMapPin,
+  FiUser,
+  FiUserCheck,
+  FiUsers,
+} from "react-icons/fi";
+
+const memberNavigation = [
+  { href: "/member", label: "Home", icon: FiHome },
+  { href: "/member/attendance", label: "Activity", icon: FiCalendar },
+  { href: "/member/profile", label: "Profile", icon: FiUser },
+];
+
+const adminNavigation = [
+  { href: "/admin/dashboard", label: "Overview", icon: FiGrid },
+  { href: "/admin/members", label: "Members", icon: FiUsers },
+  { href: "/admin/registrations", label: "Approvals", icon: FiUserCheck },
+  { href: "/admin/departments", label: "Departments", icon: FiGrid },
+  { href: "/admin/events", label: "Events", icon: FiCalendar },
+  { href: "/admin/geofence", label: "Geofence", icon: FiMapPin },
+];
+
+export function PortalNavigation({
+  portal,
+  mobile = false,
+}: {
+  portal: "member" | "admin";
+  mobile?: boolean;
+}) {
+  const pathname = usePathname();
+  const navigation = portal === "member" ? memberNavigation : adminNavigation;
+
+  return (
+    <nav
+      aria-label={portal === "member" ? "Member portal" : "Administration"}
+      className={mobile ? "grid grid-cols-3" : "grid gap-1"}
+    >
+      {navigation.map(({ href, label, icon: Icon }) => {
+        const active =
+          pathname === href || (href !== `/${portal}` && pathname.startsWith(`${href}/`));
+        return (
+          <Link
+            aria-current={active ? "page" : undefined}
+            className={
+              mobile
+                ? `flex min-h-16 flex-col items-center justify-center gap-1 px-2 text-[11px] font-bold transition ${active ? "text-[#6b21a8]" : "text-slate-400"}`
+                : `inline-flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition ${active ? portal === "admin" ? "bg-slate-950 text-white" : "bg-purple-100 text-[#5b148d]" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`
+            }
+            href={href}
+            key={href}
+          >
+            <Icon aria-hidden="true" className={mobile ? "text-xl" : "text-lg"} />
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

@@ -7,6 +7,7 @@ import {
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
+  absenceRequests,
   attendanceRecords,
   auditLogs,
   departments,
@@ -200,6 +201,29 @@ export class EventsRepository {
         .set({ pointsAwarded: 0, updatedAt: now })
         .where(eq(attendanceRecords.eventId, eventId))
         .returning({ id: attendanceRecords.id });
+      // Event-specific absence requests for this event are moot once it is
+      // cancelled; move any still-open ones to CANCELLED. Date-range requests
+      // span other events and are left untouched.
+      const cancelledRequests = await transaction
+        .update(absenceRequests)
+        .set({
+          status: 'CANCELLED',
+          reviewNote: 'Event cancelled.',
+          reviewedBy: actorId,
+          reviewedAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(absenceRequests.eventId, eventId),
+            inArray(absenceRequests.status, [
+              'PENDING',
+              'APPROVED',
+              'NEEDS_CLARIFICATION',
+            ]),
+          ),
+        )
+        .returning({ id: absenceRequests.id });
       await transaction.insert(auditLogs).values({
         churchId,
         actorUserId: actorId,
@@ -208,11 +232,16 @@ export class EventsRepository {
         entityId: eventId,
         previousData: { status: current.status },
         newData: { status: 'CANCELLED' },
-        metadata: { reason, preservedAttendanceRecords: affected.length },
+        metadata: {
+          reason,
+          preservedAttendanceRecords: affected.length,
+          cancelledAbsenceRequests: cancelledRequests.length,
+        },
       });
       return {
         event,
         preservedAttendanceRecords: affected.length,
+        cancelledAbsenceRequests: cancelledRequests.length,
         alreadyCancelled: false,
       };
     });

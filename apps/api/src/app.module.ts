@@ -10,6 +10,7 @@ import { MembersModule } from './members/members.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { EventsModule } from './events/events.module';
+import { AbsenceRequestsModule } from './absence-requests/absence-requests.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { EventsModule } from './events/events.module';
     DepartmentsModule,
     AttendanceModule,
     EventsModule,
+    AbsenceRequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
