@@ -49,22 +49,22 @@ export default async function MemberProfilePage({
     .join(" ");
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
+    <main className="min-h-screen bg-[#090a0d] px-5 py-10 text-slate-100">
       <div className="mx-auto max-w-4xl">
         <Link
-          className="inline-flex items-center gap-2 font-bold text-[#6b21a8]"
+          className="inline-flex items-center gap-2 font-bold text-violet-400"
           href="/admin/members"
         >
           <FiArrowLeft /> Back to members
         </Link>
-        <header className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <header className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
           <div className="flex flex-wrap justify-between gap-4">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-400">
                 Member profile
               </p>
               <h1 className="mt-2 text-3xl font-bold">{name}</h1>
-              <p className="mt-2 capitalize text-slate-600">
+              <p className="mt-2 capitalize text-slate-400">
                 {member.accountStatus.toLowerCase()} account ·{" "}
                 {member.membershipStatus.toLowerCase()} membership
               </p>
@@ -80,28 +80,28 @@ export default async function MemberProfilePage({
           </div>
         </header>
 
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
           <h2 className="text-xl font-bold">Department history</h2>
           {member.departmentMemberships.length === 0 ? (
-            <p className="mt-4 text-slate-600">No department assignments.</p>
+            <p className="mt-4 text-slate-400">No department assignments.</p>
           ) : (
             <div className="mt-4 grid gap-3">
               {member.departmentMemberships.map((membership) => (
                 <div
-                  className="flex flex-wrap justify-between gap-3 rounded-xl border border-slate-200 p-4"
+                  className="flex flex-wrap justify-between gap-3 rounded-xl border border-white/10 p-4"
                   key={membership.id}
                 >
                   <div>
                     <p className="font-bold">
                       <Link
-                        className="text-[#6b21a8] hover:underline"
+                        className="text-violet-400 hover:underline"
                         href={`/admin/members?departmentId=${membership.departmentId}`}
                       >
                         {membership.departmentName}
                       </Link>
                       {membership.isPrimary ? " · Primary" : ""}
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-sm text-slate-400">
                       Joined {membership.joinedAt}
                       {membership.leftAt ? ` · Left ${membership.leftAt}` : ""}
                     </p>
@@ -110,7 +110,7 @@ export default async function MemberProfilePage({
                     {membership.isActive ? "Active" : "Historical"}
                   </span>
                   {membership.isActive ? (
-                    <details className="w-full border-t border-slate-100 pt-3">
+                    <details className="w-full border-t border-white/[0.07] pt-3">
                       <summary className="cursor-pointer text-sm font-bold text-red-700">
                         End membership
                       </summary>
@@ -134,12 +134,12 @@ export default async function MemberProfilePage({
                           value={membership.id}
                         />
                         <input
-                          className="h-10 rounded-lg border border-slate-300 px-3"
+                          className="h-10 rounded-lg border border-white/15 px-3"
                           name="leftAt"
                           type="date"
                         />
                         <input
-                          className="h-10 rounded-lg border border-slate-300 px-3"
+                          className="h-10 rounded-lg border border-white/15 px-3"
                           minLength={3}
                           name="reason"
                           placeholder="Reason"
@@ -147,7 +147,7 @@ export default async function MemberProfilePage({
                         />
                         {membership.isPrimary ? (
                           <select
-                            className="h-10 rounded-lg border border-slate-300 bg-white px-3"
+                            className="h-10 rounded-lg border border-white/15 bg-[#111318] px-3"
                             name="replacementPrimaryMembershipId"
                           >
                             <option value="">No replacement primary</option>
@@ -179,7 +179,7 @@ export default async function MemberProfilePage({
         {member.departmentMemberships.some(
           (membership) => membership.isActive,
         ) ? (
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
             <h2 className="text-xl font-bold">Primary department</h2>
             <form
               action={setPrimaryDepartment}
@@ -187,7 +187,7 @@ export default async function MemberProfilePage({
             >
               <input name="memberId" type="hidden" value={member.id} />
               <select
-                className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+                className="h-11 rounded-lg border border-white/15 bg-[#111318] px-3"
                 defaultValue={
                   member.departmentMemberships.find(
                     (membership) => membership.isActive && membership.isPrimary,
@@ -205,18 +205,18 @@ export default async function MemberProfilePage({
                   ))}
               </select>
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3"
+                className="h-11 rounded-lg border border-white/15 px-3"
                 name="effectiveOn"
                 type="date"
               />
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3"
+                className="h-11 rounded-lg border border-white/15 px-3"
                 minLength={3}
                 name="reason"
                 placeholder="Reason for change"
                 required
               />
-              <button className="h-11 rounded-lg bg-[#240046] px-5 font-bold text-white">
+              <button className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white">
                 Update primary department
               </button>
             </form>
@@ -224,7 +224,7 @@ export default async function MemberProfilePage({
         ) : null}
 
         {member.accountStatus !== "ARCHIVED" ? (
-          <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
             <h2 className="text-xl font-bold">Add department membership</h2>
             <form
               action={addMemberToDepartment}
@@ -232,7 +232,7 @@ export default async function MemberProfilePage({
             >
               <input name="memberId" type="hidden" value={member.id} />
               <select
-                className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+                className="h-11 rounded-lg border border-white/15 bg-[#111318] px-3"
                 name="departmentId"
                 required
               >
@@ -246,7 +246,7 @@ export default async function MemberProfilePage({
                   ))}
               </select>
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3"
+                className="h-11 rounded-lg border border-white/15 px-3"
                 name="joinedAt"
                 type="date"
               />
@@ -254,14 +254,14 @@ export default async function MemberProfilePage({
                 <input name="makePrimary" type="checkbox" />
                 Make primary
               </label>
-              <button className="h-11 rounded-lg bg-[#240046] px-5 font-bold text-white md:col-start-4">
+              <button className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white md:col-start-4">
                 Add membership
               </button>
             </form>
           </section>
         ) : null}
 
-        <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
           <h2 className="text-xl font-bold">Edit member</h2>
           <form
             action={updateMember}
@@ -271,7 +271,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               First name
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={member.firstName}
                 name="firstName"
                 required
@@ -280,7 +280,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Last name
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={member.lastName}
                 name="lastName"
                 required
@@ -289,7 +289,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Other names
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={member.otherNames ?? ""}
                 name="otherNames"
               />
@@ -297,7 +297,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Phone
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={member.phone ?? ""}
                 name="phone"
                 placeholder="+233240000000"
@@ -306,7 +306,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Membership status
               <select
-                className="h-11 rounded-lg border border-slate-300 bg-white px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 bg-[#111318] px-3 font-normal"
                 defaultValue={member.membershipStatus}
                 name="membershipStatus"
               >
@@ -317,7 +317,7 @@ export default async function MemberProfilePage({
               </select>
             </label>
             <div className="flex items-end">
-              <button className="h-11 rounded-lg bg-[#240046] px-5 font-bold text-white">
+              <button className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white">
                 Save changes
               </button>
             </div>
@@ -327,7 +327,7 @@ export default async function MemberProfilePage({
         {member.accountStatus === "ACTIVE" ? (
           <form
             action={suspendUser}
-            className="mt-6 flex gap-3 rounded-2xl border border-red-200 bg-white p-6"
+            className="mt-6 flex gap-3 rounded-2xl border border-red-200 bg-[#111318] p-6"
           >
             <input name="userId" type="hidden" value={member.userId} />
             <input name="memberId" type="hidden" value={member.id} />
@@ -346,7 +346,7 @@ export default async function MemberProfilePage({
         {member.accountStatus === "SUSPENDED" ? (
           <form
             action={reactivateUser}
-            className="mt-6 rounded-2xl border border-green-200 bg-white p-6"
+            className="mt-6 rounded-2xl border border-green-200 bg-[#111318] p-6"
           >
             <input name="userId" type="hidden" value={member.userId} />
             <input name="memberId" type="hidden" value={member.id} />

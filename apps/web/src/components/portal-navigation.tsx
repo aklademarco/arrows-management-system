@@ -51,7 +51,7 @@ export function PortalNavigation({
             className={
               mobile
                 ? `flex min-h-16 flex-col items-center justify-center gap-1 px-2 text-[11px] font-bold transition ${active ? "text-[#6b21a8]" : "text-slate-400"}`
-                : `inline-flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition ${active ? portal === "admin" ? "bg-slate-950 text-white" : "bg-purple-100 text-[#5b148d]" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`
+                : `inline-flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition ${active ? portal === "admin" ? "bg-violet-500/15 text-violet-300 ring-1 ring-inset ring-violet-400/20" : "bg-purple-100 text-[#5b148d]" : portal === "admin" ? "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100" : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"}`
             }
             href={href}
             key={href}

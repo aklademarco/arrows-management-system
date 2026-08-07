@@ -35,10 +35,10 @@ export default async function EventDetailPage({
     !["CANCELLED", "COMPLETED"].includes(event.status) &&
     !event.attendanceFinalizedAt;
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
+    <main className="min-h-screen bg-[#090a0d] px-5 py-8 text-slate-100">
       <div className="mx-auto max-w-5xl">
         <Link
-          className="inline-flex items-center gap-2 font-bold text-[#6b21a8]"
+          className="inline-flex items-center gap-2 font-bold text-violet-400"
           href="/admin/events"
         >
           <FiArrowLeft aria-hidden="true" />
@@ -47,16 +47,16 @@ export default async function EventDetailPage({
         <header className="mt-6">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-bold">{event.name}</h1>
-            <span className="bg-purple-50 px-3 py-1 text-xs font-bold text-[#6b21a8]">
+            <span className="bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-400">
               {event.status}
             </span>
           </div>
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-slate-400">
             Manage the event schedule and attendance settings.
           </p>
         </header>
         <Link
-          className="mt-5 inline-flex font-bold text-[#6b21a8]"
+          className="mt-5 inline-flex font-bold text-violet-400"
           href={`/admin/events/${event.id}/attendance`}
         >
           View attendance roster
@@ -64,13 +64,13 @@ export default async function EventDetailPage({
         {editable ? (
           <form
             action={updateEvent}
-            className="mt-8 grid gap-4 border-y border-slate-200 bg-white px-5 py-6 md:grid-cols-2"
+            className="mt-8 grid gap-4 border-y border-white/10 bg-[#111318] px-5 py-6 md:grid-cols-2"
           >
             <input name="eventId" type="hidden" value={event.id} />
             <label className="grid gap-1 text-sm font-bold">
               Event name
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={event.name}
                 name="name"
                 required
@@ -79,7 +79,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Location
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={event.locationName ?? ""}
                 name="locationName"
               />
@@ -87,7 +87,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Starts
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={inputDate(event.startsAt)}
                 name="startsAt"
                 type="datetime-local"
@@ -97,7 +97,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Ends
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={inputDate(event.endsAt)}
                 name="endsAt"
                 type="datetime-local"
@@ -107,7 +107,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Attendance opens
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={inputDate(event.attendanceOpensAt)}
                 name="attendanceOpensAt"
                 type="datetime-local"
@@ -117,7 +117,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Attendance closes
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={inputDate(event.attendanceClosesAt)}
                 name="attendanceClosesAt"
                 type="datetime-local"
@@ -127,7 +127,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Early until
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={inputDate(event.earlyUntil)}
                 name="earlyUntil"
                 type="datetime-local"
@@ -136,7 +136,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Late after
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={inputDate(event.lateAfter)}
                 name="lateAfter"
                 type="datetime-local"
@@ -146,7 +146,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Boundary radius (m)
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={event.geofenceRadiusMeters}
                 name="geofenceRadiusMeters"
                 type="number"
@@ -155,7 +155,7 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold">
               Maximum GPS error (m)
               <input
-                className="h-11 rounded-lg border border-slate-300 px-3 font-normal"
+                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
                 defaultValue={event.maximumAccuracyMeters}
                 name="maximumAccuracyMeters"
                 type="number"
@@ -164,20 +164,20 @@ export default async function EventDetailPage({
             <label className="grid gap-1 text-sm font-bold md:col-span-2">
               Description
               <textarea
-                className="min-h-24 rounded-lg border border-slate-300 p-3 font-normal"
+                className="min-h-24 rounded-lg border border-white/15 p-3 font-normal"
                 defaultValue={event.description ?? ""}
                 name="description"
               />
             </label>
             <button
-              className="h-11 rounded-lg bg-[#240046] px-5 font-bold text-white md:w-fit"
+              className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white md:w-fit"
               type="submit"
             >
               Save changes
             </button>
           </form>
         ) : (
-          <p className="mt-8 border-y border-slate-200 bg-white px-5 py-6 text-slate-600">
+          <p className="mt-8 border-y border-white/10 bg-[#111318] px-5 py-6 text-slate-400">
             This event is read-only.
           </p>
         )}
@@ -210,9 +210,9 @@ export default async function EventDetailPage({
           </p>
         ) : null}
         {finalizable ? (
-          <section className="mt-10 border-t border-slate-200 pt-6">
+          <section className="mt-10 border-t border-white/10 pt-6">
             <h2 className="text-lg font-bold">Finalize attendance</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
               Create absent records for eligible active members without
               attendance and complete this event.
             </p>

@@ -7,7 +7,7 @@ import { adminLogout } from "./registrations/actions";
 function SignOutButton() {
   return (
     <form action={adminLogout}>
-      <button className="inline-flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-950" type="submit">
+      <button className="inline-flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-slate-400 transition hover:bg-white/[0.07] hover:text-slate-100" type="submit">
         <FiLogOut aria-hidden="true" /> Sign out
       </button>
     </form>
@@ -18,46 +18,46 @@ export default function AdminProtectedLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="min-h-screen bg-[#fafafa] text-slate-950">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur lg:hidden">
+    <div className="admin-shell min-h-screen bg-[#090a0d] text-slate-100">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0f13]/95 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <Link className="flex items-center gap-2 font-semibold" href="/admin/dashboard">
-            <span className="grid size-8 place-items-center rounded-lg bg-slate-950 text-xs font-black text-white">A</span>
+            <span className="grid size-8 place-items-center rounded-lg bg-violet-500 text-xs font-black text-white shadow-[0_0_24px_rgba(139,92,246,0.28)]">A</span>
             ACMS Admin
           </Link>
           <details className="relative">
-            <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50">
+            <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-lg border border-white/10 text-slate-400 hover:bg-[#090a0d]">
               <FiMenu aria-hidden="true" />
               <span className="sr-only">Open administration navigation</span>
             </summary>
-            <div className="absolute right-0 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-2xl">
+            <div className="absolute right-0 mt-2 w-72 rounded-xl border border-white/10 bg-[#111318] p-3 shadow-2xl">
               <PortalNavigation portal="admin" />
-              <div className="mt-2 border-t border-slate-100 pt-2"><SignOutButton /></div>
+              <div className="mt-2 border-t border-white/[0.07] pt-2"><SignOutButton /></div>
             </div>
           </details>
         </div>
       </header>
 
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white px-3 py-4 lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/10 bg-[#111318] px-3 py-4 lg:flex">
           <div className="flex items-center justify-between px-2 pb-4">
             <Link className="flex items-center gap-2" href="/admin/dashboard">
-              <span className="grid size-8 place-items-center rounded-lg bg-slate-950 text-xs font-black text-white">A</span>
+              <span className="grid size-8 place-items-center rounded-lg bg-violet-500 text-xs font-black text-white shadow-[0_0_24px_rgba(139,92,246,0.28)]">A</span>
               <span className="text-sm font-semibold">Arrows ACMS</span>
             </Link>
-            <span className="rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">ADMIN</span>
+            <span className="rounded-md border border-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">ADMIN</span>
           </div>
 
-          <button className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-left text-sm text-slate-400 shadow-sm hover:bg-slate-50" type="button">
+          <button className="mb-4 flex h-9 items-center gap-2 rounded-lg border border-white/10 px-3 text-left text-sm text-slate-400 shadow-sm hover:bg-[#090a0d]" type="button">
             <FiSearch aria-hidden="true" /> Search workspace
-            <span className="ml-auto inline-flex items-center gap-1 rounded border border-slate-200 px-1.5 py-0.5 text-[10px]"><FiCommand aria-hidden="true" />K</span>
+            <span className="ml-auto inline-flex items-center gap-1 rounded border border-white/10 px-1.5 py-0.5 text-[10px]"><FiCommand aria-hidden="true" />K</span>
           </button>
 
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">Workspace</p>
           <PortalNavigation portal="admin" />
 
-          <div className="mt-auto border-t border-slate-100 pt-3">
-            <Link className="mb-2 flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-slate-50" href="/admin/dashboard">
+          <div className="mt-auto border-t border-white/[0.07] pt-3">
+            <Link className="mb-2 flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-[#090a0d]" href="/admin/dashboard">
               <ProfileAvatar name="Administrator" size="sm" variant="admin" />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold">Administrator</span>
@@ -69,8 +69,8 @@ export default function AdminProtectedLayout({
         </aside>
 
         <div className="min-w-0 flex-1">
-          <div className="hidden h-14 items-center justify-end gap-2 border-b border-slate-200 bg-white px-6 lg:flex">
-            <button aria-label="Notifications" className="grid size-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100" type="button"><FiBell aria-hidden="true" /></button>
+          <div className="hidden h-14 items-center justify-end gap-2 border-b border-white/10 bg-[#111318] px-6 lg:flex">
+            <button aria-label="Notifications" className="grid size-9 place-items-center rounded-lg text-slate-400 hover:bg-white/[0.07]" type="button"><FiBell aria-hidden="true" /></button>
             <ProfileAvatar name="Administrator" size="sm" variant="admin" />
           </div>
           {children}

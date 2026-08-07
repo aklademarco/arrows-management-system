@@ -47,44 +47,44 @@ export default async function DepartmentsPage() {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-10 text-slate-950">
+    <main className="min-h-screen bg-[#090a0d] px-5 py-10 text-slate-100">
       <div className="mx-auto max-w-7xl">
         <Link
-          className="inline-flex items-center gap-2 font-bold text-[#6b21a8]"
+          className="inline-flex items-center gap-2 font-bold text-violet-400"
           href="/admin/dashboard"
         >
           <FiArrowLeft aria-hidden="true" />
           Back to dashboard
         </Link>
         <div className="mt-6">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-400">
             Organization
           </p>
           <h1 className="mt-2 text-3xl font-bold">Departments</h1>
-          <p className="mt-2 text-slate-600">
+          <p className="mt-2 text-slate-400">
             {departments.length} department
             {departments.length === 1 ? "" : "s"} configured.
           </p>
         </div>
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mt-8 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
           <h2 className="text-xl font-bold">Create department</h2>
           <form
             action={createDepartment}
             className="mt-4 grid gap-3 md:grid-cols-[16rem_1fr_auto]"
           >
             <input
-              className="h-11 rounded-lg border border-slate-300 px-3"
+              className="h-11 rounded-lg border border-white/15 px-3"
               minLength={2}
               name="name"
               placeholder="Department name"
               required
             />
             <input
-              className="h-11 rounded-lg border border-slate-300 px-3"
+              className="h-11 rounded-lg border border-white/15 px-3"
               name="description"
               placeholder="Description (optional)"
             />
-            <button className="rounded-lg bg-[#240046] px-5 font-bold text-white">
+            <button className="rounded-lg bg-violet-600 px-5 font-bold text-white">
               Create
             </button>
           </form>
@@ -92,10 +92,10 @@ export default async function DepartmentsPage() {
         <section className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {departments.map((department) => (
             <article
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              className="rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm"
               key={department.id}
             >
-              <span className="grid size-11 place-items-center rounded-xl bg-purple-50 text-xl text-[#6b21a8]">
+              <span className="grid size-11 place-items-center rounded-xl bg-violet-500/10 text-xl text-violet-400">
                 <FiGrid aria-hidden="true" />
               </span>
               <div className="mt-4 flex items-center justify-between gap-3">
@@ -104,24 +104,24 @@ export default async function DepartmentsPage() {
                   className={
                     department.isActive
                       ? "rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800"
-                      : "rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600"
+                      : "rounded-full bg-white/[0.07] px-3 py-1 text-xs font-bold text-slate-400"
                   }
                 >
                   {department.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
               {department.description ? (
-                <p className="mt-2 text-sm leading-6 text-slate-600">
+                <p className="mt-2 text-sm leading-6 text-slate-400">
                   {department.description}
                 </p>
               ) : null}
-              <p className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+              <p className="mt-3 flex items-center gap-2 text-sm text-slate-400">
                 <FiUsers aria-hidden="true" />
                 {department.activeMemberCount} active member
                 {department.activeMemberCount === 1 ? "" : "s"}
               </p>
-              <div className="mt-4 rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              <div className="mt-4 rounded-xl bg-[#090a0d] p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
                   Department leadership
                 </p>
                 {department.leaders.length > 0 ? (
@@ -131,7 +131,7 @@ export default async function DepartmentsPage() {
                         <p className="font-bold">
                           {leader.firstName} {leader.lastName}
                         </p>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-sm text-slate-400">
                           {leader.title ?? "Department Leader"}
                         </p>
                         <details className="mt-2">
@@ -153,7 +153,7 @@ export default async function DepartmentsPage() {
                               value={leader.id}
                             />
                             <input
-                              className="h-9 rounded-lg border border-slate-300 px-3 text-sm"
+                              className="h-9 rounded-lg border border-white/15 px-3 text-sm"
                               minLength={3}
                               name="reason"
                               placeholder="Reason"
@@ -168,20 +168,20 @@ export default async function DepartmentsPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-slate-600">
+                  <p className="mt-2 text-sm text-slate-400">
                     No active leader assigned.
                   </p>
                 )}
               </div>
               <Link
-                className="mt-5 inline-flex text-sm font-bold text-[#6b21a8]"
+                className="mt-5 inline-flex text-sm font-bold text-violet-400"
                 href={`/admin/members?departmentId=${department.id}`}
               >
                 View members
               </Link>
               {department.isActive ? (
-                <details className="mt-5 border-t border-slate-100 pt-4">
-                  <summary className="cursor-pointer text-sm font-bold text-[#6b21a8]">
+                <details className="mt-5 border-t border-white/[0.07] pt-4">
+                  <summary className="cursor-pointer text-sm font-bold text-violet-400">
                     Assign department leader
                   </summary>
                   <form
@@ -194,7 +194,7 @@ export default async function DepartmentsPage() {
                       value={department.id}
                     />
                     <select
-                      className="h-10 rounded-lg border border-slate-300 px-3"
+                      className="h-10 rounded-lg border border-white/15 px-3"
                       name="memberId"
                       required
                     >
@@ -213,39 +213,39 @@ export default async function DepartmentsPage() {
                         ))}
                     </select>
                     <input
-                      className="h-10 rounded-lg border border-slate-300 px-3"
+                      className="h-10 rounded-lg border border-white/15 px-3"
                       maxLength={100}
                       minLength={2}
                       name="title"
                       placeholder="Leadership title (optional)"
                     />
-                    <label className="grid gap-1 text-xs font-bold text-slate-600">
+                    <label className="grid gap-1 text-xs font-bold text-slate-400">
                       Starts on
                       <input
-                        className="h-10 rounded-lg border border-slate-300 px-3"
+                        className="h-10 rounded-lg border border-white/15 px-3"
                         defaultValue={today}
                         name="startsAt"
                         type="date"
                         required
                       />
                     </label>
-                    <label className="grid gap-1 text-xs font-bold text-slate-600">
+                    <label className="grid gap-1 text-xs font-bold text-slate-400">
                       Ends on (optional)
                       <input
-                        className="h-10 rounded-lg border border-slate-300 px-3"
+                        className="h-10 rounded-lg border border-white/15 px-3"
                         min={today}
                         name="endsAt"
                         type="date"
                       />
                     </label>
-                    <button className="h-10 rounded-lg bg-[#240046] px-4 font-bold text-white">
+                    <button className="h-10 rounded-lg bg-violet-600 px-4 font-bold text-white">
                       Assign leader
                     </button>
                   </form>
                 </details>
               ) : null}
-              <details className="mt-5 border-t border-slate-100 pt-4">
-                <summary className="cursor-pointer text-sm font-bold text-[#6b21a8]">
+              <details className="mt-5 border-t border-white/[0.07] pt-4">
+                <summary className="cursor-pointer text-sm font-bold text-violet-400">
                   Edit department
                 </summary>
                 <form action={updateDepartment} className="mt-4 grid gap-3">
@@ -255,19 +255,19 @@ export default async function DepartmentsPage() {
                     value={department.id}
                   />
                   <input
-                    className="h-10 rounded-lg border border-slate-300 px-3"
+                    className="h-10 rounded-lg border border-white/15 px-3"
                     defaultValue={department.name}
                     minLength={2}
                     name="name"
                     required
                   />
                   <textarea
-                    className="min-h-24 rounded-lg border border-slate-300 p-3"
+                    className="min-h-24 rounded-lg border border-white/15 p-3"
                     defaultValue={department.description ?? ""}
                     name="description"
                     placeholder="Description"
                   />
-                  <button className="h-10 rounded-lg bg-[#240046] px-4 font-bold text-white">
+                  <button className="h-10 rounded-lg bg-violet-600 px-4 font-bold text-white">
                     Save changes
                   </button>
                 </form>
@@ -291,7 +291,7 @@ export default async function DepartmentsPage() {
           ))}
         </section>
         {departments.length === 0 ? (
-          <p className="mt-8 rounded-2xl border border-dashed p-10 text-center text-slate-600">
+          <p className="mt-8 rounded-2xl border border-dashed p-10 text-center text-slate-400">
             No departments configured.
           </p>
         ) : null}
