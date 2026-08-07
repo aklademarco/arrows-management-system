@@ -22,4 +22,16 @@ export class LeaderboardsController {
       data: await this.service.individual(query, user),
     };
   }
+
+  @Get('departments')
+  async departments(
+    @Query() query: LeaderboardQueryDto,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Department leaderboard retrieved.',
+      data: await this.service.departments(query, user),
+    };
+  }
 }

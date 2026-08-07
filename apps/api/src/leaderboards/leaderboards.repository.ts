@@ -4,6 +4,7 @@ import { DATABASE, type Database } from '../database/database.module';
 import {
   attendanceRecords,
   departmentMembers,
+  departments,
   events,
   leaderboardEntries,
   memberProfiles,
@@ -72,5 +73,47 @@ export class LeaderboardsRepository {
       )
       .groupBy(leaderboardEntries.memberId);
     return { rows, points };
+  }
+
+  departments(input: { churchId: string; startsAt: Date; endsAt: Date }) {
+    return this.database
+      .select({
+        departmentId: departments.id,
+        departmentName: departments.name,
+        eventId: events.id,
+        memberId: memberProfiles.id,
+        status: attendanceRecords.status,
+        punctualityStatus: attendanceRecords.punctualityStatus,
+      })
+      .from(events)
+      .innerJoin(departments, eq(departments.churchId, events.churchId))
+      .innerJoin(
+        departmentMembers,
+        eq(departmentMembers.departmentId, departments.id),
+      )
+      .innerJoin(
+        memberProfiles,
+        eq(memberProfiles.id, departmentMembers.memberId),
+      )
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .leftJoin(
+        attendanceRecords,
+        and(
+          eq(attendanceRecords.eventId, events.id),
+          eq(attendanceRecords.memberId, memberProfiles.id),
+        ),
+      )
+      .where(
+        and(
+          eq(events.churchId, input.churchId),
+          eq(events.status, 'COMPLETED'),
+          gte(events.startsAt, input.startsAt),
+          lt(events.startsAt, input.endsAt),
+          sql`${departmentMembers.joinedAt} <= (${events.startsAt} at time zone 'Africa/Accra')::date`,
+          sql`(${departmentMembers.leftAt} is null or ${departmentMembers.leftAt} > (${events.startsAt} at time zone 'Africa/Accra')::date)`,
+          sql`(not exists (select 1 from event_departments all_ed where all_ed.event_id = ${events.id}) or exists (select 1 from event_departments scoped_ed where scoped_ed.event_id = ${events.id} and scoped_ed.department_id = ${departments.id}))`,
+        ),
+      )
+      .orderBy(asc(departments.name), asc(events.startsAt));
   }
 }

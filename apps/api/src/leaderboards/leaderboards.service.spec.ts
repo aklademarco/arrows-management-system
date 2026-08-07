@@ -69,4 +69,82 @@ describe('LeaderboardsService', () => {
     );
     expect(result.items[0]).toMatchObject({ rank: null, qualified: false });
   });
+
+  it('ranks departments from expected member slots and punctuality', async () => {
+    const repository = {
+      departments: jest.fn().mockResolvedValue([
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'event-1',
+          memberId: 'one',
+          status: 'ON_TIME',
+          punctualityStatus: 'ON_TIME',
+        },
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'event-2',
+          memberId: 'one',
+          status: 'LATE',
+          punctualityStatus: 'LATE',
+        },
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'event-3',
+          memberId: 'one',
+          status: null,
+          punctualityStatus: null,
+        },
+        {
+          departmentId: 'media',
+          departmentName: 'Media',
+          eventId: 'event-3',
+          memberId: 'two',
+          status: 'EXCUSED',
+          punctualityStatus: null,
+        },
+      ]),
+    } as unknown as LeaderboardsRepository;
+    const service = new LeaderboardsService(repository);
+
+    const result = await service.departments(
+      { period: 'MONTHLY', date: '2026-08-15', limit: 50 },
+      { id: 'user', churchId: 'church', email: 'a@b.com', roles: ['MEMBER'] },
+    );
+
+    expect(result.items[0]).toMatchObject({
+      rank: 1,
+      applicableEvents: 3,
+      expectedAttendanceSlots: 3,
+      attendedSlots: 2,
+      attendanceRate: 66.67,
+      punctualityRate: 50,
+      score: 61.67,
+      qualified: true,
+    });
+  });
+
+  it('leaves departments below the three-event minimum unranked', async () => {
+    const repository = {
+      departments: jest.fn().mockResolvedValue([
+        {
+          departmentId: 'choir',
+          departmentName: 'Choir',
+          eventId: 'event-1',
+          memberId: 'one',
+          status: 'ON_TIME',
+          punctualityStatus: 'ON_TIME',
+        },
+      ]),
+    } as unknown as LeaderboardsRepository;
+    const service = new LeaderboardsService(repository);
+    const result = await service.departments(
+      { period: 'WEEKLY', date: '2026-08-05', limit: 50 },
+      { id: 'user', churchId: 'church', email: 'a@b.com', roles: ['MEMBER'] },
+    );
+
+    expect(result.items[0]).toMatchObject({ rank: null, qualified: false });
+  });
 });

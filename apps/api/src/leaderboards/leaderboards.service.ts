@@ -122,4 +122,75 @@ export class LeaderboardsService {
       items: items.slice(0, query.limit),
     };
   }
+
+  async departments(query: LeaderboardQueryDto, user: AuthenticatedPrincipal) {
+    const { start, end } = periodRange(query.period, query.date);
+    const rows = await this.repository.departments({
+      churchId: user.churchId,
+      startsAt: start,
+      endsAt: end,
+    });
+    const grouped = new Map<string, typeof rows>();
+    for (const row of rows)
+      grouped.set(row.departmentId, [
+        ...(grouped.get(row.departmentId) ?? []),
+        row,
+      ]);
+    const items = [...grouped.entries()].map(([departmentId, slots]) => {
+      const expected = slots.filter((slot) => slot.status !== 'EXCUSED');
+      const attended = expected.filter(
+        (slot) => slot.status !== null && attendedStatuses.has(slot.status),
+      );
+      const known = attended.filter(
+        (slot) =>
+          slot.punctualityStatus ||
+          (slot.status && ['EARLY', 'ON_TIME', 'LATE'].includes(slot.status)),
+      );
+      const punctual = known.filter(
+        (slot) => (slot.punctualityStatus ?? slot.status) !== 'LATE',
+      );
+      const attendanceRate = expected.length
+        ? (attended.length / expected.length) * 100
+        : 0;
+      const punctualityRate = known.length
+        ? (punctual.length / known.length) * 100
+        : null;
+      const score =
+        punctualityRate === null
+          ? attendanceRate
+          : attendanceRate * 0.7 + punctualityRate * 0.3;
+      const applicableEvents = new Set(expected.map((slot) => slot.eventId))
+        .size;
+      return {
+        rank: null as number | null,
+        departmentId,
+        departmentName: slots[0].departmentName,
+        applicableEvents,
+        expectedAttendanceSlots: expected.length,
+        attendedSlots: attended.length,
+        attendanceRate: round(attendanceRate),
+        punctualityRate:
+          punctualityRate === null ? null : round(punctualityRate),
+        score: round(score),
+        qualified: applicableEvents >= 3,
+      };
+    });
+    items.sort(
+      (a, b) =>
+        Number(b.qualified) - Number(a.qualified) ||
+        b.score - a.score ||
+        (b.punctualityRate ?? -1) - (a.punctualityRate ?? -1) ||
+        b.attendanceRate - a.attendanceRate ||
+        a.departmentName.localeCompare(b.departmentName),
+    );
+    let rank = 0;
+    for (const item of items) if (item.qualified) item.rank = ++rank;
+    return {
+      period: query.period,
+      startsOn: start.toISOString().slice(0, 10),
+      endsOn: new Date(end.getTime() - 86400000).toISOString().slice(0, 10),
+      minimumQualifyingEvents: 3,
+      items: items.slice(0, query.limit),
+    };
+  }
 }

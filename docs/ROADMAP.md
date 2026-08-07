@@ -5,7 +5,7 @@
 **Version:** 1.0  
 **Status:** Planned  
 **Delivery Model:** Milestone-based  
-**Architecture:** Next.js + NestJS + PostgreSQL + Drizzle ORM  
+**Architecture:** Next.js + NestJS + PostgreSQL + Drizzle ORM
 
 ---
 
@@ -54,24 +54,24 @@ Version 1 excludes:
 
 # 3. Milestone Summary
 
-| Milestone | Name | Main Outcome |
-|---|---|---|
-| M0 | Planning and Documentation | Requirements and architecture approved |
-| M1 | Repository and Monorepo Setup | Frontend and backend workspace ready |
-| M2 | Local Infrastructure | PostgreSQL and Docker running |
-| M3 | Database Foundation | Drizzle schema and migrations complete |
-| M4 | Backend Core | API foundation, validation, logging, and errors |
-| M5 | Authentication | Registration, login, refresh, logout |
-| M6 | Account Approval | Admin approval and account lifecycle |
-| M7 | Members and Departments | Core church workforce data |
-| M8 | Events | Event scheduling and eligibility |
-| M9 | Attendance | Geofence and manual attendance |
-| M10 | Absence Requests | Excused absence workflow |
-| M11 | Leaderboards | Individual and department ranking |
-| M12 | Reports | Analytics and CSV export |
-| M13 | Frontend Application | Complete member and admin interfaces |
-| M14 | Testing and Hardening | Automated tests and security checks |
-| M15 | Deployment | Production release |
+| Milestone | Name                          | Main Outcome                                    |
+| --------- | ----------------------------- | ----------------------------------------------- |
+| M0        | Planning and Documentation    | Requirements and architecture approved          |
+| M1        | Repository and Monorepo Setup | Frontend and backend workspace ready            |
+| M2        | Local Infrastructure          | PostgreSQL and Docker running                   |
+| M3        | Database Foundation           | Drizzle schema and migrations complete          |
+| M4        | Backend Core                  | API foundation, validation, logging, and errors |
+| M5        | Authentication                | Registration, login, refresh, logout            |
+| M6        | Account Approval              | Admin approval and account lifecycle            |
+| M7        | Members and Departments       | Core church workforce data                      |
+| M8        | Events                        | Event scheduling and eligibility                |
+| M9        | Attendance                    | Geofence and manual attendance                  |
+| M10       | Absence Requests              | Excused absence workflow                        |
+| M11       | Leaderboards                  | Individual and department ranking               |
+| M12       | Reports                       | Analytics and CSV export                        |
+| M13       | Frontend Application          | Complete member and admin interfaces            |
+| M14       | Testing and Hardening         | Automated tests and security checks             |
+| M15       | Deployment                    | Production release                              |
 
 ---
 
@@ -665,11 +665,11 @@ Implement transparent and auditable ranking.
 
 ### Department Leaderboard
 
-- [ ] Attendance rate.
-- [ ] Punctuality rate.
-- [ ] Percentage-based scoring.
-- [ ] Excused absence handling.
-- [ ] Period filtering.
+- [x] Attendance rate.
+- [x] Punctuality rate.
+- [x] Percentage-based scoring.
+- [x] Excused absence handling.
+- [x] Period filtering.
 
 ## Deliverables
 
@@ -739,7 +739,7 @@ Build the complete mobile-first user experience.
 - [x] Attendance history.
 - [x] Absence request form.
 - [x] Individual leaderboard.
-- [ ] Department leaderboard.
+- [x] Department leaderboard.
 - [x] Profile page.
 
 ## Admin Pages
