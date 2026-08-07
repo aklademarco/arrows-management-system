@@ -691,16 +691,16 @@ Provide useful operational reporting.
 
 ## Tasks
 
-- [ ] Attendance summary.
-- [ ] Attendance by event.
-- [ ] Attendance by member.
+- [x] Attendance summary.
+- [x] Attendance by event.
+- [x] Attendance by member.
 - [ ] Attendance by department.
 - [ ] Punctuality report.
 - [ ] Repeated absence report.
 - [ ] Manual attendance report.
 - [ ] Pending registration report.
-- [ ] Date filtering.
-- [ ] Department filtering.
+- [x] Date filtering.
+- [x] Department filtering.
 - [ ] CSV export.
 - [ ] Department leader report restrictions.
 
@@ -752,7 +752,7 @@ Build the complete mobile-first user experience.
 - [x] Live event attendance.
 - [x] Manual attendance.
 - [x] Absence review.
-- [ ] Reports.
+- [x] Reports.
 - [ ] Audit logs for Super Administrator.
 
 ## UX States
