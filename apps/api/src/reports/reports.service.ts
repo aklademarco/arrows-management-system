@@ -1,5 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import type { AdminPrincipal } from '../auth/admin.guard';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import type { AttendanceReportQueryDto } from './dto/attendance-report-query.dto';
 import { ReportsRepository } from './reports.repository';
 
@@ -29,11 +33,28 @@ export class ReportsService {
 
   async attendanceSummary(
     query: AttendanceReportQueryDto,
-    admin: AdminPrincipal,
+    user: AuthenticatedPrincipal,
   ) {
+    const isAdministrator = user.roles.some(
+      (role) => role === 'ADMIN' || role === 'SUPER_ADMIN',
+    );
+    if (!isAdministrator) {
+      if (!user.roles.includes('DEPARTMENT_LEADER') || !query.departmentId)
+        throw new ForbiddenException(
+          'Department leaders must select a department they actively lead.',
+        );
+      const ledDepartmentIds = await this.repository.activelyLedDepartmentIds(
+        user.id,
+        user.churchId,
+      );
+      if (!ledDepartmentIds.includes(query.departmentId))
+        throw new ForbiddenException(
+          'You may only view reports for a department you actively lead.',
+        );
+    }
     const range = reportRange(query);
     const input = {
-      churchId: admin.churchId,
+      churchId: user.churchId,
       startsAt: range.start,
       endsAt: range.end,
       departmentId: query.departmentId,
@@ -41,7 +62,9 @@ export class ReportsService {
     const [rows, departmentRows, pendingRegistrations] = await Promise.all([
       this.repository.attendance(input),
       this.repository.departmentAttendance(input),
-      this.repository.pendingRegistrations(admin.churchId),
+      isAdministrator
+        ? this.repository.pendingRegistrations(user.churchId)
+        : Promise.resolve([]),
     ]);
     const scored = rows.filter((row) => row.status !== 'EXCUSED');
     const attended = scored.filter((row) => attendedStatuses.has(row.status));
@@ -241,8 +264,11 @@ export class ReportsService {
     };
   }
 
-  async attendanceCsv(query: AttendanceReportQueryDto, admin: AdminPrincipal) {
-    const report = await this.attendanceSummary(query, admin);
+  async attendanceCsv(
+    query: AttendanceReportQueryDto,
+    user: AuthenticatedPrincipal,
+  ) {
+    const report = await this.attendanceSummary(query, user);
     const escape = (value: string | number | null) => {
       const text = String(value ?? '');
       return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;

@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, gte, lt, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, gt, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   attendanceRecords,
   departmentMembers,
+  departmentLeaders,
   departments,
   events,
   memberProfiles,
@@ -117,5 +118,45 @@ export class ReportsRepository {
         ),
       )
       .orderBy(asc(users.createdAt));
+  }
+
+  async activelyLedDepartmentIds(userId: string, churchId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = await this.database
+      .select({ departmentId: departmentLeaders.departmentId })
+      .from(departmentLeaders)
+      .innerJoin(
+        memberProfiles,
+        eq(memberProfiles.id, departmentLeaders.memberId),
+      )
+      .innerJoin(
+        departments,
+        eq(departments.id, departmentLeaders.departmentId),
+      )
+      .innerJoin(
+        departmentMembers,
+        and(
+          eq(departmentMembers.departmentId, departmentLeaders.departmentId),
+          eq(departmentMembers.memberId, departmentLeaders.memberId),
+          lte(departmentMembers.joinedAt, today),
+          or(
+            isNull(departmentMembers.leftAt),
+            gt(departmentMembers.leftAt, today),
+          ),
+        ),
+      )
+      .where(
+        and(
+          eq(memberProfiles.userId, userId),
+          eq(departments.churchId, churchId),
+          isNull(departmentLeaders.revokedAt),
+          lte(departmentLeaders.startsAt, today),
+          or(
+            isNull(departmentLeaders.endsAt),
+            sql`${departmentLeaders.endsAt} >= ${today}`,
+          ),
+        ),
+      );
+    return rows.map((row) => row.departmentId);
   }
 }

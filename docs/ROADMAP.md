@@ -702,7 +702,7 @@ Provide useful operational reporting.
 - [x] Date filtering.
 - [x] Department filtering.
 - [x] CSV export.
-- [ ] Department leader report restrictions.
+- [x] Department leader report restrictions.
 
 ## Deliverables
 
@@ -727,7 +727,7 @@ Build the complete mobile-first user experience.
 - [x] Landing page.
 - [x] Registration page.
 - [x] Login page.
-- [ ] Password reset.
+- [x] Password reset.
 - [ ] Approval status page.
 
 ## Member Pages

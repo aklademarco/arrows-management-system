@@ -171,4 +171,40 @@ describe('ReportsService', () => {
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('restricts department leaders to an actively led department', async () => {
+    const activelyLedDepartmentIds = jest.fn().mockResolvedValue(['media']);
+    const repository = {
+      activelyLedDepartmentIds,
+    } as unknown as ReportsRepository;
+    const service = new ReportsService(repository);
+    const leader = {
+      id: 'leader',
+      churchId: 'church',
+      email: 'leader@example.com',
+      roles: ['DEPARTMENT_LEADER'],
+    };
+
+    await expect(
+      service.attendanceSummary({ departmentId: 'choir' }, leader),
+    ).rejects.toThrow(
+      'You may only view reports for a department you actively lead.',
+    );
+    expect(activelyLedDepartmentIds).toHaveBeenCalledWith('leader', 'church');
+  });
+
+  it('requires department leaders to select a department', async () => {
+    const repository = {} as ReportsRepository;
+    const leader = {
+      id: 'leader',
+      churchId: 'church',
+      email: 'leader@example.com',
+      roles: ['DEPARTMENT_LEADER'],
+    };
+    await expect(
+      new ReportsService(repository).attendanceSummary({}, leader),
+    ).rejects.toThrow(
+      'Department leaders must select a department they actively lead.',
+    );
+  });
 });
