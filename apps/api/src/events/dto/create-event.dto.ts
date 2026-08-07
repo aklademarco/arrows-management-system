@@ -1,10 +1,14 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
   IsDateString,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -74,4 +78,11 @@ export class CreateEventDto {
   @Min(1)
   @Max(1000)
   maximumAccuracyMeters!: number;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  requiredDepartmentIds?: string[];
 }

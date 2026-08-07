@@ -14,8 +14,16 @@ import {
   memberProfiles,
   users,
 } from '../database/schema';
+import {
+  eligibleEventCondition,
+  eligibleMemberCondition,
+} from '../events/event-eligibility';
 import type { CorrectAttendanceDto } from './dto/correct-attendance.dto';
 import type { ManualAttendanceDto } from './dto/manual-attendance.dto';
+
+function eventStartDate(startsAt: Date): string {
+  return startsAt.toISOString().slice(0, 10);
+}
 
 function isUniqueViolation(error: unknown): boolean {
   let current = error;
@@ -52,6 +60,7 @@ export class AttendanceRepository {
           inArray(events.status, ['SCHEDULED', 'ACTIVE']),
           lte(events.attendanceOpensAt, now),
           gte(events.attendanceClosesAt, now),
+          eligibleEventCondition(member.id),
         ),
       );
     return rows.map((event) => ({
@@ -81,6 +90,7 @@ export class AttendanceRepository {
           eq(events.churchId, churchId),
           eq(events.status, 'SCHEDULED'),
           gt(events.attendanceOpensAt, now),
+          eligibleEventCondition(member.id),
         ),
       )
       .orderBy(asc(events.startsAt))
@@ -141,6 +151,7 @@ export class AttendanceRepository {
         id: events.id,
         name: events.name,
         status: events.status,
+        startsAt: events.startsAt,
         attendanceFinalizedAt: events.attendanceFinalizedAt,
       })
       .from(events)
@@ -175,6 +186,7 @@ export class AttendanceRepository {
           eq(users.churchId, churchId),
           eq(users.accountStatus, 'ACTIVE'),
           eq(memberProfiles.membershipStatus, 'ACTIVE'),
+          eligibleMemberCondition(eventId, eventStartDate(event.startsAt)),
         ),
       )
       .orderBy(asc(memberProfiles.lastName), asc(memberProfiles.firstName));
@@ -322,6 +334,7 @@ export class AttendanceRepository {
           id: events.id,
           name: events.name,
           status: events.status,
+          startsAt: events.startsAt,
           attendanceClosesAt: events.attendanceClosesAt,
           attendanceFinalizedAt: events.attendanceFinalizedAt,
         })
@@ -359,6 +372,7 @@ export class AttendanceRepository {
             eq(users.churchId, admin.churchId),
             eq(users.accountStatus, 'ACTIVE'),
             eq(memberProfiles.membershipStatus, 'ACTIVE'),
+            eligibleMemberCondition(eventId, eventStartDate(event.startsAt)),
           ),
         );
       const existing = await transaction
@@ -422,9 +436,46 @@ export class AttendanceRepository {
     });
   }
 
+  async findActiveMemberId(
+    userId: string,
+    churchId: string,
+  ): Promise<string | null> {
+    const [member] = await this.database
+      .select({ id: memberProfiles.id })
+      .from(memberProfiles)
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .where(
+        and(
+          eq(users.id, userId),
+          eq(users.churchId, churchId),
+          eq(memberProfiles.membershipStatus, 'ACTIVE'),
+        ),
+      )
+      .limit(1);
+    return member?.id ?? null;
+  }
+
+  async isMemberEligibleForEvent(
+    memberProfileId: string,
+    eventId: string,
+    churchId: string,
+  ): Promise<boolean> {
+    const [row] = await this.database
+      .select({ id: events.id })
+      .from(events)
+      .where(
+        and(
+          eq(events.id, eventId),
+          eq(events.churchId, churchId),
+          eligibleEventCondition(memberProfileId),
+        ),
+      )
+      .limit(1);
+    return Boolean(row);
+  }
+
   async checkIn(input: {
-    userId: string;
-    churchId: string;
+    memberId: string;
     eventId: string;
     now: Date;
     latitude: number;
@@ -434,38 +485,23 @@ export class AttendanceRepository {
     status: 'EARLY' | 'ON_TIME' | 'LATE';
   }) {
     try {
-      return await this.database.transaction(async (transaction) => {
-        const [member] = await transaction
-          .select({ id: memberProfiles.id })
-          .from(memberProfiles)
-          .innerJoin(users, eq(users.id, memberProfiles.userId))
-          .where(
-            and(
-              eq(users.id, input.userId),
-              eq(users.churchId, input.churchId),
-              eq(memberProfiles.membershipStatus, 'ACTIVE'),
-            ),
-          )
-          .limit(1);
-        if (!member) throw new NotFoundException('Member profile not found.');
-        const [record] = await transaction
-          .insert(attendanceRecords)
-          .values({
-            eventId: input.eventId,
-            memberId: member.id,
-            status: input.status,
-            method: 'GEOLOCATION',
-            checkedInAt: input.now,
-            latitude: String(input.latitude),
-            longitude: String(input.longitude),
-            accuracyMeters: input.accuracyMeters.toFixed(2),
-            distanceMeters: input.distanceMeters.toFixed(2),
-            withinGeofence: true,
-            pointsAwarded: 10,
-          })
-          .returning();
-        return record;
-      });
+      const [record] = await this.database
+        .insert(attendanceRecords)
+        .values({
+          eventId: input.eventId,
+          memberId: input.memberId,
+          status: input.status,
+          method: 'GEOLOCATION',
+          checkedInAt: input.now,
+          latitude: String(input.latitude),
+          longitude: String(input.longitude),
+          accuracyMeters: input.accuracyMeters.toFixed(2),
+          distanceMeters: input.distanceMeters.toFixed(2),
+          withinGeofence: true,
+          pointsAwarded: 10,
+        })
+        .returning();
+      return record;
     } catch (error: unknown) {
       if (isUniqueViolation(error))
         throw new ConflictException({

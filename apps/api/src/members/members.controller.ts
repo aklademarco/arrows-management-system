@@ -51,28 +51,28 @@ export class MembersController {
   }
 
   @Get()
-  @UseGuards(AdminGuard)
+  @UseGuards(AuthenticatedGuard)
   async list(
     @Query() query: ListMembersDto,
-    @AdminUser() admin: AdminPrincipal,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
   ) {
     return {
       success: true,
       message: 'Members retrieved.',
-      data: await this.service.list(query, admin.churchId),
+      data: await this.service.list(query, viewer),
     };
   }
 
   @Get(':memberId')
-  @UseGuards(AdminGuard)
+  @UseGuards(AuthenticatedGuard)
   async findById(
     @Param('memberId', ParseUUIDPipe) memberId: string,
-    @AdminUser() admin: AdminPrincipal,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
   ) {
     return {
       success: true,
       message: 'Member retrieved.',
-      data: await this.service.findById(memberId, admin.churchId),
+      data: await this.service.findById(memberId, viewer),
     };
   }
 

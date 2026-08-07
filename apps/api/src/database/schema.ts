@@ -280,6 +280,31 @@ export const events = pgTable(
   ],
 );
 
+export const eventDepartments = pgTable(
+  'event_departments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    departmentId: uuid('department_id')
+      .notNull()
+      .references(() => departments.id),
+    isRequired: boolean('is_required').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('event_departments_event_department_unique').on(
+      table.eventId,
+      table.departmentId,
+    ),
+    index('event_departments_event_idx').on(table.eventId),
+    index('event_departments_department_idx').on(table.departmentId),
+  ],
+);
+
 export const attendanceRecords = pgTable(
   'attendance_records',
   {

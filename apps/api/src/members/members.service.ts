@@ -1,20 +1,55 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import { ListMembersDto } from './dto/list-members.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersRepository } from './members.repository';
 
+const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
+
 @Injectable()
 export class MembersService {
   constructor(private readonly repository: MembersRepository) {}
 
-  list(query: ListMembersDto, churchId: string) {
-    return this.repository.list(query, churchId);
+  async list(query: ListMembersDto, viewer: AuthenticatedPrincipal) {
+    const restrictToDepartmentIds = await this.resolveReadScope(viewer);
+    return this.repository.list(query, viewer.churchId, restrictToDepartmentIds);
   }
 
-  findById(memberId: string, churchId: string) {
-    return this.repository.findById(memberId, churchId);
+  async findById(memberId: string, viewer: AuthenticatedPrincipal) {
+    const restrictToDepartmentIds = await this.resolveReadScope(viewer);
+    return this.repository.findById(
+      memberId,
+      viewer.churchId,
+      restrictToDepartmentIds,
+    );
+  }
+
+  /**
+   * Resolves the department directory a viewer may read. Administrators see the
+   * whole church (undefined); a department leader is limited to the departments
+   * they currently lead. Anyone else is denied.
+   */
+  private async resolveReadScope(
+    viewer: AuthenticatedPrincipal,
+  ): Promise<string[] | undefined> {
+    if (viewer.roles.some((role) => ADMIN_ROLES.includes(role))) {
+      return undefined;
+    }
+    const ledDepartmentIds = await this.repository.findLedDepartmentIds(
+      viewer.id,
+      viewer.churchId,
+    );
+    if (ledDepartmentIds.length === 0) {
+      throw new ForbiddenException(
+        'You do not have access to the member directory.',
+      );
+    }
+    return ledDepartmentIds;
   }
 
   findOwnProfile(user: AuthenticatedPrincipal) {

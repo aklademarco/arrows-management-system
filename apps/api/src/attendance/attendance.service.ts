@@ -57,6 +57,11 @@ export class AttendanceService {
 
   async checkIn(user: AuthenticatedPrincipal, dto: CheckInDto) {
     const now = new Date();
+    const memberId = await this.repository.findActiveMemberId(
+      user.id,
+      user.churchId,
+    );
+    if (!memberId) throw new NotFoundException('Member profile not found.');
     const [event] = await this.database
       .select()
       .from(events)
@@ -74,6 +79,19 @@ export class AttendanceService {
         {
           code: 'ATTENDANCE_CLOSED',
           message: 'Attendance is not open for this event.',
+        },
+        422,
+      );
+    const eligible = await this.repository.isMemberEligibleForEvent(
+      memberId,
+      event.id,
+      user.churchId,
+    );
+    if (!eligible)
+      throw new HttpException(
+        {
+          code: 'EVENT_NOT_ELIGIBLE',
+          message: 'You are not eligible to attend this event.',
         },
         422,
       );
@@ -114,8 +132,7 @@ export class AttendanceService {
           ? 'LATE'
           : 'ON_TIME';
     const record = await this.repository.checkIn({
-      userId: user.id,
-      churchId: user.churchId,
+      memberId,
       eventId: event.id,
       now,
       latitude: dto.latitude,

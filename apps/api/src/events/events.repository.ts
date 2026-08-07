@@ -1,7 +1,18 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq } from 'drizzle-orm';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
-import { attendanceRecords, auditLogs, events } from '../database/schema';
+import {
+  attendanceRecords,
+  auditLogs,
+  departments,
+  eventDepartments,
+  events,
+} from '../database/schema';
 import type { CreateEventDto } from './dto/create-event.dto';
 import type { UpdateEventDto } from './dto/update-event.dto';
 
@@ -18,7 +29,26 @@ export class EventsRepository {
   }
 
   create(dto: CreateEventDto, admin: { id: string; churchId: string }) {
+    const requiredDepartmentIds = Array.from(
+      new Set(dto.requiredDepartmentIds ?? []),
+    );
     return this.database.transaction(async (transaction) => {
+      if (requiredDepartmentIds.length > 0) {
+        const owned = await transaction
+          .select({ id: departments.id })
+          .from(departments)
+          .where(
+            and(
+              eq(departments.churchId, admin.churchId),
+              eq(departments.isActive, true),
+              inArray(departments.id, requiredDepartmentIds),
+            ),
+          );
+        if (owned.length !== requiredDepartmentIds.length)
+          throw new BadRequestException(
+            'One or more required departments were not found in this church.',
+          );
+      }
       const [event] = await transaction
         .insert(events)
         .values({
@@ -41,6 +71,14 @@ export class EventsRepository {
           createdBy: admin.id,
         })
         .returning();
+      if (requiredDepartmentIds.length > 0) {
+        await transaction.insert(eventDepartments).values(
+          requiredDepartmentIds.map((departmentId) => ({
+            eventId: event.id,
+            departmentId,
+          })),
+        );
+      }
       await transaction.insert(auditLogs).values({
         churchId: admin.churchId,
         actorUserId: admin.id,
@@ -51,9 +89,10 @@ export class EventsRepository {
           name: event.name,
           startsAt: event.startsAt,
           status: event.status,
+          requiredDepartmentIds,
         },
       });
-      return event;
+      return { ...event, requiredDepartmentIds };
     });
   }
 
@@ -64,7 +103,14 @@ export class EventsRepository {
       .where(and(eq(events.id, eventId), eq(events.churchId, churchId)))
       .limit(1);
     if (!event) throw new NotFoundException('Event not found.');
-    return event;
+    const assigned = await this.database
+      .select({ departmentId: eventDepartments.departmentId })
+      .from(eventDepartments)
+      .where(eq(eventDepartments.eventId, eventId));
+    return {
+      ...event,
+      requiredDepartmentIds: assigned.map((row) => row.departmentId),
+    };
   }
 
   update(

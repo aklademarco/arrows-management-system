@@ -21,6 +21,7 @@ import {
 import { DATABASE, type Database } from '../database/database.module';
 import {
   auditLogs,
+  departmentLeaders,
   departmentMembers,
   departments,
   memberProfiles,
@@ -34,6 +35,41 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 @Injectable()
 export class MembersRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
+
+  /**
+   * Department IDs the given user currently leads within their church. A term
+   * counts when it is not revoked and today falls inside its half-open range.
+   */
+  async findLedDepartmentIds(
+    userId: string,
+    churchId: string,
+  ): Promise<string[]> {
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = await this.database
+      .selectDistinct({ departmentId: departmentLeaders.departmentId })
+      .from(departmentLeaders)
+      .innerJoin(
+        memberProfiles,
+        eq(memberProfiles.id, departmentLeaders.memberId),
+      )
+      .innerJoin(
+        departments,
+        eq(departments.id, departmentLeaders.departmentId),
+      )
+      .where(
+        and(
+          eq(memberProfiles.userId, userId),
+          eq(departments.churchId, churchId),
+          isNull(departmentLeaders.revokedAt),
+          lte(departmentLeaders.startsAt, today),
+          or(
+            isNull(departmentLeaders.endsAt),
+            sql`${departmentLeaders.endsAt} >= ${today}`,
+          ),
+        ),
+      );
+    return rows.map((row) => row.departmentId);
+  }
 
   async findOwnProfile(userId: string, churchId: string) {
     const [member] = await this.database
@@ -55,8 +91,24 @@ export class MembersRepository {
     return member;
   }
 
-  async list(query: ListMembersDto, churchId: string) {
+  async list(
+    query: ListMembersDto,
+    churchId: string,
+    restrictToDepartmentIds?: string[],
+  ) {
     const filters = [eq(users.churchId, churchId)];
+    if (restrictToDepartmentIds) {
+      const scopedMemberIds = this.database
+        .select({ id: departmentMembers.memberId })
+        .from(departmentMembers)
+        .where(
+          and(
+            inArray(departmentMembers.departmentId, restrictToDepartmentIds),
+            isNull(departmentMembers.leftAt),
+          ),
+        );
+      filters.push(inArray(memberProfiles.id, scopedMemberIds));
+    }
     if (query.accountStatus) {
       filters.push(eq(users.accountStatus, query.accountStatus));
     } else {
@@ -175,7 +227,25 @@ export class MembersRepository {
     };
   }
 
-  async findById(memberId: string, churchId: string) {
+  async findById(
+    memberId: string,
+    churchId: string,
+    restrictToDepartmentIds?: string[],
+  ) {
+    const scopeFilter =
+      restrictToDepartmentIds &&
+      inArray(
+        memberProfiles.id,
+        this.database
+          .select({ id: departmentMembers.memberId })
+          .from(departmentMembers)
+          .where(
+            and(
+              inArray(departmentMembers.departmentId, restrictToDepartmentIds),
+              isNull(departmentMembers.leftAt),
+            ),
+          ),
+      );
     const [member] = await this.database
       .select({
         id: memberProfiles.id,
@@ -193,7 +263,13 @@ export class MembersRepository {
       })
       .from(memberProfiles)
       .innerJoin(users, eq(users.id, memberProfiles.userId))
-      .where(and(eq(memberProfiles.id, memberId), eq(users.churchId, churchId)))
+      .where(
+        and(
+          eq(memberProfiles.id, memberId),
+          eq(users.churchId, churchId),
+          ...(scopeFilter ? [scopeFilter] : []),
+        ),
+      )
       .limit(1);
     if (!member) {
       throw new NotFoundException('Member not found.');

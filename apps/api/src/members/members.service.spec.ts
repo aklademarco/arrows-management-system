@@ -98,28 +98,66 @@ describe('MembersService', () => {
     ).toThrow('Provide at least one profile field.');
   });
 
-  it('loads a member within the administrator church', async () => {
+  const admin = {
+    id: 'admin-id',
+    churchId: 'church-id',
+    email: 'admin@example.com',
+    roles: ['ADMIN'],
+  };
+  const leader = {
+    id: 'leader-id',
+    churchId: 'church-id',
+    email: 'leader@example.com',
+    roles: ['DEPARTMENT_LEADER'],
+  };
+
+  it('loads any member in the church for an administrator', async () => {
     const findById = jest.fn().mockResolvedValue({ id: 'member-id' });
     const service = new MembersService({
       findById,
     } as unknown as MembersRepository);
 
-    await service.findById('member-id', 'church-id');
+    await service.findById('member-id', admin);
 
-    expect(findById).toHaveBeenCalledWith('member-id', 'church-id');
+    expect(findById).toHaveBeenCalledWith('member-id', 'church-id', undefined);
   });
 
-  it('passes validated filters and church scope to the repository', async () => {
+  it('gives an administrator the whole-church member list', async () => {
     const list = jest.fn().mockResolvedValue({ items: [], total: 0 });
     const service = new MembersService({
       list,
     } as unknown as MembersRepository);
     const query = new ListMembersDto();
     query.search = 'Marco';
-    query.departmentId = 'c87f9051-bff8-40a8-a773-dc3ab40fb279';
 
-    await service.list(query, 'church-id');
+    await service.list(query, admin);
 
-    expect(list).toHaveBeenCalledWith(query, 'church-id');
+    expect(list).toHaveBeenCalledWith(query, 'church-id', undefined);
+  });
+
+  it('restricts a leader to the members of their led departments', async () => {
+    const list = jest.fn().mockResolvedValue({ items: [], total: 0 });
+    const findLedDepartmentIds = jest.fn().mockResolvedValue(['dept-a']);
+    const service = new MembersService({
+      list,
+      findLedDepartmentIds,
+    } as unknown as MembersRepository);
+    const query = new ListMembersDto();
+
+    await service.list(query, leader);
+
+    expect(findLedDepartmentIds).toHaveBeenCalledWith('leader-id', 'church-id');
+    expect(list).toHaveBeenCalledWith(query, 'church-id', ['dept-a']);
+  });
+
+  it('denies the directory to a viewer who leads nothing', async () => {
+    const findLedDepartmentIds = jest.fn().mockResolvedValue([]);
+    const service = new MembersService({
+      findLedDepartmentIds,
+    } as unknown as MembersRepository);
+
+    await expect(service.list(new ListMembersDto(), leader)).rejects.toThrow(
+      'You do not have access to the member directory.',
+    );
   });
 });
