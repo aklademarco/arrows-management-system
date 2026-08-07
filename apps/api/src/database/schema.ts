@@ -228,6 +228,7 @@ export const memberProfiles = pgTable('member_profiles', {
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
   otherNames: varchar('other_names', { length: 150 }),
+  profilePhotoUrl: text('profile_photo_url'),
   coverPhotoUrl: text('cover_photo_url'),
   requestedDepartmentId: uuid('requested_department_id').references(
     () => departments.id,

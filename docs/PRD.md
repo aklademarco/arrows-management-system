@@ -82,6 +82,24 @@ Responsible for attendance verification.
 - View attendance history  
 - View leaderboard  
 - Submit absence requests  
+- Receive dashboard notifications and authorized church messages.
+
+**Pastor / Church Leader**
+
+- Send dashboard and SMS messages to all active church members.
+- Create service liturgies and assign preachers.
+- View live service timing and projection views.
+
+**Publicity Leader**
+
+- Submit announcement flyers and publicity instructions to the Media department.
+- Associate a publicity request with an event and deadline.
+- Receive delivery/read-status updates.
+
+**Choir Leader**
+
+- Submit event song lists, song titles, lyrics, keys, and performance notes.
+- Notify eligible choir and media members when material changes.
 
 **5. MVP Features**  
 
@@ -98,6 +116,7 @@ Responsible for attendance verification.
 - Edit members  
 - Activate/deactivate accounts  
 - Assign departments  
+- Upload profile and cover photos through Cloudinary.
 **Department Management**  
 - Create departments  
 - Assign leaders  
@@ -125,6 +144,34 @@ Responsible for attendance verification.
 - Attendance by event  
 - Monthly summaries  
 - CSV export  
+
+**Ministry Collaboration and Notifications**
+
+- Publicity leaders can send event announcement flyers and instructions to the Media department.
+- Media members receive an in-app notification and see outstanding publicity items on their dashboard.
+- Choir leaders can publish event song lists with titles, lyrics, keys, ordering, and notes.
+- Song-list changes notify the eligible choir and media recipients.
+- Collaboration items track sender, target department, event, attachments, delivery state, read state, deadlines, and audit history.
+
+**Leadership Messaging**
+
+- Pastors and authorized church-wide leaders can send messages to all active members.
+- Department leaders can send messages only to members in departments they actively lead.
+- Messages appear in each recipient's dashboard inbox and may also be delivered by SMS.
+- SMS delivery is asynchronous and records queued, sent, delivered, and failed states.
+- Recipient scope is resolved and stored when the message is sent so later department transfers do not rewrite message history.
+- Sensitive messages, recipient lists, delivery attempts, and authorization decisions are audited.
+
+**Service Liturgy and Live Timing**
+
+- Administrators and authorized pastors can create reusable default service-liturgy templates.
+- A liturgy contains ordered schedule items with planned start time, duration, owner, notes, and projection visibility.
+- Event liturgies may override the default template without changing the template.
+- Events can store the preacher's name, profile, topic, and Cloudinary-hosted image.
+- A live service clock calculates planned, actual, remaining, overtime, and cumulative schedule variance.
+- Authorized operators can start, pause, skip, extend, and complete liturgy items with every timing change audited.
+- Media members can open a clean projection-safe timing view suitable for a church screen or confidence monitor.
+- The projection view must support full-screen display, large typography, automatic advancement, and real-time synchronization.
   
 **6. Functional Requirements**  
 **Authentication**  
@@ -148,6 +195,22 @@ The MVP will not use device locking, browser fingerprinting, or QR-code verifica
 After an event closes, the system will finalize attendance for every eligible member. Members covered by an approved absence request will receive an `EXCUSED` outcome; other eligible members without attendance will receive an `ABSENT` outcome. A genuine check-in or valid manual attendance will never be overwritten by finalization.
 
 Cancelling an event will preserve any attendance already submitted for audit, exclude the event from attendance rates and leaderboards, void its secondary points, and stop attendance finalization.
+
+**Media Storage**
+
+- Profile photos, cover photos, publicity flyers, preacher images, and other approved image assets shall be stored in Cloudinary rather than PostgreSQL.
+- Uploads must be authenticated, restricted to approved image formats and file sizes, and organized under church/member or church/event asset folders.
+- Only Cloudinary secure URLs and asset identifiers are stored in the database.
+- Replacing or removing an asset must invalidate the previous Cloudinary resource where applicable.
+- Private ministry documents and message attachments require authorized delivery; a public image URL must never substitute for access control where confidentiality is expected.
+
+**Notifications and Messaging Authorization**
+
+- Pastors with church-wide messaging permission may target all active members.
+- A department leader must hold both the `DEPARTMENT_LEADER` role and an active, unrevoked assignment for every targeted department.
+- Publicity and choir workflows must validate the sender's active leadership assignment and the recipient department at submission time.
+- Members may mark dashboard notifications read but cannot alter the underlying announcement, message, song list, or liturgy.
+- SMS content must exclude secrets and unnecessary sensitive personal information.
 
 **Departments**  
 

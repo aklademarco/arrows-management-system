@@ -1,8 +1,8 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class UpdateCoverPhotoDto {
+export class UpdateProfilePhotoDto {
   @IsOptional()
   @IsString()
   @MaxLength(1000)
-  coverPhotoUrl!: string | null;
+  profilePhotoUrl!: string | null;
 }

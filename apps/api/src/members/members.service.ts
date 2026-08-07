@@ -72,22 +72,24 @@ export class MembersService {
   }
 
   updateCoverPhoto(user: AuthenticatedPrincipal, coverPhotoUrl: string | null) {
-    if (coverPhotoUrl) {
-      const match =
-        /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(
-          coverPhotoUrl,
-        );
-      if (!match || Buffer.byteLength(match[2], 'base64') > 650_000) {
-        throw new BadRequestException(
-          'Cover photo must be a JPEG, PNG, or WebP image no larger than 650 KB.',
-        );
-      }
-    }
+    this.validateCloudinaryUrl(coverPhotoUrl);
     return this.repository.updateCoverPhoto({
       userId: user.id,
       churchId: user.churchId,
       coverPhotoUrl,
     });
+  }
+
+  updateProfilePhoto(user: AuthenticatedPrincipal, profilePhotoUrl: string | null) {
+    this.validateCloudinaryUrl(profilePhotoUrl);
+    return this.repository.updateProfilePhoto({ userId: user.id, churchId: user.churchId, profilePhotoUrl });
+  }
+
+  private validateCloudinaryUrl(value: string | null) {
+    if (!value) return;
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    if (!cloudName || !value.startsWith(`https://res.cloudinary.com/${cloudName}/image/upload/`))
+      throw new BadRequestException('Photo must be uploaded through the configured Cloudinary account.');
   }
 
   updateMember(input: {

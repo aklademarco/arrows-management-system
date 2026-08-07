@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { FiAward, FiFilter, FiUsers } from "react-icons/fi";
+import { FiAward, FiUsers } from "react-icons/fi";
 import { getMemberResource } from "../member-api";
+import { LeaderboardFilters } from "../leaderboard-filters";
 
 type DepartmentLeaderboardItem = {
   rank: number | null;
@@ -69,27 +70,10 @@ export default async function DepartmentLeaderboardPage({
           </span>
         </nav>
 
-        <form className="mt-5 grid gap-3 rounded-3xl border border-purple-100 bg-white p-4 shadow-sm sm:grid-cols-[1fr_1fr_auto]">
-          <select
-            className="h-12 rounded-2xl border border-slate-200 bg-[#fbfafc] px-4 font-bold"
-            defaultValue={leaderboard.period}
-            name="period"
-          >
-            <option value="WEEKLY">Weekly</option>
-            <option value="MONTHLY">Monthly</option>
-            <option value="QUARTERLY">Quarterly</option>
-            <option value="YEARLY">Yearly</option>
-          </select>
-          <input
-            className="h-12 rounded-2xl border border-slate-200 bg-[#fbfafc] px-4"
-            defaultValue={parameters.date}
-            name="date"
-            type="date"
-          />
-          <button className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#6b21a8] px-5 font-extrabold text-white">
-            <FiFilter /> View period
-          </button>
-        </form>
+        <LeaderboardFilters
+          date={parameters.date}
+          period={leaderboard.period}
+        />
 
         <p className="mt-4 text-xs font-bold text-slate-400">
           {leaderboard.startsOn} – {leaderboard.endsOn} · At least{" "}

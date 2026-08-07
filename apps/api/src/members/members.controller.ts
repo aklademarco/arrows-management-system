@@ -23,6 +23,7 @@ import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { SetPrimaryDepartmentDto } from './dto/set-primary-department.dto';
 import { UpdateCoverPhotoDto } from './dto/update-cover-photo.dto';
+import { UpdateProfilePhotoDto } from './dto/update-profile-photo.dto';
 
 @Controller('members')
 export class MembersController {
@@ -64,6 +65,12 @@ export class MembersController {
         : 'Cover photo removed.',
       data: await this.service.updateCoverPhoto(user, body.coverPhotoUrl),
     };
+  }
+
+  @Patch('me/profile-photo')
+  @UseGuards(AuthenticatedGuard)
+  async updateProfilePhoto(@Body() body: UpdateProfilePhotoDto, @AuthenticatedUser() user: AuthenticatedPrincipal) {
+    return { success: true, message: body.profilePhotoUrl ? 'Profile photo updated.' : 'Profile photo removed.', data: await this.service.updateProfilePhoto(user, body.profilePhotoUrl) };
   }
 
   @Get()
