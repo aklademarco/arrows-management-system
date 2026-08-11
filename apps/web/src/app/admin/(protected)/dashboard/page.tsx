@@ -6,6 +6,7 @@ import {
   FiCheckCircle,
   FiClock,
   FiGrid,
+  FiHeart,
   FiMapPin,
   FiPlus,
   FiUsers,
@@ -15,20 +16,34 @@ import { getAdminResource } from "../registrations/admin-api";
 type CountPage = { total: number };
 type Department = { id: string; name: string; isActive: boolean };
 type Event = { id: string; status: string };
+type CareCandidate = {
+  memberId: string;
+  followUps: { nextFollowUpOn: string | null }[];
+};
 
 export default async function AdminDashboardPage() {
-  const [members, registrations, departments, events] = await Promise.all([
+  const [members, registrations, departments, events, careQueue] =
+    await Promise.all([
     getAdminResource<CountPage>("/members?limit=1"),
     getAdminResource<CountPage>("/admin/registrations?limit=1"),
     getAdminResource<Department[]>("/departments"),
     getAdminResource<Event[]>("/events"),
-  ]);
+      getAdminResource<CareCandidate[]>("/pastoral-care/queue"),
+    ]);
   const activeDepartments = departments.filter(
     (department) => department.isActive,
   );
   const scheduledEvents = events.filter(
     (event) => event.status === "SCHEDULED",
   );
+  const today = new Date().toISOString().slice(0, 10);
+  const awaitingFirstContact = careQueue.filter(
+    (member) => member.followUps.length === 0,
+  ).length;
+  const dueFollowUps = careQueue.filter((member) => {
+    const nextDate = member.followUps[0]?.nextFollowUpOn;
+    return nextDate !== null && nextDate !== undefined && nextDate <= today;
+  }).length;
   const metrics = [
     {
       label: "Active members",
@@ -47,6 +62,12 @@ export default async function AdminDashboardPage() {
       value: scheduledEvents.length,
       detail: "Attendance-ready",
       icon: FiCalendar,
+    },
+    {
+      label: "Care queue",
+      value: careQueue.length,
+      detail: `${awaitingFirstContact} awaiting contact`,
+      icon: FiHeart,
     },
     {
       label: "Departments",
@@ -81,6 +102,13 @@ export default async function AdminDashboardPage() {
       description: "Review the location boundary used for secure check-in.",
       href: "/admin/geofence",
       icon: FiMapPin,
+    },
+    {
+      title: "Pastoral care",
+      description:
+        "Check on repeatedly absent members and record private follow-up notes.",
+      href: "/admin/pastoral-care",
+      icon: FiHeart,
     },
     {
       title: "Attendance reports",
@@ -119,7 +147,7 @@ export default async function AdminDashboardPage() {
 
         <section
           aria-label="Administration metrics"
-          className="mt-6 grid overflow-hidden rounded-xl border border-white/10 bg-[#111318] sm:grid-cols-2 xl:grid-cols-4"
+          className="mt-6 grid overflow-hidden rounded-xl border border-white/10 bg-[#111318] sm:grid-cols-2 xl:grid-cols-5"
         >
           {metrics.map(({ label, value, detail, icon: Icon }, index) => (
             <article
@@ -218,6 +246,27 @@ export default async function AdminDashboardPage() {
                 href="/admin/registrations"
               >
                 Open inbox <FiArrowUpRight aria-hidden="true" />
+              </Link>
+            </article>
+            <article className="rounded-xl border border-violet-400/20 bg-violet-400/[0.06] p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-violet-300">
+                Member care
+              </p>
+              <h2 className="mt-3 font-semibold">
+                {careQueue.length === 0
+                  ? "No follow-up concerns"
+                  : `${careQueue.length} ${careQueue.length === 1 ? "person needs" : "people need"} care`}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                {careQueue.length === 0
+                  ? "No member has reached the repeated-absence threshold."
+                  : `${awaitingFirstContact} awaiting first contact and ${dueFollowUps} scheduled follow-up${dueFollowUps === 1 ? " is" : "s are"} due.`}
+              </p>
+              <Link
+                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-violet-200 hover:underline"
+                href="/admin/pastoral-care"
+              >
+                Open care queue <FiArrowUpRight aria-hidden="true" />
               </Link>
             </article>
           </div>
