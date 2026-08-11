@@ -23,6 +23,10 @@ export class EventsService {
     return this.repository.list(admin.churchId, query);
   }
 
+  listRecurringDefaults(admin: AdminPrincipal) {
+    return this.repository.listRecurringDefaults(admin.churchId);
+  }
+
   findById(eventId: string, admin: AdminPrincipal) {
     return this.repository.findById(eventId, admin.churchId);
   }

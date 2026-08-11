@@ -1,10 +1,13 @@
 import Link from "next/link";
-import { FiArrowLeft, FiCheckCircle, FiMail, FiPhone } from "react-icons/fi";
+import { FiArrowLeft, FiCheckCircle, FiPhone } from "react-icons/fi";
 import { getMemberProfile } from "../member-api";
-import { updateOwnProfile } from "../profile-actions";
 import type { MemberProfile } from "../member-types";
-import { ProfilePhotoPicker } from "./profile-photo-picker";
+import { updateOwnProfile } from "../profile-actions";
 import { CoverPhotoPicker } from "./cover-photo-picker";
+import { ProfilePhotoPicker } from "./profile-photo-picker";
+
+const fieldClass =
+  "min-h-14 w-full border-0 border-b border-slate-200 bg-transparent px-0 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-[#8b3bc0] focus:ring-0";
 
 export default async function MemberProfilePage({
   searchParams,
@@ -12,160 +15,139 @@ export default async function MemberProfilePage({
   searchParams: Promise<{ updated?: string }>;
 }) {
   const [member, parameters] = await Promise.all([
-    getMemberProfile(),
+    getMemberProfile<MemberProfile>(),
     searchParams,
   ]);
-
   const memberName = `${member.firstName} ${member.lastName}`;
 
   return (
     <main className="min-h-screen bg-[#fbf9fd] text-slate-950">
-      <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8">
-        <Link
-          href="/member"
-          className="inline-flex items-center gap-2 text-sm font-extrabold text-slate-600 transition hover:text-[#6b21a8]"
-        >
-          <FiArrowLeft aria-hidden="true" />
-          Back to dashboard
-        </Link>
-
-        <div className="mt-8">
-          <p className="text-sm font-extrabold text-[#6b21a8]">
-            Account settings
-          </p>
-
-          <h1 className="mt-1 text-4xl font-black tracking-[-0.04em]">
-            Make your profile yours.
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
-            Keep your details recognizable and current for leaders and
-            administrators.
-          </p>
-        </div>
+      <div className="mx-auto w-full max-w-3xl pb-24">
+        <header className="sticky top-0 z-10 grid grid-cols-[48px_1fr_48px] items-center border-b border-purple-100 bg-[#fbf9fd]/95 px-4 py-4 backdrop-blur sm:px-6">
+          <Link
+            aria-label="Back to dashboard"
+            className="grid size-11 place-items-center rounded-full border border-purple-100 bg-white text-xl text-slate-700 shadow-sm transition hover:bg-purple-50 hover:text-[#6b21a8]"
+            href="/member"
+          >
+            <FiArrowLeft aria-hidden="true" />
+          </Link>
+          <h1 className="text-center text-lg font-black">Edit profile</h1>
+          <span />
+        </header>
 
         {parameters.updated === "1" ? (
           <p
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-emerald-100 px-4 py-3 text-sm font-extrabold text-emerald-800"
+            className="mx-5 mt-5 flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 px-4 py-3 text-sm font-bold text-emerald-300 sm:mx-6"
             role="status"
           >
             <FiCheckCircle aria-hidden="true" /> Profile updated successfully.
           </p>
         ) : null}
 
-        <CoverPhotoPicker currentCover={member.coverPhotoUrl}>
-          <ProfilePhotoPicker
-            compact
-            currentPhoto={member.profilePhotoUrl}
-            name={memberName}
-          />
-        </CoverPhotoPicker>
+        <div className="px-4 sm:px-6">
+          <CoverPhotoPicker currentCover={member.coverPhotoUrl}>
+            <ProfilePhotoPicker
+              compact
+              currentPhoto={member.profilePhotoUrl}
+              name={memberName}
+            />
+            <div className="mt-4 text-center">
+              <p className="text-lg font-black">{memberName}</p>
+              <p className="mt-1 text-sm font-semibold capitalize text-slate-400">
+                {member.membershipStatus.toLowerCase()} member
+              </p>
+              <p className="mt-3 text-sm font-bold text-[#8b7cff]">
+                Use the camera button to edit your picture
+              </p>
+            </div>
+          </CoverPhotoPicker>
+        </div>
 
         <form
           action={updateOwnProfile}
-          className="mt-5 grid gap-6 rounded-[2rem] border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)] sm:p-8"
+          className="mx-4 mt-7 overflow-hidden rounded-3xl border border-purple-100 bg-white shadow-[0_18px_45px_rgba(70,40,100,0.06)] sm:mx-6"
         >
-          <div>
-            <p className="text-sm font-extrabold text-[#6b21a8]">
-              Personal details
-            </p>
-
-            <h2 className="mt-1 text-2xl font-black tracking-[-0.03em]">
-              The basics
-            </h2>
-
-            <p className="mt-1 text-sm text-slate-500">
-              Your email address remains managed by your church account.
-            </p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label
-              className="grid gap-2 text-sm font-extrabold"
-              htmlFor="firstName"
-            >
-              First name
-              <input
-                className="h-12 rounded-2xl border border-slate-200 bg-[#fbfafc] px-4 font-medium outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
-                defaultValue={member.firstName}
-                id="firstName"
-                name="firstName"
-                required
-              />
-            </label>
-
-            <label
-              className="grid gap-2 text-sm font-extrabold"
-              htmlFor="lastName"
-            >
-              Last name
-              <input
-                className="h-12 rounded-2xl border border-slate-200 bg-[#fbfafc] px-4 font-medium outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
-                defaultValue={member.lastName}
-                id="lastName"
-                name="lastName"
-                required
-              />
-            </label>
-          </div>
-
-          <label
-            className="grid gap-2 text-sm font-extrabold"
-            htmlFor="otherNames"
-          >
-            Other names
+          <ProfileField label="First name">
             <input
-              className="h-12 rounded-2xl border border-slate-200 bg-[#fbfafc] px-4 font-medium outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
+              className={fieldClass}
+              defaultValue={member.firstName}
+              id="firstName"
+              name="firstName"
+              required
+            />
+          </ProfileField>
+          <ProfileField label="Last name">
+            <input
+              className={fieldClass}
+              defaultValue={member.lastName}
+              id="lastName"
+              name="lastName"
+              required
+            />
+          </ProfileField>
+          <ProfileField label="Other names">
+            <input
+              className={fieldClass}
               defaultValue={member.otherNames ?? ""}
               id="otherNames"
               name="otherNames"
+              placeholder="Add other names"
             />
-          </label>
-
-          <label className="grid gap-2 text-sm font-extrabold" htmlFor="email">
-            Email address
-            <div className="relative">
-              <FiMail
-                aria-hidden="true"
-                className="absolute left-4 top-4 text-slate-400"
-              />
-
+          </ProfileField>
+          <ProfileField label="Email">
+            <div>
               <input
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 font-medium text-slate-500"
+                className={`${fieldClass} text-slate-500`}
                 defaultValue={member.email}
                 id="email"
                 readOnly
               />
+              <p className="pb-4 text-xs text-slate-500">
+                Email is managed by your church account.
+              </p>
             </div>
-          </label>
+          </ProfileField>
+          <ProfileField label="Phone">
+            <div>
+              <input
+                className={fieldClass}
+                defaultValue={member.phone ?? ""}
+                id="phone"
+                name="phone"
+                placeholder="+233240000000"
+                type="tel"
+              />
+              <p className="flex items-center gap-2 pb-4 text-xs text-slate-500">
+                <FiPhone aria-hidden="true" /> Use international format.
+              </p>
+            </div>
+          </ProfileField>
 
-          <label className="grid gap-2 text-sm font-extrabold" htmlFor="phone">
-            Phone number
-            <input
-              className="h-12 rounded-2xl border border-slate-200 bg-[#fbfafc] px-4 font-medium outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
-              defaultValue={member.phone ?? ""}
-              id="phone"
-              name="phone"
-              placeholder="+233240000000"
-              type="tel"
-            />
-          </label>
-
-          <div className="flex flex-col gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="inline-flex items-center gap-2 text-sm font-medium text-slate-500">
-              <FiPhone aria-hidden="true" />
-              Use international phone format.
-            </p>
-
+          <div className="bg-purple-50/50 px-5 py-6 sm:px-7">
             <button
-              className="h-12 rounded-2xl bg-[#6b21a8] px-6 font-extrabold text-white shadow-[0_8px_20px_rgba(107,33,168,0.22)] transition hover:-translate-y-0.5 hover:bg-[#581b89]"
+              className="member-primary-action mx-auto sm:ml-auto sm:mr-0"
               type="submit"
             >
-              Save profile
+              Save changes
             </button>
           </div>
         </form>
       </div>
     </main>
+  );
+}
+
+function ProfileField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="grid grid-cols-[110px_1fr] gap-5 px-5 text-base sm:grid-cols-[150px_1fr] sm:px-7">
+      <span className="pt-[1.1rem] font-semibold text-slate-600">{label}</span>
+      {children}
+    </label>
   );
 }

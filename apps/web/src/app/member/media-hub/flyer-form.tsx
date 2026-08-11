@@ -52,7 +52,7 @@ export function FlyerForm() {
         <label className="grid gap-2 text-sm font-bold sm:col-span-2">Instructions<textarea className="min-h-24 rounded-xl border border-slate-200 p-4 font-medium" maxLength={2000} name="instructions" /></label>
         <label className="grid gap-2 text-sm font-bold sm:col-span-2">Flyer image<input accept="image/jpeg,image/png,image/webp" className="rounded-xl border border-dashed border-purple-300 p-4" onChange={(event) => setFile(event.target.files?.[0] ?? null)} required type="file" /></label>
       </div>
-      <button className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#6b21a8] px-5 font-extrabold text-white disabled:opacity-50" disabled={pending} type="submit"><FiSend />{pending ? "Sending…" : "Send to Media"}</button>
+      <button className="member-primary-action mt-5" disabled={pending} type="submit"><FiSend />{pending ? "Sending…" : "Send to Media"}</button>
       {message && <p className="mt-3 text-sm font-bold text-[#6b21a8]" role="status">{message}</p>}
     </form>
   );

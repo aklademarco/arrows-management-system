@@ -54,10 +54,10 @@ export default async function DepartmentLeaderboardPage({
 
         <nav
           aria-label="Leaderboard view"
-          className="mt-6 inline-flex rounded-2xl border border-purple-100 bg-white p-1 shadow-sm"
+          className="mt-6 inline-flex rounded-2xl border border-purple-300 bg-[#fff200] p-1 shadow-sm"
         >
           <Link
-            className="rounded-xl px-4 py-2 text-sm font-extrabold text-slate-500 hover:text-[#6b21a8]"
+            className="rounded-xl px-4 py-2 text-sm font-extrabold text-slate-800 hover:text-[#6b21a8]"
             href="/member/leaderboard"
           >
             Individuals
@@ -81,7 +81,7 @@ export default async function DepartmentLeaderboardPage({
         </p>
 
         {leaderboard.items.length === 0 ? (
-          <section className="mt-7 grid min-h-64 place-items-center rounded-[2rem] border border-dashed border-purple-200 bg-white text-center">
+          <section className="mt-7 grid min-h-64 place-items-center rounded-4xl border border-dashed border-purple-200 bg-white text-center">
             <div>
               <FiAward className="mx-auto text-5xl text-purple-300" />
               <h2 className="mt-4 text-xl font-black">
@@ -96,7 +96,7 @@ export default async function DepartmentLeaderboardPage({
           <section className="mt-7 grid gap-4 md:grid-cols-2">
             {leaderboard.items.map((item) => (
               <article
-                className="rounded-[2rem] border border-purple-100 bg-white p-5 shadow-[0_18px_45px_rgba(70,40,100,0.07)]"
+                className="rounded-4xl border border-purple-100 bg-white p-5 shadow-[0_18px_45px_rgba(70,40,100,0.07)]"
                 key={item.departmentId}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -156,7 +156,7 @@ export default async function DepartmentLeaderboardPage({
                   </div>
                 </div>
                 {!item.qualified ? (
-                  <span className="mt-4 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800">
+                  <span className="mt-4 inline-flex rounded-s shadow-lg bg-[#fff200] px-2 py-1 text-[10px] font-bold text-slate-800">
                     Building eligibility
                   </span>
                 ) : null}

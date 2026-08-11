@@ -75,7 +75,7 @@ export default function CheckInButton({ eventId }: { eventId: string }) {
       ) : null}
       <div>
         <button
-          className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#b7f34a] px-6 font-extrabold text-[#240046] shadow-[0_7px_0_#78a91e] transition active:translate-y-1 active:shadow-[0_3px_0_#78a91e] disabled:translate-y-0 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+          className="member-primary-action"
           disabled={busy || result?.success}
           onClick={() => captureAndCheckIn(false)}
           type="button"

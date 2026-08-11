@@ -13,6 +13,7 @@ import {
   departments,
   eventDepartments,
   events,
+  recurringServiceTemplates,
 } from '../database/schema';
 import type { CreateEventDto } from './dto/create-event.dto';
 import type { UpdateEventDto } from './dto/update-event.dto';
@@ -39,6 +40,27 @@ export class EventsRepository {
       .from(events)
       .where(and(...filters))
       .orderBy(desc(events.startsAt));
+  }
+
+  listRecurringDefaults(churchId: string) {
+    return this.database
+      .select({
+        id: recurringServiceTemplates.id,
+        name: recurringServiceTemplates.name,
+        recurrenceRule: recurringServiceTemplates.recurrenceRule,
+        startsAtLocal: recurringServiceTemplates.startsAtLocal,
+        durationMinutes: recurringServiceTemplates.durationMinutes,
+        priority: recurringServiceTemplates.priority,
+        isActive: recurringServiceTemplates.isActive,
+      })
+      .from(recurringServiceTemplates)
+      .where(
+        and(
+          eq(recurringServiceTemplates.churchId, churchId),
+          eq(recurringServiceTemplates.isActive, true),
+        ),
+      )
+      .orderBy(desc(recurringServiceTemplates.priority));
   }
 
   create(dto: CreateEventDto, admin: { id: string; churchId: string }) {

@@ -14,13 +14,26 @@ type Event = {
   locationName: string | null;
 };
 
+type RecurringDefault = {
+  id: string;
+  name: string;
+  recurrenceRule: "FIRST_SUNDAY" | "EVERY_SUNDAY";
+  startsAtLocal: string;
+  durationMinutes: number;
+  priority: number;
+  isActive: boolean;
+};
+
 export default async function EventsPage({ searchParams }: { searchParams: Promise<{ status?: string; from?: string; to?: string }> }) {
   const parameters = await searchParams;
   const query = new URLSearchParams();
   if (parameters.status) query.set("status", parameters.status);
   if (parameters.from) query.set("from", parameters.from);
   if (parameters.to) query.set("to", parameters.to);
-  const events = await getAdminResource<Event[]>(`/events?${query.toString()}`);
+  const [events, recurringDefaults] = await Promise.all([
+    getAdminResource<Event[]>(`/events?${query.toString()}`),
+    getAdminResource<RecurringDefault[]>("/events/recurring-defaults"),
+  ]);
   const hasFilters = query.size > 0;
 
   return (
@@ -42,6 +55,42 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
             Schedule an event and define when eligible members may check in.
           </p>
         </header>
+
+        <section className="mt-8 rounded-xl border border-violet-400/20 bg-violet-400/[0.06] p-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-400">
+                Automatic schedule
+              </p>
+              <h2 className="mt-1 text-xl font-bold">Default Sunday services</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                A specially scheduled event replaces the default for that Sunday.
+              </p>
+            </div>
+            <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300">
+              Active all year
+            </span>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {recurringDefaults.map((service) => {
+              const hours = Math.floor(service.durationMinutes / 60);
+              const minutes = service.durationMinutes % 60;
+              return (
+                <article className="rounded-xl border border-white/10 bg-[#111318] p-4" key={service.id}>
+                  <h3 className="font-bold text-white">{service.name}</h3>
+                  <p className="mt-2 text-sm text-slate-300">
+                    {service.recurrenceRule === "FIRST_SUNDAY"
+                      ? "Every first Sunday"
+                      : "Every other Sunday"}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Starts {service.startsAtLocal} · {hours}h {minutes}m
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
         <section className="mt-8 border-y border-white/10 bg-[#111318] py-6">
           <div className="max-w-5xl px-5">

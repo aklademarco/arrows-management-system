@@ -20,15 +20,21 @@ export default async function MemberLayout({
       <header className="sticky top-0 z-20 border-b border-purple-100/80 bg-[#f8f7fb]/90 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-5 py-3">
           <Link className="flex items-center gap-2" href="/member">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#6b21a8] font-black text-white">
-              A
+            <span className="relative block size-10 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-purple-100">
+              <Image
+                alt="The Arrows church logo"
+                className="object-contain scale-[1.45]"
+                fill
+                sizes="40px"
+                src="/assets/arrows.PNG"
+              />
             </span>
             <span>
               <span className="block text-sm font-black leading-none text-[#240046]">
-                ACMS
+                ARROWS
               </span>
-              <span className="text-xs font-semibold text-slate-400">
-                Your church rhythm
+              <span className="mt-1 block max-w-44 text-[10px] font-semibold leading-tight text-slate-400">
+                In the hands of the mighty one
               </span>
             </span>
           </Link>
@@ -44,54 +50,24 @@ export default async function MemberLayout({
       <div className="mx-auto flex max-w-[1500px]">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-purple-100 bg-white px-5 py-6 lg:flex">
           <Link className="flex items-center gap-3 px-2" href="/member">
-            <span className="grid size-11 place-items-center rounded-2xl bg-[#6b21a8] text-lg font-black text-white shadow-[0_8px_24px_rgba(107,33,168,0.25)]">
-              A
+            <span className="relative block size-12 shrink-0 overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(107,33,168,0.14)] ring-1 ring-purple-100">
+              <Image
+                alt="The Arrows church logo"
+                className="object-contain scale-[1.45]"
+                fill
+                sizes="48px"
+                src="/assets/arrows.PNG"
+              />
             </span>
             <span>
               <span className="block font-black tracking-tight text-[#240046]">
-                Arrows ACMS
+                ARROWS
               </span>
-              <span className="text-xs font-semibold text-slate-400">
-                Member experience
+              <span className="mt-0.5 block max-w-40 text-[10px] font-semibold leading-tight text-slate-400">
+                In the hands of the mighty one
               </span>
             </span>
           </Link>
-
-          <div className="mt-7 overflow-hidden rounded-3xl border border-purple-100 bg-white shadow-[0_14px_35px_rgba(36,0,70,0.1)]">
-            <div className="relative h-24 overflow-hidden bg-gradient-to-br from-[#7e32b5] to-[#b56ae0]">
-              {member.coverPhotoUrl ? (
-                <Image
-                  alt={`${memberName} cover photo`}
-                  className="object-cover object-center"
-                  fill
-                  sizes="248px"
-                  src={member.coverPhotoUrl}
-                  unoptimized
-                />
-              ) : null}
-            </div>
-            <div className="px-5 pb-5">
-              <div className="-mt-7 w-fit rounded-full bg-white p-1">
-                <ProfileAvatar
-                  imageUrl={member.profilePhotoUrl}
-                  name={memberName}
-                  size="lg"
-                />
-              </div>
-              <p className="mt-3 truncate text-sm font-black text-slate-950">
-                {memberName}
-              </p>
-              <p className="mt-0.5 text-xs font-semibold capitalize text-slate-400">
-                {member.membershipStatus.toLowerCase()} member
-              </p>
-              <Link
-                className="mt-3 inline-flex text-xs font-extrabold text-[#6b21a8] hover:text-[#240046]"
-                href="/member/profile"
-              >
-                View profile →
-              </Link>
-            </div>
-          </div>
 
           <div className="mt-7">
             <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
@@ -101,15 +77,7 @@ export default async function MemberLayout({
             <NotificationLink count={unread.count} />
           </div>
 
-          <div className="mt-auto rounded-2xl border border-purple-100 bg-purple-50/70 p-4">
-            <p className="text-sm font-extrabold text-[#5b148d]">
-              Stay connected
-            </p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">
-              Check in, review your activity, and keep your profile current.
-            </p>
-          </div>
-          <form action={memberLogout} className="mt-4">
+          <form action={memberLogout} className="mt-auto pt-4">
             <button
               className="inline-flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
               type="submit"

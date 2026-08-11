@@ -85,8 +85,8 @@ export function CoverPhotoPicker({
     });
 
   return (
-    <section className="mt-7 overflow-hidden rounded-[2rem] border border-purple-100 bg-white shadow-[0_18px_45px_rgba(70,40,100,0.07)]">
-      <div className="relative h-52 bg-gradient-to-br from-[#7e32b5] to-[#b56ae0] sm:h-64">
+    <section className="mt-7 overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-[0_18px_45px_rgba(70,40,100,0.07)]">
+      <div className="relative h-40 bg-gradient-to-br from-[#352061] to-[#6941a5] sm:h-52">
         {preview ? (
           <Image
             alt="Your cover preview"
@@ -99,8 +99,8 @@ export function CoverPhotoPicker({
         ) : null}
         <div className="absolute inset-0 bg-black/10" />
         <div className="absolute right-4 top-4 flex flex-wrap justify-end gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-extrabold text-white shadow-lg backdrop-blur">
-            <FiCamera /> {pending ? "Saving…" : "Choose cover"}
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-extrabold text-slate-900 shadow-lg backdrop-blur">
+            <FiCamera /> {pending ? "Saving…" : "Edit cover"}
             <input
               accept="image/jpeg,image/png,image/webp"
               className="sr-only"
@@ -125,7 +125,7 @@ export function CoverPhotoPicker({
           </label>
           {preview ? (
             <button
-              className="inline-flex items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-extrabold text-white backdrop-blur"
+              className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-sm font-extrabold text-red-600 shadow-lg backdrop-blur"
               disabled={pending}
               onClick={remove}
               type="button"
@@ -135,10 +135,10 @@ export function CoverPhotoPicker({
           ) : null}
         </div>
       </div>
-      <div className="relative px-6 pb-6 sm:px-8 sm:pb-8">
+      <div className="relative px-6 pb-7 sm:px-8 sm:pb-8">
         {children}
         {message ? (
-          <p className="mt-3 text-sm font-bold text-[#6b21a8]" role="status">
+          <p className="mt-3 text-center text-sm font-bold text-[#6b21a8]" role="status">
             {message}
           </p>
         ) : null}

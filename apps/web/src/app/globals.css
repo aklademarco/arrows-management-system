@@ -68,6 +68,50 @@ body {
   opacity: 0.75;
 }
 
+.member-primary-action {
+  display: inline-flex;
+  min-height: 44px;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 0;
+  background: var(--acms-purple);
+  padding: 0.625rem 1.25rem;
+  color: white;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: 1.2;
+  box-shadow: none;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.member-primary-action:hover {
+  background: #581b89;
+}
+
+.member-primary-action:active {
+  transform: scale(0.97);
+}
+
+.member-primary-action:disabled {
+  background: #d8dbe2;
+  color: #7c8493;
+  transform: none;
+}
+
+@media (min-width: 640px) {
+  .member-primary-action {
+    border-radius: 0.875rem;
+    background: var(--acms-purple);
+  }
+
+  .member-primary-action:hover {
+    background: #581b89;
+  }
+}
+
 @keyframes check-in-photo-reveal {
   from {
     opacity: 0;

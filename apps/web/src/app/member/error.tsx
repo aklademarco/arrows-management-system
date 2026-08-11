@@ -23,7 +23,7 @@ export default function MemberError({
           safe.
         </p>
         <button
-          className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#6b21a8] font-extrabold text-white shadow-[0_6px_0_#4c1677]"
+          className="member-primary-action mt-7"
           onClick={reset}
         >
           <FiRefreshCw /> Try again

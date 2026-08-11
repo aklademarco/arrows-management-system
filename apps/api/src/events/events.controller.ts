@@ -46,6 +46,15 @@ export class EventsController {
     };
   }
 
+  @Get('recurring-defaults')
+  async recurringDefaults(@AdminUser() admin: AdminPrincipal) {
+    return {
+      success: true,
+      message: 'Recurring service defaults retrieved.',
+      data: await this.service.listRecurringDefaults(admin),
+    };
+  }
+
   @Get(':eventId')
   async findById(
     @Param('eventId', ParseUUIDPipe) eventId: string,

@@ -91,7 +91,7 @@ export function ProfilePhotoPicker({
     }
   };
   return (
-    <div className={compact ? "relative flex flex-col sm:flex-row sm:items-end sm:justify-between" : "flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left"}>
+    <div className={compact ? "relative flex flex-col items-center" : "flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left"}>
       <div className={compact ? "relative -mt-14 w-fit rounded-full bg-white p-1.5 sm:-mt-16" : "relative"}>
         {preview ? (
           <Image
@@ -107,7 +107,7 @@ export function ProfilePhotoPicker({
         )}
         <label
           aria-label="Change profile photo"
-          className="absolute bottom-0 right-0 grid size-9 cursor-pointer place-items-center rounded-full border-2 border-white bg-slate-950 text-white shadow-md transition hover:scale-105 hover:bg-[#6b21a8]"
+          className="absolute bottom-0 right-0 grid size-9 cursor-pointer place-items-center rounded-full border-2 border-white bg-[#6b21a8] text-white shadow-md transition hover:scale-105 hover:bg-[#8b3bc0]"
           title="Change profile photo"
         >
           <FiCamera aria-hidden="true" />
@@ -123,7 +123,7 @@ export function ProfilePhotoPicker({
           />
         </label>
       </div>
-      <div className={compact ? "mt-4 sm:ml-5 sm:mt-4 sm:flex sm:flex-1 sm:items-center sm:justify-between" : "flex-1"}>
+      <div className={compact ? "mt-3 text-center" : "flex-1"}>
         <div className={compact ? "hidden" : ""}>
           <p className="font-extrabold">Profile photo</p>
           <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -131,7 +131,7 @@ export function ProfilePhotoPicker({
           securely in Cloudinary.
           </p>
         </div>
-        <div className={compact ? "flex flex-wrap gap-2 sm:ml-auto" : "mt-3 flex flex-wrap gap-2"}>
+        <div className={compact ? "flex flex-wrap justify-center gap-2" : "mt-3 flex flex-wrap gap-2"}>
           {preview ? (
             <button
               className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-red-600"

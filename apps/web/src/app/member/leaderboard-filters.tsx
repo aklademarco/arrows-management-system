@@ -111,7 +111,7 @@ function FilterForm({
             ))}
         </select>
       ) : null}
-      <button className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#6b21a8] px-5 font-extrabold text-white">
+      <button className="member-primary-action mx-auto lg:mx-0">
         <FiFilter aria-hidden="true" /> View period
       </button>
     </form>

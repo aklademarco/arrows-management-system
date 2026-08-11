@@ -9,6 +9,177 @@
 
 ---
 
+## Launch-First Delivery Plan
+
+This plan supersedes using every milestone below as a prerequisite for first
+use. ACMS will be released in controlled phases so the church can begin using
+the stable operational core while larger ministry features continue to be
+developed.
+
+### Current Implementation Snapshot — August 2026
+
+Already implemented:
+
+- Registration, email verification, approval, login, refresh, and logout
+- Administrator dashboard, member directory, and account lifecycle
+- Departments, memberships, primary departments, and department leaders
+- Events, event eligibility, cancellation, and attendance windows
+- Geofence and manual attendance, duplicate prevention, and finalization
+- Absence requests and review
+- Individual and department leaderboards
+- Attendance reports, CSV export, and audit logs
+- Member profile and cover photos through Cloudinary
+- Member notification inbox and unread indicators
+- Initial Publicity-to-Media flyer handoff and Media Hub
+
+Still requiring launch verification or implementation:
+
+- Production environment and deployment pipeline
+- Production database backup and restoration procedure
+- End-to-end and real-device attendance testing
+- Security, environment, and dependency review
+- Monitoring, operational documentation, and user onboarding
+- Choir song-list workflow
+- Leadership dashboard messages and SMS delivery
+- Service liturgy, live timer, and projection view
+
+---
+
+### Phase 1 — Pilot-Ready Core
+
+**Goal:** Use ACMS during real services with a small internal group as soon as
+possible.
+
+**Included:**
+
+- Authentication and account approval
+- Member and department management
+- Event creation and attendance windows
+- Automatic geofence attempt with manual check-in fallback
+- Manual attendance correction by authorized leaders
+- Member attendance history
+- Basic absence requests
+- Admin attendance reports and CSV export
+- Profile and cover photos
+
+**Work remaining before pilot:**
+
+- [ ] Correct and verify production Cloudinary credentials.
+- [ ] Test registration-to-approval end to end.
+- [ ] Test automatic and button check-in on Android Chrome and iPhone Safari.
+- [ ] Verify location-denied, weak-GPS, outside-geofence, and duplicate cases.
+- [ ] Run access-control checks for admin, leader, and member accounts.
+- [ ] Resolve critical lint, dependency, and security findings.
+- [ ] Configure production PostgreSQL, migrations, secrets, HTTPS, and domains.
+- [ ] Configure daily backups and perform one restoration test.
+- [ ] Add application error and uptime monitoring.
+- [ ] Create production administrator and church configuration.
+- [ ] Onboard administrators and two department leaders.
+
+**Release gate:** One administrator and a small group of members can complete a
+real service check-in, correct exceptions, and export the attendance report
+without developer intervention.
+
+---
+
+### Phase 2 — Controlled Church Rollout
+
+**Goal:** Expand from the pilot group to all active members and department
+leaders.
+
+**Included:**
+
+- Leaderboards and attendance streak presentation
+- Full absence-review workflow
+- Notification center
+- Publicity-to-Media flyer handoff
+- Department-leader access to their team
+- Improved operational reports and audit review
+
+**Work remaining:**
+
+- [ ] Complete flyer acknowledgement and completion states.
+- [ ] Add Media Hub outstanding-work indicators.
+- [ ] Add administrator controls for ministry workflow failures.
+- [ ] Complete browser and responsive UI testing.
+- [ ] Collect pilot feedback and correct high-priority usability issues.
+- [ ] Document support, rollback, and incident procedures.
+
+**Release gate:** All departments can use ACMS for two consecutive services
+with no critical attendance or authorization failures.
+
+---
+
+### Phase 3 — Ministry Communication
+
+**Goal:** Replace informal ministry handoffs and leader broadcast messages.
+
+**Included:**
+
+- Choir event song titles, ordering, lyrics, keys, and notes
+- Leadership dashboard messages
+- Pastor-to-church messages
+- Leader-to-department messages
+- SMS delivery queue, provider integration, delivery status, and retries
+
+**Work remaining:**
+
+- [ ] Implement Choir-to-Media song-list API and interface.
+- [ ] Implement scoped leadership messaging permissions.
+- [ ] Implement dashboard message recipients and read state.
+- [ ] Select and configure an SMS provider.
+- [ ] Add background SMS jobs, callbacks, retries, and delivery reporting.
+- [ ] Add messaging audit logs and cost protections.
+
+**Release gate:** Pastors can reach the church and leaders can reach only their
+authorized teams, with recipient and SMS delivery records available to admins.
+
+---
+
+### Phase 4 — Service Production and Projection
+
+**Goal:** Help leaders and Media keep live services organized and on time.
+
+**Included:**
+
+- Reusable default liturgy templates
+- Event schedules and preacher details/images
+- Live start, pause, extend, skip, and complete controls
+- Planned-versus-actual timing
+- Media operator view
+- Full-screen projection view
+
+**Work remaining:**
+
+- [ ] Implement liturgy template administration.
+- [ ] Generate event liturgies from templates.
+- [ ] Implement live timing state and audit history.
+- [ ] Implement operator and read-only projection interfaces.
+- [ ] Add reconnect and stale-state safeguards.
+- [ ] Test on the church Media computer and projector.
+
+**Release gate:** The Media team can run and project a complete service schedule
+without relying on developer tools.
+
+---
+
+### Phase 5 — Scale and Optimization
+
+**Goal:** Improve reliability, insight, and reach after stable church adoption.
+
+Possible scope:
+
+- Push notifications
+- Installable PWA and enhanced offline behavior
+- Advanced analytics
+- Additional export formats
+- Multi-church support
+- Native mobile applications if usage justifies them
+
+These items do not block the initial church launch.
+
+---
+
 ## 1. Purpose
 
 This roadmap converts the product requirements, system requirements, database design, API specification, and architecture into an implementation sequence.

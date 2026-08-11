@@ -90,7 +90,7 @@ export default async function MemberAbsencesPage() {
               name="details"
               placeholder="Additional details (optional)"
             />
-            <button className="h-12 rounded-2xl bg-[#6b21a8] font-extrabold text-white">
+            <button className="member-primary-action mx-auto sm:mx-0">
               Submit event request
             </button>
           </form>
@@ -142,7 +142,7 @@ export default async function MemberAbsencesPage() {
               name="details"
               placeholder="Additional details (optional)"
             />
-            <button className="h-12 rounded-2xl bg-[#240046] font-extrabold text-white">
+            <button className="member-primary-action mx-auto sm:mx-0">
               Submit date request
             </button>
           </form>

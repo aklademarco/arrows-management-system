@@ -355,6 +355,39 @@ export const eventDepartments = pgTable(
   ],
 );
 
+export const recurringServiceTemplates = pgTable(
+  'recurring_service_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    name: varchar('name', { length: 180 }).notNull(),
+    recurrenceRule: varchar('recurrence_rule', { length: 40 }).notNull(),
+    startsAtLocal: varchar('starts_at_local', { length: 5 }).notNull(),
+    durationMinutes: integer('duration_minutes').notNull(),
+    priority: integer('priority').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('recurring_service_templates_church_name_unique').on(
+      table.churchId,
+      table.name,
+    ),
+    index('recurring_service_templates_church_active_idx').on(
+      table.churchId,
+      table.isActive,
+      table.priority,
+    ),
+  ],
+);
+
 export const attendanceRecords = pgTable(
   'attendance_records',
   {
