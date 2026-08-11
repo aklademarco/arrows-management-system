@@ -92,6 +92,37 @@ export async function updateMember(formData: FormData) {
   revalidatePath("/admin/members");
 }
 
+export async function updateMinistryRoles(formData: FormData) {
+  const memberId = memberIdSchema.parse(formData.get("memberId"));
+  const roles = z
+    .array(z.enum(["PASTOR", "DEPARTMENT_LEADER"]))
+    .parse(formData.getAll("roles"));
+  const token = (await cookies()).get("acms_admin_session")?.value;
+  if (!token) redirect("/admin/login");
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const response = await fetch(`${apiUrl}/members/${memberId}/ministry-roles`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ roles }),
+    cache: "no-store",
+  });
+  if (response.status === 401 || response.status === 403)
+    redirect("/admin/login");
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    const message = Array.isArray(body?.message)
+      ? body.message.join(" ")
+      : body?.message;
+    throw new Error(message ?? "Ministry roles could not be updated.");
+  }
+  revalidatePath(`/admin/members/${memberId}`);
+}
+
 export async function archiveMember(formData: FormData) {
   const memberId = memberIdSchema.parse(formData.get("memberId"));
   const token = (await cookies()).get("acms_admin_session")?.value;

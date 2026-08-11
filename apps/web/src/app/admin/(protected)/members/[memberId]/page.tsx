@@ -9,6 +9,7 @@ import {
   endDepartmentMembership,
   setPrimaryDepartment,
   updateMember,
+  updateMinistryRoles,
 } from "../actions";
 
 type MemberProfile = {
@@ -23,6 +24,7 @@ type MemberProfile = {
   membershipStatus: string;
   emailVerifiedAt: string | null;
   createdAt: string;
+  roles: string[];
   departmentMemberships: Array<{
     id: string;
     departmentId: string;
@@ -90,6 +92,24 @@ export default async function MemberProfilePage({
             </div>
           </div>
         </header>
+
+        <section className="mt-6 rounded-2xl border border-violet-400/20 bg-[#111318] p-6 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-400">Access control</p>
+          <h2 className="mt-2 text-xl font-bold">Ministry access</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">Assign the leadership workspace appropriate to this member. These changes take effect on their next sign-in.</p>
+          <form action={updateMinistryRoles} className="mt-5 grid gap-3">
+            <input name="memberId" type="hidden" value={member.id} />
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-[#090a0d] p-4">
+              <input className="mt-1 size-4 accent-violet-500" defaultChecked={member.roles.includes("PASTOR")} name="roles" type="checkbox" value="PASTOR" />
+              <span><span className="block font-semibold">Pastor</span><span className="mt-1 block text-sm leading-5 text-slate-400">Church-wide leadership workspace without personal attendance, rankings, or streaks.</span></span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-[#090a0d] p-4">
+              <input className="mt-1 size-4 accent-violet-500" defaultChecked={member.roles.includes("DEPARTMENT_LEADER")} name="roles" type="checkbox" value="DEPARTMENT_LEADER" />
+              <span><span className="block font-semibold">Department leader</span><span className="mt-1 block text-sm leading-5 text-slate-400">Enables the leader workspace. Assign an active department leadership term as well to grant team access.</span></span>
+            </label>
+            <button className="mt-2 h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500 sm:ml-auto" type="submit">Save ministry access</button>
+          </form>
+        </section>
 
         <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-3">

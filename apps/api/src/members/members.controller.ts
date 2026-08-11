@@ -25,6 +25,7 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 import { SetPrimaryDepartmentDto } from './dto/set-primary-department.dto';
 import { UpdateCoverPhotoDto } from './dto/update-cover-photo.dto';
 import { UpdateProfilePhotoDto } from './dto/update-profile-photo.dto';
+import { UpdateMinistryRolesDto } from './dto/update-ministry-roles.dto';
 
 @Controller('members')
 export class MembersController {
@@ -200,6 +201,25 @@ export class MembersController {
         churchId: admin.churchId,
         actorUserId: admin.id,
         ...body,
+      }),
+    };
+  }
+
+  @Put(':memberId/ministry-roles')
+  @UseGuards(AdminGuard)
+  async updateMinistryRoles(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @Body() body: UpdateMinistryRolesDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Ministry roles updated.',
+      data: await this.service.updateMinistryRoles({
+        memberId,
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        roles: body.roles,
       }),
     };
   }

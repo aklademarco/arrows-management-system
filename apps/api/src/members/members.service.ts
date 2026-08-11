@@ -163,4 +163,13 @@ export class MembersService {
   }) {
     return this.repository.setPrimaryDepartment(input);
   }
+
+  updateMinistryRoles(input: {
+    memberId: string;
+    churchId: string;
+    actorUserId: string;
+    roles: Array<'PASTOR' | 'DEPARTMENT_LEADER'>;
+  }) {
+    return this.repository.updateMinistryRoles(input);
+  }
 }

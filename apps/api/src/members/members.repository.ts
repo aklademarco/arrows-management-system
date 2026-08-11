@@ -16,6 +16,7 @@ import {
   inArray,
   isNull,
   lte,
+  notInArray,
   or,
   sql,
 } from 'drizzle-orm';
@@ -29,6 +30,8 @@ import {
   memberProfiles,
   notifications,
   primaryDepartmentAssignments,
+  roles,
+  userRoles,
   users,
 } from '../database/schema';
 import { ListMembersDto } from './dto/list-members.dto';
@@ -606,8 +609,15 @@ export class MembersRepository {
       .where(eq(departmentMembers.memberId, member.id))
       .orderBy(asc(departmentMembers.joinedAt));
 
+    const assignedRoles = await this.database
+      .select({ name: roles.name })
+      .from(userRoles)
+      .innerJoin(roles, eq(roles.id, userRoles.roleId))
+      .where(eq(userRoles.userId, member.userId));
+
     return {
       ...member,
+      roles: assignedRoles.map((role) => role.name),
       departmentMemberships: memberships.map((membership) => ({
         ...membership,
         isActive: membership.leftAt === null,
@@ -616,6 +626,87 @@ export class MembersRepository {
           membership.primaryEndsAt === null,
       })),
     };
+  }
+
+  async updateMinistryRoles(input: {
+    memberId: string;
+    churchId: string;
+    actorUserId: string;
+    roles: Array<'PASTOR' | 'DEPARTMENT_LEADER'>;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const [member] = await transaction
+        .select({ userId: users.id })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(
+          and(
+            eq(memberProfiles.id, input.memberId),
+            eq(users.churchId, input.churchId),
+          ),
+        )
+        .limit(1)
+        .for('update');
+      if (!member) throw new NotFoundException('Member not found.');
+      const managedRoles = await transaction
+        .select({ id: roles.id, name: roles.name })
+        .from(roles)
+        .where(inArray(roles.name, ['PASTOR', 'DEPARTMENT_LEADER']));
+      if (managedRoles.length !== 2)
+        throw new ConflictException('Ministry roles are not configured.');
+      const managedRoleIds = managedRoles.map((role) => role.id);
+      const current = await transaction
+        .select({ roleId: userRoles.roleId, name: roles.name })
+        .from(userRoles)
+        .innerJoin(roles, eq(roles.id, userRoles.roleId))
+        .where(
+          and(
+            eq(userRoles.userId, member.userId),
+            inArray(userRoles.roleId, managedRoleIds),
+          ),
+        );
+      const desiredRoleIds = managedRoles
+        .filter((role) =>
+          input.roles.includes(role.name as 'PASTOR' | 'DEPARTMENT_LEADER'),
+        )
+        .map((role) => role.id);
+      if (desiredRoleIds.length) {
+        await transaction
+          .insert(userRoles)
+          .values(
+            desiredRoleIds.map((roleId) => ({ userId: member.userId, roleId })),
+          )
+          .onConflictDoNothing();
+        await transaction
+          .delete(userRoles)
+          .where(
+            and(
+              eq(userRoles.userId, member.userId),
+              inArray(userRoles.roleId, managedRoleIds),
+              notInArray(userRoles.roleId, desiredRoleIds),
+            ),
+          );
+      } else {
+        await transaction
+          .delete(userRoles)
+          .where(
+            and(
+              eq(userRoles.userId, member.userId),
+              inArray(userRoles.roleId, managedRoleIds),
+            ),
+          );
+      }
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'MEMBER_MINISTRY_ROLES_UPDATED',
+        entityType: 'MEMBER_PROFILE',
+        entityId: input.memberId,
+        previousData: { roles: current.map((role) => role.name) },
+        newData: { roles: input.roles },
+      });
+      return { memberId: input.memberId, roles: input.roles };
+    });
   }
 
   async updateOwnProfile(input: {

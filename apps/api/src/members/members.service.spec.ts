@@ -43,6 +43,26 @@ describe('MembersService', () => {
     expect(archiveMember).toHaveBeenCalledWith(input);
   });
 
+  it('passes trusted ministry roles with administrator church scope', async () => {
+    const updateMinistryRoles = jest.fn().mockResolvedValue({
+      memberId: 'member-id',
+      roles: ['PASTOR'],
+    });
+    const service = new MembersService({
+      updateMinistryRoles,
+    } as unknown as MembersRepository);
+    const input = {
+      memberId: 'member-id',
+      churchId: 'church-id',
+      actorUserId: 'admin-id',
+      roles: ['PASTOR'] as Array<'PASTOR' | 'DEPARTMENT_LEADER'>,
+    };
+
+    await service.updateMinistryRoles(input);
+
+    expect(updateMinistryRoles).toHaveBeenCalledWith(input);
+  });
+
   it('passes administrator member updates with church scope', async () => {
     const updateMember = jest.fn().mockResolvedValue({ id: 'member-id' });
     const service = new MembersService({
