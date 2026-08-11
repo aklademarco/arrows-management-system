@@ -15,6 +15,7 @@ import { LeaderboardsModule } from './leaderboards/leaderboards.module';
 import { ReportsModule } from './reports/reports.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { MinistryContentModule } from './ministry-content/ministry-content.module';
 
 @Module({
@@ -36,6 +37,7 @@ import { MinistryContentModule } from './ministry-content/ministry-content.modul
     ReportsModule,
     AuditLogsModule,
     NotificationsModule,
+    PastoralCareModule,
     MinistryContentModule,
   ],
   controllers: [AppController],

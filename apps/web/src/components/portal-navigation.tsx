@@ -15,6 +15,7 @@ import {
   FiUserCheck,
   FiUsers,
   FiImage,
+  FiHeart,
 } from "react-icons/fi";
 
 const memberNavigation = [
@@ -33,6 +34,7 @@ const adminNavigation = [
   { href: "/admin/departments", label: "Departments", icon: FiGrid },
   { href: "/admin/events", label: "Events", icon: FiCalendar },
   { href: "/admin/absences", label: "Absences", icon: FiFileText },
+  { href: "/admin/pastoral-care", label: "Pastoral care", icon: FiHeart },
   { href: "/admin/reports", label: "Reports", icon: FiBarChart2 },
   { href: "/admin/geofence", label: "Geofence", icon: FiMapPin },
 ];

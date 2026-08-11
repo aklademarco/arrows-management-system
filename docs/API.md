@@ -1505,6 +1505,26 @@ GET /reports/repeated-absences
 
 Department leaders are constrained to actively led departments and cannot retrieve church-wide repeated-absence results.
 
+### Pastoral Care Queue
+
+```http
+GET /pastoral-care/queue
+```
+
+Returns active care candidates with at least two system-recorded, unexcused
+absences during the previous 90 days. The initial endpoint is restricted to
+administrators and pastors using the administration workspace. It includes a
+small recent-event summary and the member's private follow-up history.
+
+```http
+POST /pastoral-care/members/:memberId/follow-ups
+```
+
+Records a call, message, visit, in-person conversation, or other contact with
+an outcome, optional private note, and optional next follow-up date. The API
+must verify church ownership from the authenticated session and create an audit
+record without copying the private note into audit metadata.
+
 ### Query Parameters
 
 ```text

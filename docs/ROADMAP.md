@@ -31,6 +31,7 @@ Already implemented:
 - Member profile and cover photos through Cloudinary
 - Member notification inbox and unread indicators
 - Initial Publicity-to-Media flyer handoff and Media Hub
+- Pastoral care queue for repeated absences and private follow-up records
 
 Still requiring launch verification or implementation:
 
@@ -95,6 +96,7 @@ leaders.
 - Publicity-to-Media flyer handoff
 - Department-leader access to their team
 - Improved operational reports and audit review
+- Repeated-absence pastoral follow-up queue
 
 **Work remaining:**
 

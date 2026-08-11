@@ -107,6 +107,24 @@ export const liturgyItemStatus = pgEnum('liturgy_item_status', [
   'SKIPPED',
 ]);
 
+export const pastoralFollowUpMethod = pgEnum('pastoral_follow_up_method', [
+  'CALL',
+  'MESSAGE',
+  'VISIT',
+  'IN_PERSON',
+  'OTHER',
+]);
+export const pastoralFollowUpOutcome = pgEnum('pastoral_follow_up_outcome', [
+  'NO_RESPONSE',
+  'REACHED',
+  'NEEDS_PRAYER',
+  'NEEDS_VISIT',
+  'SICK',
+  'TRAVELLING',
+  'RETURNING_SOON',
+  'CARE_COMPLETED',
+]);
+
 export const reviewDecision = pgEnum('review_decision', [
   'APPROVED',
   'REJECTED',
@@ -477,6 +495,42 @@ export const absenceRequests = pgTable(
     check(
       'absence_requests_reason_not_blank',
       sql`char_length(btrim(${table.reason})) > 0`,
+    ),
+  ],
+);
+
+export const pastoralFollowUps = pgTable(
+  'pastoral_follow_ups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    contactedBy: uuid('contacted_by')
+      .notNull()
+      .references(() => users.id),
+    method: pastoralFollowUpMethod('method').notNull(),
+    outcome: pastoralFollowUpOutcome('outcome').notNull(),
+    notes: text('notes'),
+    contactedAt: timestamp('contacted_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    nextFollowUpOn: date('next_follow_up_on'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('pastoral_follow_ups_church_contacted_idx').on(
+      table.churchId,
+      table.contactedAt,
+    ),
+    index('pastoral_follow_ups_member_contacted_idx').on(
+      table.memberId,
+      table.contactedAt,
     ),
   ],
 );
