@@ -18,7 +18,7 @@ type Department = { id: string; name: string; isActive: boolean };
 type Event = { id: string; status: string };
 type CareCandidate = {
   memberId: string;
-  followUps: { nextFollowUpOn: string | null }[];
+  careStatus: string;
 };
 
 export default async function AdminDashboardPage() {
@@ -36,14 +36,15 @@ export default async function AdminDashboardPage() {
   const scheduledEvents = events.filter(
     (event) => event.status === "SCHEDULED",
   );
-  const today = new Date().toISOString().slice(0, 10);
   const awaitingFirstContact = careQueue.filter(
-    (member) => member.followUps.length === 0,
+    (member) => member.careStatus === "NEEDS_CONTACT",
   ).length;
-  const dueFollowUps = careQueue.filter((member) => {
-    const nextDate = member.followUps[0]?.nextFollowUpOn;
-    return nextDate !== null && nextDate !== undefined && nextDate <= today;
-  }).length;
+  const dueFollowUps = careQueue.filter(
+    (member) => member.careStatus === "FOLLOW_UP_DUE",
+  ).length;
+  const activeCareCount = careQueue.filter(
+    (member) => member.careStatus !== "CARE_COMPLETED",
+  ).length;
   const metrics = [
     {
       label: "Active members",
@@ -65,7 +66,7 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "Care queue",
-      value: careQueue.length,
+      value: activeCareCount,
       detail: `${awaitingFirstContact} awaiting contact`,
       icon: FiHeart,
     },
@@ -253,12 +254,12 @@ export default async function AdminDashboardPage() {
                 Member care
               </p>
               <h2 className="mt-3 font-semibold">
-                {careQueue.length === 0
+                {activeCareCount === 0
                   ? "No follow-up concerns"
-                  : `${careQueue.length} ${careQueue.length === 1 ? "person needs" : "people need"} care`}
+                  : `${activeCareCount} ${activeCareCount === 1 ? "person needs" : "people need"} care`}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-400">
-                {careQueue.length === 0
+                {activeCareCount === 0
                   ? "No member has reached the repeated-absence threshold."
                   : `${awaitingFirstContact} awaiting first contact and ${dueFollowUps} scheduled follow-up${dueFollowUps === 1 ? " is" : "s are"} due.`}
               </p>

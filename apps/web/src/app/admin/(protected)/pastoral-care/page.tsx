@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FiHeart, FiMessageCircle, FiPhone, FiUserCheck } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getAdminResource } from "../registrations/admin-api";
@@ -21,6 +22,12 @@ type CareCandidate = {
   profilePhotoUrl: string | null;
   absenceCount: number;
   lastMissedAt: string;
+  careStatus:
+    | "NEEDS_CONTACT"
+    | "FOLLOW_UP_DUE"
+    | "FOLLOW_UP_SCHEDULED"
+    | "CONTACTED"
+    | "CARE_COMPLETED";
   missedEvents: { id: string; name: string; startsAt: string }[];
   followUps: FollowUp[];
 };
@@ -31,11 +38,38 @@ const dateFormatter = new Intl.DateTimeFormat("en-GH", {
   year: "numeric",
 });
 
-export default async function PastoralCarePage() {
+function statusStyle(status: CareCandidate["careStatus"]) {
+  if (status === "CARE_COMPLETED") return "border-emerald-400/20 bg-emerald-400/10 text-emerald-300";
+  if (status === "FOLLOW_UP_DUE") return "border-rose-400/20 bg-rose-400/10 text-rose-300";
+  if (status === "FOLLOW_UP_SCHEDULED") return "border-sky-400/20 bg-sky-400/10 text-sky-300";
+  if (status === "CONTACTED") return "border-white/15 bg-white/[0.06] text-slate-300";
+  return "border-amber-400/20 bg-amber-400/10 text-amber-200";
+}
+
+export default async function PastoralCarePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const { view = "attention" } = await searchParams;
   const candidates = await getAdminResource<CareCandidate[]>(
     "/pastoral-care/queue",
   );
-  const awaitingContact = candidates.filter((member) => member.followUps.length === 0).length;
+  const attentionStatuses = new Set(["NEEDS_CONTACT", "FOLLOW_UP_DUE"]);
+  const visibleCandidates = candidates.filter((member) => {
+    if (view === "all") return true;
+    if (view === "scheduled") return member.careStatus === "FOLLOW_UP_SCHEDULED";
+    if (view === "completed") return member.careStatus === "CARE_COMPLETED";
+    return attentionStatuses.has(member.careStatus);
+  });
+  const awaitingContact = candidates.filter((member) => member.careStatus === "NEEDS_CONTACT").length;
+  const due = candidates.filter((member) => member.careStatus === "FOLLOW_UP_DUE").length;
+  const tabs = [
+    { value: "attention", label: "Needs attention", count: awaitingContact + due },
+    { value: "scheduled", label: "Scheduled", count: candidates.filter((member) => member.careStatus === "FOLLOW_UP_SCHEDULED").length },
+    { value: "completed", label: "Completed", count: candidates.filter((member) => member.careStatus === "CARE_COMPLETED").length },
+    { value: "all", label: "All", count: candidates.length },
+  ];
 
   return (
     <main className="min-h-screen bg-[#090a0d] px-5 py-10 text-slate-100">
@@ -51,17 +85,30 @@ export default async function PastoralCarePage() {
           </div>
         </header>
 
-        {candidates.length === 0 ? (
+        <nav aria-label="Care queue filters" className="mt-6 flex gap-2 overflow-x-auto rounded-xl border border-white/10 bg-[#111318] p-2">
+          {tabs.map((tab) => (
+            <Link
+              aria-current={view === tab.value ? "page" : undefined}
+              className={`shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition ${view === tab.value ? "bg-violet-500 text-white" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"}`}
+              href={`/admin/pastoral-care?view=${tab.value}`}
+              key={tab.value}
+            >
+              {tab.label} <span className="ml-1 opacity-70">{tab.count}</span>
+            </Link>
+          ))}
+        </nav>
+
+        {visibleCandidates.length === 0 ? (
           <section className="mt-8 grid min-h-80 place-items-center rounded-xl border border-dashed border-white/15 bg-[#111318] text-center">
             <div>
               <FiUserCheck className="mx-auto text-5xl text-emerald-400" />
-              <h2 className="mt-4 text-xl font-bold">Everyone is accounted for</h2>
-              <p className="mt-2 text-sm text-slate-400">No member has two unexcused absences in the last 90 days.</p>
+              <h2 className="mt-4 text-xl font-bold">Nothing in this view</h2>
+              <p className="mt-2 text-sm text-slate-400">Choose another care filter to review other members.</p>
             </div>
           </section>
         ) : (
           <section className="mt-8 grid gap-5">
-            {candidates.map((member) => {
+            {visibleCandidates.map((member) => {
               const latest = member.followUps[0];
               return (
                 <article className="overflow-hidden rounded-xl border border-white/10 bg-[#111318]" key={member.memberId}>
@@ -73,6 +120,7 @@ export default async function PastoralCarePage() {
                           <h2 className="text-lg font-semibold">{member.displayName}</h2>
                           <p className="mt-1 text-sm text-slate-400">{member.phone ?? member.email}</p>
                           <span className="mt-3 inline-flex rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">{member.absenceCount} absences</span>
+                          <span className={`ml-2 mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${statusStyle(member.careStatus)}`}>{member.careStatus.replaceAll("_", " ")}</span>
                         </div>
                       </div>
                       <div className="mt-5 border-t border-white/[0.07] pt-4">
