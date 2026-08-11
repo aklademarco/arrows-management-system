@@ -33,6 +33,14 @@ export class MembersService {
     return this.repository.directoryProfile(memberId, viewer.churchId);
   }
 
+  greetDirectoryMember(memberId: string, viewer: AuthenticatedPrincipal) {
+    return this.repository.greetDirectoryMember(
+      memberId,
+      viewer.id,
+      viewer.churchId,
+    );
+  }
+
   async findById(memberId: string, viewer: AuthenticatedPrincipal) {
     const restrictToDepartmentIds = await this.resolveReadScope(viewer);
     return this.repository.findById(

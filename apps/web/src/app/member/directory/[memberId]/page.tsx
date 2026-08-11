@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FiArrowLeft, FiMessageCircle, FiPhone, FiUsers } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getMemberResource } from "../../member-api";
+import { sayHello } from "./actions";
 
 type DirectoryProfile = {
   id: string;
@@ -18,10 +19,12 @@ type DirectoryProfile = {
 
 export default async function DirectoryProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ memberId: string }>;
+  searchParams: Promise<{ hello?: string }>;
 }) {
-  const { memberId } = await params;
+  const [{ memberId }, query] = await Promise.all([params, searchParams]);
   const member = await getMemberResource<DirectoryProfile>(
     `/members/directory/${memberId}`,
   );
@@ -46,6 +49,11 @@ export default async function DirectoryProfilePage({
             <h1 className="mt-4 text-2xl font-black tracking-tight">{name}</h1>
             {member.otherNames ? <p className="mt-1 text-sm font-semibold text-slate-400">Also known as {member.otherNames}</p> : null}
             {member.directoryBio ? <p className="mt-5 whitespace-pre-line text-[15px] font-medium leading-7 text-slate-700">{member.directoryBio}</p> : <p className="mt-5 text-sm font-medium text-slate-400">{member.firstName} has not added an introduction yet.</p>}
+            {query.hello === "1" ? <p className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-extrabold text-emerald-700">Your hello was sent to {member.firstName}.</p> : null}
+            <form action={sayHello} className="mt-5">
+              <input name="memberId" type="hidden" value={member.id} />
+              <button className="member-primary-action h-11 w-full sm:w-auto" type="submit"><FiMessageCircle /> Say hello</button>
+            </form>
           </div>
         </section>
 

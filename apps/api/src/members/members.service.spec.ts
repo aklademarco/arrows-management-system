@@ -218,4 +218,26 @@ describe('MembersService', () => {
 
     expect(directoryProfile).toHaveBeenCalledWith('member-id', 'church-id');
   });
+
+  it('sends a directory greeting within the viewer church', async () => {
+    const greetDirectoryMember = jest
+      .fn()
+      .mockResolvedValue({ id: 'greeting-id' });
+    const service = new MembersService({
+      greetDirectoryMember,
+    } as unknown as MembersRepository);
+
+    await service.greetDirectoryMember('recipient-member-id', {
+      id: 'sender-user-id',
+      churchId: 'church-id',
+      email: 'sender@example.com',
+      roles: ['MEMBER'],
+    });
+
+    expect(greetDirectoryMember).toHaveBeenCalledWith(
+      'recipient-member-id',
+      'sender-user-id',
+      'church-id',
+    );
+  });
 });

@@ -30,6 +30,7 @@ export async function memberLogin(
   }
 
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  let destination = "/member";
   try {
     const response = await fetch(`${apiUrl}/auth/login`, {
       method: "POST",
@@ -39,7 +40,7 @@ export async function memberLogin(
     });
     const body = (await response.json()) as {
       message?: string;
-      data?: { accessToken: string };
+      data?: { accessToken: string; user: { roles: string[] } };
     };
     if (!response.ok || !body.data) {
       return { message: body.message ?? "Unable to sign in." };
@@ -58,13 +59,27 @@ export async function memberLogin(
       maxAge: 15 * 60,
       path: "/",
     });
+    if (
+      body.data.user.roles.includes("PASTOR") ||
+      body.data.user.roles.includes("DEPARTMENT_LEADER")
+    ) {
+      (await cookies()).set("acms_leader_session", body.data.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 15 * 60,
+        path: "/",
+      });
+      destination = "/leader";
+    }
   } catch {
     return { message: "The login service is unavailable. Try again shortly." };
   }
-  redirect("/member");
+  redirect(destination);
 }
 
 export async function memberLogout() {
   (await cookies()).delete("acms_member_session");
+  (await cookies()).delete("acms_leader_session");
   redirect("/login");
 }

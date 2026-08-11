@@ -544,6 +544,32 @@ export const pastoralFollowUps = pgTable(
   ],
 );
 
+export const directoryGreetings = pgTable(
+  'directory_greetings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    senderUserId: uuid('sender_user_id')
+      .notNull()
+      .references(() => users.id),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('directory_greetings_sender_recipient_created_idx').on(
+      table.senderUserId,
+      table.recipientUserId,
+      table.createdAt,
+    ),
+  ],
+);
+
 export const leaderboardEntries = pgTable(
   'leaderboard_entries',
   {

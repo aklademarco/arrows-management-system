@@ -122,6 +122,19 @@ export class MembersController {
     };
   }
 
+  @Post('directory/:memberId/hello')
+  @UseGuards(AuthenticatedGuard)
+  async greetDirectoryMember(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Your hello was sent.',
+      data: await this.service.greetDirectoryMember(memberId, viewer),
+    };
+  }
+
   @Get(':memberId')
   @UseGuards(AuthenticatedGuard)
   async findById(
