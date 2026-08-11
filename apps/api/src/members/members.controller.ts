@@ -13,6 +13,7 @@ import {
 import { AdminUser } from '../auth/admin-user.decorator';
 import { AdminGuard, type AdminPrincipal } from '../auth/admin.guard';
 import { ListMembersDto } from './dto/list-members.dto';
+import { ListDirectoryDto } from './dto/list-directory.dto';
 import { MembersService } from './members.service';
 import {
   AuthenticatedGuard,
@@ -92,6 +93,19 @@ export class MembersController {
       success: true,
       message: 'Members retrieved.',
       data: await this.service.list(query, viewer),
+    };
+  }
+
+  @Get('directory')
+  @UseGuards(AuthenticatedGuard)
+  async directory(
+    @Query() query: ListDirectoryDto,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Church directory retrieved.',
+      data: await this.service.directory(query, viewer),
     };
   }
 

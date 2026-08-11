@@ -21,6 +21,7 @@ import {
 const memberNavigation = [
   { href: "/member", label: "Home", icon: FiHome },
   { href: "/member/attendance", label: "Activity", icon: FiCalendar },
+  { href: "/member/directory", label: "People", icon: FiUsers },
   { href: "/member/absences", label: "Absences", icon: FiFileText },
   { href: "/member/leaderboard", label: "Ranks", icon: FiAward },
   { href: "/member/media-hub", label: "Media hub", icon: FiImage },
@@ -57,7 +58,11 @@ export function PortalNavigation({
   const navigation =
     portal === "member"
       ? mobile
-        ? memberNavigation.filter((item) => item.href !== "/member/media-hub")
+        ? memberNavigation.filter(
+            (item) =>
+              item.href !== "/member/media-hub" &&
+              item.href !== "/member/absences",
+          )
         : memberNavigation
       : showAuditLogs
         ? [...adminNavigation, superAdminNavigation]

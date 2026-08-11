@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import { ListMembersDto } from './dto/list-members.dto';
+import { ListDirectoryDto } from './dto/list-directory.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersRepository } from './members.repository';
@@ -22,6 +23,10 @@ export class MembersService {
       viewer.churchId,
       restrictToDepartmentIds,
     );
+  }
+
+  directory(query: ListDirectoryDto, viewer: AuthenticatedPrincipal) {
+    return this.repository.directory(query, viewer.churchId);
   }
 
   async findById(memberId: string, viewer: AuthenticatedPrincipal) {

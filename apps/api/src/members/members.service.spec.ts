@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { ListMembersDto } from './dto/list-members.dto';
+import { ListDirectoryDto } from './dto/list-directory.dto';
 import { MembersRepository } from './members.repository';
 import { MembersService } from './members.service';
 
@@ -159,5 +160,23 @@ describe('MembersService', () => {
     await expect(service.list(new ListMembersDto(), leader)).rejects.toThrow(
       'You do not have access to the member directory.',
     );
+  });
+
+  it('allows a member to load the privacy-safe church directory', async () => {
+    const directory = jest.fn().mockResolvedValue({ items: [], total: 0 });
+    const service = new MembersService({
+      directory,
+    } as unknown as MembersRepository);
+    const query = new ListDirectoryDto();
+    const member = {
+      id: 'member-user-id',
+      churchId: 'church-id',
+      email: 'member@example.com',
+      roles: ['MEMBER'],
+    };
+
+    await service.directory(query, member);
+
+    expect(directory).toHaveBeenCalledWith(query, 'church-id');
   });
 });

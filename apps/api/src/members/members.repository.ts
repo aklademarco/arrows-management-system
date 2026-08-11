@@ -29,6 +29,7 @@ import {
   users,
 } from '../database/schema';
 import { ListMembersDto } from './dto/list-members.dto';
+import { ListDirectoryDto } from './dto/list-directory.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 
@@ -304,6 +305,93 @@ export class MembersRepository {
             name: membership.departmentName,
             isPrimary: membership.primaryAssignmentId !== null,
           })),
+      })),
+      total,
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit),
+    };
+  }
+
+  async directory(query: ListDirectoryDto, churchId: string) {
+    const filters = [
+      eq(users.churchId, churchId),
+      eq(users.accountStatus, 'ACTIVE'),
+      eq(memberProfiles.membershipStatus, 'ACTIVE'),
+    ];
+    const search = query.search?.trim();
+    if (search) {
+      const pattern = `%${search}%`;
+      filters.push(
+        or(
+          ilike(memberProfiles.firstName, pattern),
+          ilike(memberProfiles.lastName, pattern),
+          ilike(memberProfiles.otherNames, pattern),
+        )!,
+      );
+    }
+    if (query.departmentId) {
+      const departmentMemberIds = this.database
+        .select({ id: departmentMembers.memberId })
+        .from(departmentMembers)
+        .where(
+          and(
+            eq(departmentMembers.departmentId, query.departmentId),
+            isNull(departmentMembers.leftAt),
+          ),
+        );
+      filters.push(inArray(memberProfiles.id, departmentMemberIds));
+    }
+    const where = and(...filters);
+    const [members, [{ total }]] = await Promise.all([
+      this.database
+        .select({
+          id: memberProfiles.id,
+          firstName: memberProfiles.firstName,
+          lastName: memberProfiles.lastName,
+          otherNames: memberProfiles.otherNames,
+          profilePhotoUrl: memberProfiles.profilePhotoUrl,
+          coverPhotoUrl: memberProfiles.coverPhotoUrl,
+        })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(where)
+        .orderBy(asc(memberProfiles.firstName), asc(memberProfiles.lastName))
+        .limit(query.limit)
+        .offset((query.page - 1) * query.limit),
+      this.database
+        .select({ total: count() })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(where),
+    ]);
+    const memberIds = members.map((member) => member.id);
+    const memberships = memberIds.length
+      ? await this.database
+          .select({
+            memberId: departmentMembers.memberId,
+            id: departments.id,
+            name: departments.name,
+          })
+          .from(departmentMembers)
+          .innerJoin(
+            departments,
+            eq(departments.id, departmentMembers.departmentId),
+          )
+          .where(
+            and(
+              inArray(departmentMembers.memberId, memberIds),
+              isNull(departmentMembers.leftAt),
+              eq(departments.isActive, true),
+            ),
+          )
+      : [];
+    return {
+      items: members.map((member) => ({
+        ...member,
+        departments: memberships
+          .filter((membership) => membership.memberId === member.id)
+          .map(({ id, name }) => ({ id, name })),
       })),
       total,
       page: query.page,
