@@ -83,6 +83,29 @@ describe('MembersService', () => {
     });
   });
 
+  it('normalizes duplicate directory skills before saving', async () => {
+    const updateOwnProfile = jest.fn().mockResolvedValue({ id: 'member-id' });
+    const service = new MembersService({
+      updateOwnProfile,
+    } as unknown as MembersRepository);
+
+    await service.updateOwnProfile(
+      {
+        id: 'user-id',
+        churchId: 'church-id',
+        email: 'member@example.com',
+        roles: ['MEMBER'],
+      },
+      { skills: [' Singing ', 'Singing', 'Teaching'] },
+    );
+
+    expect(updateOwnProfile).toHaveBeenCalledWith({
+      userId: 'user-id',
+      churchId: 'church-id',
+      updates: { skills: ['Singing', 'Teaching'] },
+    });
+  });
+
   it('rejects an empty profile update', () => {
     const service = new MembersService({} as MembersRepository);
 
@@ -178,5 +201,21 @@ describe('MembersService', () => {
     await service.directory(query, member);
 
     expect(directory).toHaveBeenCalledWith(query, 'church-id');
+  });
+
+  it('loads a privacy-safe directory profile within the viewer church', async () => {
+    const directoryProfile = jest.fn().mockResolvedValue({ id: 'member-id' });
+    const service = new MembersService({
+      directoryProfile,
+    } as unknown as MembersRepository);
+
+    await service.directoryProfile('member-id', {
+      id: 'viewer-id',
+      churchId: 'church-id',
+      email: 'viewer@example.com',
+      roles: ['MEMBER'],
+    });
+
+    expect(directoryProfile).toHaveBeenCalledWith('member-id', 'church-id');
   });
 });

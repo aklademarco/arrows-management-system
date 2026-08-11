@@ -29,6 +29,10 @@ export class MembersService {
     return this.repository.directory(query, viewer.churchId);
   }
 
+  directoryProfile(memberId: string, viewer: AuthenticatedPrincipal) {
+    return this.repository.directoryProfile(memberId, viewer.churchId);
+  }
+
   async findById(memberId: string, viewer: AuthenticatedPrincipal) {
     const restrictToDepartmentIds = await this.resolveReadScope(viewer);
     return this.repository.findById(
@@ -69,10 +73,22 @@ export class MembersService {
     if (Object.values(updates).every((value) => value === undefined)) {
       throw new BadRequestException('Provide at least one profile field.');
     }
+    const normalizedUpdates = {
+      ...updates,
+      ...(updates.skills
+        ? {
+            skills: [
+              ...new Set(
+                updates.skills.map((skill) => skill.trim()).filter(Boolean),
+              ),
+            ],
+          }
+        : {}),
+    };
     return this.repository.updateOwnProfile({
       userId: user.id,
       churchId: user.churchId,
-      updates,
+      updates: normalizedUpdates,
     });
   }
 

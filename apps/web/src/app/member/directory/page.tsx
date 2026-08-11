@@ -79,7 +79,7 @@ export default async function MemberDirectoryPage({
             {directory.items.map((member) => {
               const name = `${member.firstName} ${member.lastName}`;
               return (
-                <article className="overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" key={member.id}>
+                <Link className="block overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" href={`/member/directory/${member.id}`} key={member.id}>
                   <div className="h-24 bg-gradient-to-br from-[#4c0d72] via-[#6b21a8] to-[#9d4edd] bg-cover bg-center" style={member.coverPhotoUrl ? { backgroundImage: `linear-gradient(rgba(76,13,114,.3), rgba(76,13,114,.3)), url(${member.coverPhotoUrl})` } : undefined} />
                   <div className="px-5 pb-5">
                     <div className="-mt-10"><ProfileAvatar imageUrl={member.profilePhotoUrl} name={name} size="xl" /></div>
@@ -92,7 +92,8 @@ export default async function MemberDirectoryPage({
                     </div>
                     {member.phone ? <div className="mt-4 flex gap-2 border-t border-purple-100 pt-4"><a className="member-primary-action h-10 flex-1 px-3 text-sm" href={`tel:${member.phone}`}>Call</a><a className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-purple-100 px-3 text-sm font-extrabold text-[#6b21a8]" href={`sms:${member.phone}`}>Message</a></div> : null}
                   </div>
-                </article>
+                  <span className="sr-only">View {name}&apos;s profile</span>
+                </Link>
               );
             })}
           </section>

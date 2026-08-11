@@ -283,7 +283,10 @@ export const memberProfiles = pgTable('member_profiles', {
   directoryPhoneVisible: boolean('directory_phone_visible')
     .notNull()
     .default(false),
-  skills: text('skills').array().notNull().default(sql`'{}'::text[]`),
+  skills: text('skills')
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   requestedDepartmentId: uuid('requested_department_id').references(
     () => departments.id,
   ),

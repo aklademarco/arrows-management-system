@@ -109,6 +109,19 @@ export class MembersController {
     };
   }
 
+  @Get('directory/:memberId')
+  @UseGuards(AuthenticatedGuard)
+  async directoryProfile(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Directory profile retrieved.',
+      data: await this.service.directoryProfile(memberId, viewer),
+    };
+  }
+
   @Get(':memberId')
   @UseGuards(AuthenticatedGuard)
   async findById(

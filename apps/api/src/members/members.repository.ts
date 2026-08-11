@@ -358,7 +358,9 @@ export class MembersRepository {
           profilePhotoUrl: memberProfiles.profilePhotoUrl,
           coverPhotoUrl: memberProfiles.coverPhotoUrl,
           directoryBio: memberProfiles.directoryBio,
-          phone: sql<string | null>`case when ${memberProfiles.directoryPhoneVisible} then ${users.phone} else null end`,
+          phone: sql<
+            string | null
+          >`case when ${memberProfiles.directoryPhoneVisible} then ${users.phone} else null end`,
           skills: memberProfiles.skills,
         })
         .from(memberProfiles)
@@ -406,6 +408,53 @@ export class MembersRepository {
       limit: query.limit,
       totalPages: Math.ceil(total / query.limit),
     };
+  }
+
+  async directoryProfile(memberId: string, churchId: string) {
+    const [member] = await this.database
+      .select({
+        id: memberProfiles.id,
+        firstName: memberProfiles.firstName,
+        lastName: memberProfiles.lastName,
+        otherNames: memberProfiles.otherNames,
+        profilePhotoUrl: memberProfiles.profilePhotoUrl,
+        coverPhotoUrl: memberProfiles.coverPhotoUrl,
+        directoryBio: memberProfiles.directoryBio,
+        phone: sql<
+          string | null
+        >`case when ${memberProfiles.directoryPhoneVisible} then ${users.phone} else null end`,
+        skills: memberProfiles.skills,
+      })
+      .from(memberProfiles)
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .where(
+        and(
+          eq(memberProfiles.id, memberId),
+          eq(users.churchId, churchId),
+          eq(users.accountStatus, 'ACTIVE'),
+          eq(memberProfiles.membershipStatus, 'ACTIVE'),
+          eq(memberProfiles.directoryVisible, true),
+        ),
+      )
+      .limit(1);
+    if (!member) throw new NotFoundException('Directory profile not found.');
+    const memberships = await this.database
+      .select({ id: departments.id, name: departments.name })
+      .from(departmentMembers)
+      .innerJoin(
+        departments,
+        eq(departments.id, departmentMembers.departmentId),
+      )
+      .where(
+        and(
+          eq(departmentMembers.memberId, memberId),
+          isNull(departmentMembers.leftAt),
+          eq(departments.isActive, true),
+          eq(departments.churchId, churchId),
+        ),
+      )
+      .orderBy(asc(departments.name));
+    return { ...member, departments: memberships };
   }
 
   async findById(
