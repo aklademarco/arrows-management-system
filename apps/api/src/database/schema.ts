@@ -278,6 +278,12 @@ export const memberProfiles = pgTable('member_profiles', {
   otherNames: varchar('other_names', { length: 150 }),
   profilePhotoUrl: text('profile_photo_url'),
   coverPhotoUrl: text('cover_photo_url'),
+  directoryBio: varchar('directory_bio', { length: 300 }),
+  directoryVisible: boolean('directory_visible').notNull().default(true),
+  directoryPhoneVisible: boolean('directory_phone_visible')
+    .notNull()
+    .default(false),
+  skills: text('skills').array().notNull().default(sql`'{}'::text[]`),
   requestedDepartmentId: uuid('requested_department_id').references(
     () => departments.id,
   ),

@@ -18,6 +18,10 @@ const profileSchema = z.object({
       "Use international format, for example +233240000000.",
     )
     .nullable(),
+  directoryBio: z.string().trim().max(300).nullable(),
+  directoryVisible: z.boolean(),
+  directoryPhoneVisible: z.boolean(),
+  skills: z.array(z.string().trim().min(1).max(40)).max(12),
 });
 
 export async function updateOwnProfile(formData: FormData) {
@@ -30,6 +34,14 @@ export async function updateOwnProfile(formData: FormData) {
     lastName: String(formData.get("lastName") ?? ""),
     otherNames: parseOptional("otherNames"),
     phone: parseOptional("phone"),
+    directoryBio: parseOptional("directoryBio"),
+    directoryVisible: formData.get("directoryVisible") === "on",
+    directoryPhoneVisible:
+      formData.get("directoryPhoneVisible") === "on",
+    skills: String(formData.get("skills") ?? "")
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter(Boolean),
   });
   if (!result.success) {
     throw new Error(
@@ -61,6 +73,7 @@ export async function updateOwnProfile(formData: FormData) {
   }
   revalidatePath("/member");
   revalidatePath("/member/profile");
+  revalidatePath("/member/directory");
   redirect("/member/profile?updated=1");
 }
 

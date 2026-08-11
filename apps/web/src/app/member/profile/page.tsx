@@ -122,6 +122,57 @@ export default async function MemberProfilePage({
               </p>
             </div>
           </ProfileField>
+          <ProfileField label="Introduction">
+            <div className="py-3">
+              <textarea
+                className="min-h-28 w-full resize-y rounded-2xl border border-slate-200 bg-[#fbf9fd] p-4 text-sm font-medium leading-6 text-slate-950 outline-none placeholder:text-slate-400 focus:border-[#8b3bc0] focus:ring-4 focus:ring-purple-100"
+                defaultValue={member.directoryBio ?? ""}
+                id="directoryBio"
+                maxLength={300}
+                name="directoryBio"
+                placeholder="Share a little about yourself with your church family."
+              />
+              <p className="mt-2 text-xs text-slate-500">Only shown in the church directory. Maximum 300 characters.</p>
+            </div>
+          </ProfileField>
+          <ProfileField label="Skills">
+            <div className="py-3">
+              <input
+                className={fieldClass}
+                defaultValue={member.skills.join(", ")}
+                id="skills"
+                name="skills"
+                placeholder="Photography, singing, teaching"
+              />
+              <p className="pb-4 text-xs text-slate-500">Separate skills with commas. Add up to 12 skills.</p>
+            </div>
+          </ProfileField>
+          <div className="mx-5 mb-5 mt-3 rounded-2xl bg-purple-50 p-4 sm:mx-7">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                className="mt-1 size-5 rounded border-purple-300 text-[#6b21a8] focus:ring-purple-300"
+                defaultChecked={member.directoryVisible}
+                name="directoryVisible"
+                type="checkbox"
+              />
+              <span>
+                <span className="block text-sm font-black text-slate-900">Show me in the church directory</span>
+                <span className="mt-1 block text-xs font-medium leading-5 text-slate-500">Other approved members can see your name, photos, introduction, and departments. Your phone and email remain private.</span>
+              </span>
+            </label>
+            <label className="mt-4 flex cursor-pointer items-start gap-3 border-t border-purple-100 pt-4">
+              <input
+                className="mt-1 size-5 rounded border-purple-300 text-[#6b21a8] focus:ring-purple-300"
+                defaultChecked={member.directoryPhoneVisible}
+                name="directoryPhoneVisible"
+                type="checkbox"
+              />
+              <span>
+                <span className="block text-sm font-black text-slate-900">Show my phone number</span>
+                <span className="mt-1 block text-xs font-medium leading-5 text-slate-500">Approved members can call or message you from the directory. This is off by default.</span>
+              </span>
+            </label>
+          </div>
 
           <div className="bg-purple-50/50 px-5 py-6 sm:px-7">
             <button

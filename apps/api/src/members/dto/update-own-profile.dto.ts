@@ -1,5 +1,8 @@
 import { Transform } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   Matches,
@@ -37,4 +40,25 @@ export class UpdateOwnProfileDto {
     message: 'phone must use international format, for example +233240000000',
   })
   phone?: string | null;
+
+  @Transform(trim)
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  directoryBio?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  directoryVisible?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  directoryPhoneVisible?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  skills?: string[];
 }

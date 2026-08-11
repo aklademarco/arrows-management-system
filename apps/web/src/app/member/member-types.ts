@@ -7,6 +7,10 @@ export type MemberProfile = {
   membershipStatus: string;
   profilePhotoUrl?: string | null;
   coverPhotoUrl?: string | null;
+  directoryBio?: string | null;
+  directoryVisible: boolean;
+  directoryPhoneVisible: boolean;
+  skills: string[];
 };
 
 export type ActiveEvent = {

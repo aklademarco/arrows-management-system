@@ -81,6 +81,10 @@ export class MembersRepository {
         otherNames: memberProfiles.otherNames,
         profilePhotoUrl: memberProfiles.profilePhotoUrl,
         coverPhotoUrl: memberProfiles.coverPhotoUrl,
+        directoryBio: memberProfiles.directoryBio,
+        directoryVisible: memberProfiles.directoryVisible,
+        directoryPhoneVisible: memberProfiles.directoryPhoneVisible,
+        skills: memberProfiles.skills,
         membershipStatus: memberProfiles.membershipStatus,
         email: users.email,
         phone: users.phone,
@@ -318,6 +322,7 @@ export class MembersRepository {
       eq(users.churchId, churchId),
       eq(users.accountStatus, 'ACTIVE'),
       eq(memberProfiles.membershipStatus, 'ACTIVE'),
+      eq(memberProfiles.directoryVisible, true),
     ];
     const search = query.search?.trim();
     if (search) {
@@ -352,6 +357,9 @@ export class MembersRepository {
           otherNames: memberProfiles.otherNames,
           profilePhotoUrl: memberProfiles.profilePhotoUrl,
           coverPhotoUrl: memberProfiles.coverPhotoUrl,
+          directoryBio: memberProfiles.directoryBio,
+          phone: sql<string | null>`case when ${memberProfiles.directoryPhoneVisible} then ${users.phone} else null end`,
+          skills: memberProfiles.skills,
         })
         .from(memberProfiles)
         .innerJoin(users, eq(users.id, memberProfiles.userId))
@@ -499,6 +507,10 @@ export class MembersRepository {
             firstName: memberProfiles.firstName,
             lastName: memberProfiles.lastName,
             otherNames: memberProfiles.otherNames,
+            directoryBio: memberProfiles.directoryBio,
+            directoryVisible: memberProfiles.directoryVisible,
+            directoryPhoneVisible: memberProfiles.directoryPhoneVisible,
+            skills: memberProfiles.skills,
             phone: users.phone,
           })
           .from(memberProfiles)
@@ -523,6 +535,18 @@ export class MembersRepository {
           ...(input.updates.otherNames !== undefined
             ? { otherNames: input.updates.otherNames }
             : {}),
+          ...(input.updates.directoryBio !== undefined
+            ? { directoryBio: input.updates.directoryBio }
+            : {}),
+          ...(input.updates.directoryVisible !== undefined
+            ? { directoryVisible: input.updates.directoryVisible }
+            : {}),
+          ...(input.updates.directoryPhoneVisible !== undefined
+            ? { directoryPhoneVisible: input.updates.directoryPhoneVisible }
+            : {}),
+          ...(input.updates.skills !== undefined
+            ? { skills: input.updates.skills }
+            : {}),
           updatedAt: now,
         };
         await transaction
@@ -545,6 +569,10 @@ export class MembersRepository {
             firstName: member.firstName,
             lastName: member.lastName,
             otherNames: member.otherNames,
+            directoryBio: member.directoryBio,
+            directoryVisible: member.directoryVisible,
+            directoryPhoneVisible: member.directoryPhoneVisible,
+            skills: member.skills,
             phone: member.phone,
           },
           newData: input.updates,
@@ -555,6 +583,10 @@ export class MembersRepository {
             firstName: memberProfiles.firstName,
             lastName: memberProfiles.lastName,
             otherNames: memberProfiles.otherNames,
+            directoryBio: memberProfiles.directoryBio,
+            directoryVisible: memberProfiles.directoryVisible,
+            directoryPhoneVisible: memberProfiles.directoryPhoneVisible,
+            skills: memberProfiles.skills,
             phone: users.phone,
           })
           .from(memberProfiles)
