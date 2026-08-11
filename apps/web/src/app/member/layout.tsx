@@ -6,14 +6,21 @@ import { PortalNavigation } from "@/components/portal-navigation";
 import { memberLogout } from "../login/actions";
 import { getMemberProfile, getMemberResource } from "./member-api";
 import type { MemberProfile } from "./member-types";
+import { redirect } from "next/navigation";
 
 export default async function MemberLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [member, unread] = await Promise.all([
+  const [member, unread, account] = await Promise.all([
     getMemberProfile<MemberProfile>(),
     getMemberResource<{ count: number }>("/notifications/unread-count"),
+    getMemberResource<{ roles: string[] }>("/auth/me"),
   ]);
+  if (
+    account.roles.includes("PASTOR") ||
+    account.roles.includes("DEPARTMENT_LEADER")
+  )
+    redirect("/leader");
   const memberName = `${member.firstName} ${member.lastName}`;
   return (
     <div className="min-h-screen bg-[#f8f7fb] text-slate-950">
