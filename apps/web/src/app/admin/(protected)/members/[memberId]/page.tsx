@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { FiArrowLeft, FiMail, FiPhone } from "react-icons/fi";
+import { AdminActionButton } from "@/components/admin-action-button";
+import { AdminFeedback } from "@/components/admin-feedback";
 import { reactivateUser, suspendUser } from "../../registrations/actions";
 import { getAdminResource } from "../../registrations/admin-api";
 import {
@@ -46,10 +48,12 @@ type PointAdjustment = {
 
 export default async function MemberProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ memberId: string }>;
+  searchParams: Promise<{ feedback?: string; message?: string }>;
 }) {
-  const { memberId } = await params;
+  const [{ memberId }, feedback] = await Promise.all([params, searchParams]);
   const [member, departments, adjustments] = await Promise.all([
     getAdminResource<MemberProfile>(`/members/${memberId}`),
     getAdminResource<Department[]>("/departments"),
@@ -93,6 +97,10 @@ export default async function MemberProfilePage({
           </div>
         </header>
 
+        {(feedback.feedback === "success" || feedback.feedback === "error") && feedback.message ? (
+          <AdminFeedback kind={feedback.feedback} message={feedback.message} />
+        ) : null}
+
         <section className="mt-6 rounded-2xl border border-violet-400/20 bg-[#111318] p-6 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-400">Access control</p>
           <h2 className="mt-2 text-xl font-bold">Ministry access</h2>
@@ -107,7 +115,7 @@ export default async function MemberProfilePage({
               <input className="mt-1 size-4 accent-violet-500" defaultChecked={member.roles.includes("DEPARTMENT_LEADER")} name="roles" type="checkbox" value="DEPARTMENT_LEADER" />
               <span><span className="block font-semibold">Department leader</span><span className="mt-1 block text-sm leading-5 text-slate-400">Enables the leader workspace. Assign an active department leadership term as well to grant team access.</span></span>
             </label>
-            <button className="mt-2 h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500 sm:ml-auto" type="submit">Save ministry access</button>
+            <AdminActionButton className="mt-2 h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500 sm:ml-auto" pendingLabel="Updating access…" type="submit">Save ministry access</AdminActionButton>
           </form>
         </section>
 
@@ -152,9 +160,9 @@ export default async function MemberProfilePage({
                 required
               />
             </label>
-            <button className="mt-auto h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500">
+            <AdminActionButton className="mt-auto h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500" pendingLabel="Recording…">
               Record adjustment
-            </button>
+            </AdminActionButton>
           </form>
           {adjustments.length > 0 ? (
             <div className="mt-5 divide-y divide-white/[0.07] border-t border-white/[0.07]">
@@ -279,9 +287,9 @@ export default async function MemberProfilePage({
                               ))}
                           </select>
                         ) : null}
-                        <button className="h-10 rounded-lg bg-red-700 px-4 font-bold text-white">
+                        <AdminActionButton className="h-10 rounded-lg bg-red-700 px-4 font-bold text-white" pendingLabel="Ending…">
                           End membership
-                        </button>
+                        </AdminActionButton>
                       </form>
                     </details>
                   ) : null}
@@ -331,9 +339,9 @@ export default async function MemberProfilePage({
                 placeholder="Reason for change"
                 required
               />
-              <button className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white">
+              <AdminActionButton className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white" pendingLabel="Updating…">
                 Update primary department
-              </button>
+              </AdminActionButton>
             </form>
           </section>
         ) : null}
@@ -369,9 +377,9 @@ export default async function MemberProfilePage({
                 <input name="makePrimary" type="checkbox" />
                 Make primary
               </label>
-              <button className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white md:col-start-4">
+              <AdminActionButton className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white md:col-start-4" pendingLabel="Adding…">
                 Add membership
-              </button>
+              </AdminActionButton>
             </form>
           </section>
         ) : null}
@@ -432,9 +440,9 @@ export default async function MemberProfilePage({
               </select>
             </label>
             <div className="flex items-end">
-              <button className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white">
+              <AdminActionButton className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white" pendingLabel="Saving…">
                 Save changes
-              </button>
+              </AdminActionButton>
             </div>
           </form>
         </section>
@@ -453,9 +461,9 @@ export default async function MemberProfilePage({
               placeholder="Suspension reason"
               required
             />
-            <button className="rounded-lg bg-red-700 px-5 font-bold text-white">
+            <AdminActionButton className="rounded-lg bg-red-700 px-5 font-bold text-white" pendingLabel="Suspending…">
               Suspend
-            </button>
+            </AdminActionButton>
           </form>
         ) : null}
         {member.accountStatus === "SUSPENDED" ? (
@@ -465,9 +473,9 @@ export default async function MemberProfilePage({
           >
             <input name="userId" type="hidden" value={member.userId} />
             <input name="memberId" type="hidden" value={member.id} />
-            <button className="rounded-lg bg-green-700 px-5 py-3 font-bold text-white">
+            <AdminActionButton className="rounded-lg bg-green-700 px-5 py-3 font-bold text-white" pendingLabel="Reactivating…">
               Reactivate account
-            </button>
+            </AdminActionButton>
           </form>
         ) : null}
 
@@ -480,9 +488,9 @@ export default async function MemberProfilePage({
             </p>
             <form action={archiveMember} className="mt-4">
               <input name="memberId" type="hidden" value={member.id} />
-              <button className="rounded-lg bg-red-800 px-5 py-3 font-bold text-white hover:bg-red-900">
+              <AdminActionButton className="rounded-lg bg-red-800 px-5 py-3 font-bold text-white hover:bg-red-900" pendingLabel="Archiving…">
                 Archive member
-              </button>
+              </AdminActionButton>
             </form>
           </section>
         ) : null}

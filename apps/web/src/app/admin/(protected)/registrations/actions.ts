@@ -31,9 +31,10 @@ async function review(
   }
   if (!response.ok) {
     const body = (await response.json()) as { message?: string };
-    throw new Error(body.message ?? "The administrative action failed.");
+    return body.message ?? "The administrative action failed.";
   }
   revalidatePath("/admin/registrations");
+  return null;
 }
 
 export async function approveRegistration(formData: FormData) {
@@ -45,11 +46,12 @@ export async function approveRegistration(formData: FormData) {
     .array(userIdSchema)
     .parse(formData.getAll("additionalDepartmentIds"));
   const note = String(formData.get("note") ?? "").trim();
-  await review(`/admin/registrations/${userId}/approve`, {
+  const error = await review(`/admin/registrations/${userId}/approve`, {
     primaryDepartmentId,
     additionalDepartmentIds,
     ...(note ? { note } : {}),
   });
+  if (error) throw new Error(error);
 }
 
 export async function rejectRegistration(formData: FormData) {
@@ -58,7 +60,8 @@ export async function rejectRegistration(formData: FormData) {
   if (reason.length < 3) {
     throw new Error("Enter a rejection reason.");
   }
-  await review(`/admin/registrations/${userId}/reject`, { reason });
+  const error = await review(`/admin/registrations/${userId}/reject`, { reason });
+  if (error) throw new Error(error);
 }
 
 export async function suspendUser(formData: FormData) {
@@ -67,22 +70,32 @@ export async function suspendUser(formData: FormData) {
   if (reason.length < 3) {
     throw new Error("Enter a suspension reason.");
   }
-  await review(`/admin/users/${userId}/suspend`, { reason });
+  const error = await review(`/admin/users/${userId}/suspend`, { reason });
   revalidatePath(`/admin/registrations/${userId}`);
   const memberId = formData.get("memberId");
   if (typeof memberId === "string") {
-    revalidatePath(`/admin/members/${userIdSchema.parse(memberId)}`);
+    const parsedMemberId = userIdSchema.parse(memberId);
+    revalidatePath(`/admin/members/${parsedMemberId}`);
+    redirect(
+      `/admin/members/${parsedMemberId}?feedback=${error ? "error" : "success"}&message=${encodeURIComponent(error ?? "Member account suspended.")}`,
+    );
   }
+  if (error) throw new Error(error);
 }
 
 export async function reactivateUser(formData: FormData) {
   const userId = userIdSchema.parse(formData.get("userId"));
-  await review(`/admin/users/${userId}/reactivate`, {});
+  const error = await review(`/admin/users/${userId}/reactivate`, {});
   revalidatePath(`/admin/registrations/${userId}`);
   const memberId = formData.get("memberId");
   if (typeof memberId === "string") {
-    revalidatePath(`/admin/members/${userIdSchema.parse(memberId)}`);
+    const parsedMemberId = userIdSchema.parse(memberId);
+    revalidatePath(`/admin/members/${parsedMemberId}`);
+    redirect(
+      `/admin/members/${parsedMemberId}?feedback=${error ? "error" : "success"}&message=${encodeURIComponent(error ?? "Member account reactivated.")}`,
+    );
   }
+  if (error) throw new Error(error);
 }
 
 export async function adminLogout() {

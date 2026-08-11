@@ -7,6 +7,16 @@ import { z } from "zod";
 
 const memberIdSchema = z.uuid();
 
+function memberFeedback(
+  memberId: string,
+  kind: "success" | "error",
+  message: string,
+): never {
+  redirect(
+    `/admin/members/${memberId}?feedback=${kind}&message=${encodeURIComponent(message)}`,
+  );
+}
+
 export async function adjustMemberPoints(formData: FormData) {
   const memberId = memberIdSchema.parse(formData.get("memberId"));
   const points = z.coerce
@@ -41,7 +51,9 @@ export async function adjustMemberPoints(formData: FormData) {
     redirect("/admin/login");
   if (!response.ok) {
     const body = (await response.json()) as { message?: string | string[] };
-    throw new Error(
+    memberFeedback(
+      memberId,
+      "error",
       Array.isArray(body.message)
         ? body.message.join(" ")
         : (body.message ?? "The point adjustment could not be recorded."),
@@ -49,6 +61,7 @@ export async function adjustMemberPoints(formData: FormData) {
   }
   revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/member/leaderboard");
+  memberFeedback(memberId, "success", "Points adjustment recorded.");
 }
 
 export async function updateMember(formData: FormData) {
@@ -82,7 +95,9 @@ export async function updateMember(formData: FormData) {
   }
   if (!response.ok) {
     const body = (await response.json()) as { message?: string | string[] };
-    throw new Error(
+    memberFeedback(
+      memberId,
+      "error",
       Array.isArray(body.message)
         ? body.message.join(" ")
         : (body.message ?? "The member could not be updated."),
@@ -90,6 +105,7 @@ export async function updateMember(formData: FormData) {
   }
   revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/admin/members");
+  memberFeedback(memberId, "success", "Member details updated.");
 }
 
 export async function updateMinistryRoles(formData: FormData) {
@@ -118,9 +134,14 @@ export async function updateMinistryRoles(formData: FormData) {
     const message = Array.isArray(body?.message)
       ? body.message.join(" ")
       : body?.message;
-    throw new Error(message ?? "Ministry roles could not be updated.");
+    memberFeedback(
+      memberId,
+      "error",
+      message ?? "Ministry roles could not be updated.",
+    );
   }
   revalidatePath(`/admin/members/${memberId}`);
+  memberFeedback(memberId, "success", "Ministry access updated successfully.");
 }
 
 export async function archiveMember(formData: FormData) {
@@ -138,10 +159,15 @@ export async function archiveMember(formData: FormData) {
   }
   if (!response.ok) {
     const body = (await response.json()) as { message?: string };
-    throw new Error(body.message ?? "The member could not be archived.");
+    memberFeedback(
+      memberId,
+      "error",
+      body.message ?? "The member could not be archived.",
+    );
   }
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/${memberId}`);
+  memberFeedback(memberId, "success", "Member archived successfully.");
 }
 
 export async function addMemberToDepartment(formData: FormData) {
@@ -173,11 +199,16 @@ export async function addMemberToDepartment(formData: FormData) {
   }
   if (!response.ok) {
     const body = (await response.json()) as { message?: string };
-    throw new Error(body.message ?? "The department assignment failed.");
+    memberFeedback(
+      memberId,
+      "error",
+      body.message ?? "The department assignment failed.",
+    );
   }
   revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/admin/members");
   revalidatePath("/admin/departments");
+  memberFeedback(memberId, "success", "Department membership added.");
 }
 
 export async function endDepartmentMembership(formData: FormData) {
@@ -213,11 +244,16 @@ export async function endDepartmentMembership(formData: FormData) {
   }
   if (!response.ok) {
     const body = (await response.json()) as { message?: string };
-    throw new Error(body.message ?? "The membership could not be ended.");
+    memberFeedback(
+      memberId,
+      "error",
+      body.message ?? "The membership could not be ended.",
+    );
   }
   revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/admin/members");
   revalidatePath("/admin/departments");
+  memberFeedback(memberId, "success", "Department membership ended.");
 }
 
 export async function setPrimaryDepartment(formData: FormData) {
@@ -251,8 +287,13 @@ export async function setPrimaryDepartment(formData: FormData) {
   }
   if (!response.ok) {
     const body = (await response.json()) as { message?: string };
-    throw new Error(body.message ?? "The primary department update failed.");
+    memberFeedback(
+      memberId,
+      "error",
+      body.message ?? "The primary department update failed.",
+    );
   }
   revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/admin/members");
+  memberFeedback(memberId, "success", "Primary department updated.");
 }
