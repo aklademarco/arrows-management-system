@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { FiHeart, FiMessageCircle, FiPhone, FiUserCheck } from "react-icons/fi";
+import {
+  FiClock,
+  FiHeart,
+  FiMail,
+  FiMessageCircle,
+  FiPhone,
+  FiUserCheck,
+} from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getAdminResource } from "../registrations/admin-api";
 import { recordPastoralFollowUp } from "./actions";
@@ -123,6 +130,37 @@ export default async function PastoralCarePage({
                           <span className={`ml-2 mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${statusStyle(member.careStatus)}`}>{member.careStatus.replaceAll("_", " ")}</span>
                         </div>
                       </div>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {member.phone ? (
+                          <>
+                            <a
+                              className="inline-flex h-10 items-center gap-2 rounded-lg bg-violet-500 px-4 text-sm font-semibold text-white transition hover:bg-violet-400"
+                              href={`tel:${member.phone}`}
+                            >
+                              <FiPhone aria-hidden="true" /> Call member
+                            </a>
+                            <a
+                              className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/15 px-4 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]"
+                              href={`sms:${member.phone}`}
+                            >
+                              <FiMessageCircle aria-hidden="true" /> Send SMS
+                            </a>
+                          </>
+                        ) : (
+                          <a
+                            className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/15 px-4 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]"
+                            href={`mailto:${member.email}`}
+                          >
+                            <FiMail aria-hidden="true" /> Email member
+                          </a>
+                        )}
+                        <Link
+                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/15 px-4 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]"
+                          href={`/admin/members/${member.memberId}`}
+                        >
+                          View profile
+                        </Link>
+                      </div>
                       <div className="mt-5 border-t border-white/[0.07] pt-4">
                         <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Recently missed</p>
                         <div className="mt-3 grid gap-2">
@@ -141,6 +179,37 @@ export default async function PastoralCarePage({
                           {latest.notes ? <p className="mt-1 text-sm leading-6 text-slate-400">{latest.notes}</p> : null}
                           <p className="mt-2 text-xs text-slate-500">Recorded {dateFormatter.format(new Date(latest.contactedAt))} by {latest.contactedByEmail}</p>
                         </div>
+                      ) : null}
+                      {member.followUps.length > 1 ? (
+                        <details className="group mt-4 rounded-lg border border-white/10 bg-[#0c0d11]">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-300">
+                            <span className="flex items-center gap-2">
+                              <FiClock className="text-violet-400" /> Complete care history
+                            </span>
+                            <span className="text-xs text-slate-500">{member.followUps.length} records</span>
+                          </summary>
+                          <ol className="border-t border-white/[0.07] px-4 py-1">
+                            {member.followUps.map((followUp, index) => (
+                              <li className="relative border-l border-white/10 py-4 pl-5" key={followUp.id}>
+                                <span className="absolute -left-1 top-5 size-2 rounded-full bg-violet-400" />
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-slate-200">
+                                    {followUp.method.replaceAll("_", " ")} · {followUp.outcome.replaceAll("_", " ")}
+                                  </p>
+                                  <time className="text-xs text-slate-500" dateTime={followUp.contactedAt}>
+                                    {dateFormatter.format(new Date(followUp.contactedAt))}
+                                  </time>
+                                </div>
+                                {followUp.notes ? <p className="mt-2 text-sm leading-6 text-slate-400">{followUp.notes}</p> : null}
+                                <p className="mt-2 text-xs text-slate-500">
+                                  By {followUp.contactedByEmail}
+                                  {followUp.nextFollowUpOn ? ` · Next follow-up ${dateFormatter.format(new Date(`${followUp.nextFollowUpOn}T00:00:00Z`))}` : ""}
+                                  {index === 0 ? " · Latest" : ""}
+                                </p>
+                              </li>
+                            ))}
+                          </ol>
+                        </details>
                       ) : null}
                     </div>
 
