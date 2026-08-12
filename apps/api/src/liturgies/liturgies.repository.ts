@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
-import { auditLogs, eventLiturgies, eventLiturgyItems, events, liturgyTemplateItems, liturgyTemplates } from '../database/schema';
+import { auditLogs, departmentMembers, departments, eventLiturgies, eventLiturgyItems, events, liturgyTemplateItems, liturgyTemplates, memberProfiles } from '../database/schema';
 import type { GenerateEventLiturgyDto } from './dto/generate-event-liturgy.dto';
 
 type DefaultItem = {
@@ -121,6 +121,9 @@ export class LiturgiesRepository {
       projectionEnabled: eventLiturgies.projectionEnabled,
       startedAt: eventLiturgies.startedAt,
       completedAt: eventLiturgies.completedAt,
+      eventName: events.name,
+      eventStartsAt: events.startsAt,
+      eventEndsAt: events.endsAt,
     }).from(eventLiturgies).innerJoin(events, eq(events.id, eventLiturgies.eventId))
       .where(and(eq(eventLiturgies.eventId, eventId), eq(events.churchId, churchId))).limit(1);
     if (!liturgy) return null;
@@ -185,6 +188,113 @@ export class LiturgiesRepository {
         newData: { eventId: event.id, templateId: template.id, preacherName: input.preacherName, itemCount: items.length },
       });
       return { ...liturgy, items };
+    });
+  }
+
+  async isActiveMediaMember(userId: string, churchId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    const [membership] = await this.database.select({ id: departmentMembers.id })
+      .from(departmentMembers)
+      .innerJoin(memberProfiles, eq(memberProfiles.id, departmentMembers.memberId))
+      .innerJoin(departments, eq(departments.id, departmentMembers.departmentId))
+      .where(and(
+        eq(memberProfiles.userId, userId),
+        eq(departments.churchId, churchId),
+        eq(departments.isActive, true),
+        sql`lower(${departments.name}) like '%media%'`,
+        lte(departmentMembers.joinedAt, today),
+        or(isNull(departmentMembers.leftAt), gt(departmentMembers.leftAt, today)),
+      )).limit(1);
+    return Boolean(membership);
+  }
+
+  async controlItem(input: {
+    itemId: string;
+    churchId: string;
+    actorUserId: string;
+    action: 'START' | 'PAUSE' | 'RESUME' | 'EXTEND' | 'SKIP' | 'COMPLETE';
+    extensionMinutes?: number;
+  }) {
+    return this.database.transaction(async (transaction) => {
+      const [current] = await transaction.select({
+        id: eventLiturgyItems.id,
+        liturgyId: eventLiturgyItems.liturgyId,
+        position: eventLiturgyItems.position,
+        status: eventLiturgyItems.status,
+        pausedAt: eventLiturgyItems.pausedAt,
+        accumulatedPauseSeconds: eventLiturgyItems.accumulatedPauseSeconds,
+        plannedDurationMinutes: eventLiturgyItems.plannedDurationMinutes,
+      }).from(eventLiturgyItems)
+        .innerJoin(eventLiturgies, eq(eventLiturgies.id, eventLiturgyItems.liturgyId))
+        .innerJoin(events, eq(events.id, eventLiturgies.eventId))
+        .where(and(eq(eventLiturgyItems.id, input.itemId), eq(events.churchId, input.churchId)))
+        .limit(1).for('update');
+      if (!current) throw new NotFoundException('Liturgy item not found.');
+      const now = new Date();
+      const updates: Partial<typeof eventLiturgyItems.$inferInsert> = { timingUpdatedBy: input.actorUserId, updatedAt: now };
+      let advance = false;
+      switch (input.action) {
+        case 'START': {
+          if (current.status !== 'PENDING') throw new ConflictException('Only a pending activity can be started.');
+          const [running] = await transaction.select({ id: eventLiturgyItems.id }).from(eventLiturgyItems)
+            .where(and(eq(eventLiturgyItems.liturgyId, current.liturgyId), inArray(eventLiturgyItems.status, ['ACTIVE', 'PAUSED']))).limit(1);
+          if (running) throw new ConflictException('Complete or skip the current activity first.');
+          Object.assign(updates, { status: 'ACTIVE' as const, actualStartedAt: now });
+          await transaction.update(eventLiturgies).set({ startedAt: now, updatedAt: now })
+            .where(and(eq(eventLiturgies.id, current.liturgyId), isNull(eventLiturgies.startedAt)));
+          break;
+        }
+        case 'PAUSE':
+          if (current.status !== 'ACTIVE') throw new ConflictException('Only an active activity can be paused.');
+          Object.assign(updates, { status: 'PAUSED' as const, pausedAt: now });
+          break;
+        case 'RESUME':
+          if (current.status !== 'PAUSED' || !current.pausedAt) throw new ConflictException('Only a paused activity can be resumed.');
+          Object.assign(updates, {
+            status: 'ACTIVE' as const,
+            pausedAt: null,
+            accumulatedPauseSeconds: current.accumulatedPauseSeconds + Math.max(0, Math.floor((now.getTime() - current.pausedAt.getTime()) / 1000)),
+          });
+          break;
+        case 'EXTEND':
+          if (!['PENDING', 'ACTIVE', 'PAUSED'].includes(current.status)) throw new ConflictException('This activity can no longer be extended.');
+          updates.plannedDurationMinutes = current.plannedDurationMinutes + (input.extensionMinutes ?? 0);
+          break;
+        case 'SKIP':
+          if (!['PENDING', 'ACTIVE', 'PAUSED'].includes(current.status)) throw new ConflictException('This activity can no longer be skipped.');
+          Object.assign(updates, { status: 'SKIPPED' as const, skippedAt: now, pausedAt: null });
+          advance = current.status !== 'PENDING';
+          break;
+        case 'COMPLETE':
+          if (!['ACTIVE', 'PAUSED'].includes(current.status)) throw new ConflictException('Start the activity before completing it.');
+          Object.assign(updates, { status: 'COMPLETED' as const, actualCompletedAt: now, pausedAt: null });
+          advance = true;
+          break;
+      }
+      const [updated] = await transaction.update(eventLiturgyItems).set(updates)
+        .where(eq(eventLiturgyItems.id, current.id)).returning();
+      let nextItemId: string | null = null;
+      if (advance) {
+        const [next] = await transaction.select({ id: eventLiturgyItems.id }).from(eventLiturgyItems)
+          .where(and(eq(eventLiturgyItems.liturgyId, current.liturgyId), gt(eventLiturgyItems.position, current.position), eq(eventLiturgyItems.status, 'PENDING')))
+          .orderBy(asc(eventLiturgyItems.position)).limit(1).for('update');
+        if (next) {
+          nextItemId = next.id;
+          await transaction.update(eventLiturgyItems).set({ status: 'ACTIVE', actualStartedAt: now, timingUpdatedBy: input.actorUserId, updatedAt: now }).where(eq(eventLiturgyItems.id, next.id));
+        } else {
+          await transaction.update(eventLiturgies).set({ completedAt: now, updatedAt: now }).where(eq(eventLiturgies.id, current.liturgyId));
+        }
+      }
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: `LITURGY_ITEM_${input.action}`,
+        entityType: 'EVENT_LITURGY_ITEM',
+        entityId: current.id,
+        previousData: { status: current.status, plannedDurationMinutes: current.plannedDurationMinutes },
+        newData: { status: updated.status, plannedDurationMinutes: updated.plannedDurationMinutes, nextItemId },
+      });
+      return { ...updated, nextItemId };
     });
   }
 }

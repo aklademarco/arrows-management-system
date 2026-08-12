@@ -29,4 +29,14 @@ describe('LiturgiesService', () => {
       preacherName: 'Pastor Ken',
     }));
   });
+
+  it('allows an active Media member to operate a liturgy', async () => {
+    const repository = {
+      isActiveMediaMember: jest.fn().mockResolvedValue(true),
+      controlItem: jest.fn().mockResolvedValue({ id: 'item-id', status: 'ACTIVE' }),
+    };
+    const service = new LiturgiesService(repository as never);
+    const member = { id: 'media-user', churchId: 'church-id', email: 'media@example.com', roles: ['MEMBER'] };
+    await expect(service.control('item-id', { action: 'START' as never }, member)).resolves.toEqual({ id: 'item-id', status: 'ACTIVE' });
+  });
 });

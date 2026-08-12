@@ -156,9 +156,9 @@ authorized teams, with recipient and SMS delivery records available to admins.
 
 - [x] Implement default liturgy templates and administration view.
 - [x] Generate event liturgies from templates with preacher details and image.
-- [ ] Implement live timing state and audit history.
-- [ ] Implement operator and read-only projection interfaces.
-- [ ] Add reconnect and stale-state safeguards.
+- [x] Implement live timing state and audit history.
+- [x] Implement operator and read-only projection interfaces.
+- [x] Add reconnect and stale-state safeguards.
 - [ ] Test on the church Media computer and projector.
 
 **Release gate:** The Media team can run and project a complete service schedule

@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import type { AdminPrincipal } from '../auth/admin.guard';
 import { LiturgiesRepository } from './liturgies.repository';
 import type { GenerateEventLiturgyDto } from './dto/generate-event-liturgy.dto';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
+import type { ControlLiturgyItemDto } from './dto/control-liturgy-item.dto';
 
 @Injectable()
 export class LiturgiesService {
@@ -29,6 +31,30 @@ export class LiturgiesService {
       churchId: admin.churchId,
       actorUserId: admin.id,
       ...body,
+    });
+  }
+
+  private async assertOperator(user: AuthenticatedPrincipal) {
+    if (user.roles.some((role) => ['SUPER_ADMIN', 'ADMIN', 'PASTOR'].includes(role))) return;
+    if (!(await this.repository.isActiveMediaMember(user.id, user.churchId)))
+      throw new ForbiddenException('Only administrators, pastors, and active Media members can operate a service liturgy.');
+  }
+
+  async liveEvent(eventId: string, user: AuthenticatedPrincipal) {
+    await this.assertOperator(user);
+    return this.repository.eventLiturgy(eventId, user.churchId);
+  }
+
+  async control(itemId: string, body: ControlLiturgyItemDto, user: AuthenticatedPrincipal) {
+    await this.assertOperator(user);
+    if (body.action === 'EXTEND' && !body.extensionMinutes)
+      throw new BadRequestException('Choose how many minutes to add.');
+    return this.repository.controlItem({
+      itemId,
+      churchId: user.churchId,
+      actorUserId: user.id,
+      action: body.action,
+      extensionMinutes: body.extensionMinutes,
     });
   }
 }
