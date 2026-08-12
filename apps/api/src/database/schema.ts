@@ -895,6 +895,10 @@ export const liturgyTemplates = pgTable('liturgy_templates', {
     .references(() => churches.id),
   name: varchar('name', { length: 180 }).notNull(),
   description: text('description'),
+  recurrenceRule: varchar('recurrence_rule', { length: 40 })
+    .notNull()
+    .default('MANUAL'),
+  priority: integer('priority').notNull().default(0),
   isDefault: boolean('is_default').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   createdBy: uuid('created_by')

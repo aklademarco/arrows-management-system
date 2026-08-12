@@ -18,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { MinistryContentModule } from './ministry-content/ministry-content.module';
 import { LeadershipMessagesModule } from './leadership-messages/leadership-messages.module';
+import { LiturgiesModule } from './liturgies/liturgies.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { LeadershipMessagesModule } from './leadership-messages/leadership-messa
     PastoralCareModule,
     MinistryContentModule,
     LeadershipMessagesModule,
+    LiturgiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
