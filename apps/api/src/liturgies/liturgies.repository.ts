@@ -1,7 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
-import { auditLogs, liturgyTemplateItems, liturgyTemplates } from '../database/schema';
+import { auditLogs, eventLiturgies, eventLiturgyItems, events, liturgyTemplateItems, liturgyTemplates } from '../database/schema';
+import type { GenerateEventLiturgyDto } from './dto/generate-event-liturgy.dto';
 
 type DefaultItem = {
   title: string;
@@ -107,5 +108,83 @@ export class LiturgiesRepository {
       showOnProjection: liturgyTemplateItems.showOnProjection,
     }).from(liturgyTemplateItems).where(inArray(liturgyTemplateItems.templateId, templateIds)).orderBy(asc(liturgyTemplateItems.position)) : [];
     return templates.map((template) => ({ ...template, items: items.filter((item) => item.templateId === template.id) }));
+  }
+
+  async eventLiturgy(eventId: string, churchId: string) {
+    const [liturgy] = await this.database.select({
+      id: eventLiturgies.id,
+      eventId: eventLiturgies.eventId,
+      sourceTemplateId: eventLiturgies.sourceTemplateId,
+      preacherName: eventLiturgies.preacherName,
+      sermonTitle: eventLiturgies.sermonTitle,
+      preacherImageUrl: eventLiturgies.preacherImageUrl,
+      projectionEnabled: eventLiturgies.projectionEnabled,
+      startedAt: eventLiturgies.startedAt,
+      completedAt: eventLiturgies.completedAt,
+    }).from(eventLiturgies).innerJoin(events, eq(events.id, eventLiturgies.eventId))
+      .where(and(eq(eventLiturgies.eventId, eventId), eq(events.churchId, churchId))).limit(1);
+    if (!liturgy) return null;
+    const items = await this.database.select().from(eventLiturgyItems)
+      .where(eq(eventLiturgyItems.liturgyId, liturgy.id)).orderBy(asc(eventLiturgyItems.position));
+    return { ...liturgy, items };
+  }
+
+  async generateEventLiturgy(input: GenerateEventLiturgyDto & { eventId: string; churchId: string; actorUserId: string }) {
+    return this.database.transaction(async (transaction) => {
+      const [event] = await transaction.select({ id: events.id, startsAt: events.startsAt })
+        .from(events).where(and(eq(events.id, input.eventId), eq(events.churchId, input.churchId))).limit(1);
+      if (!event) throw new NotFoundException('Event not found.');
+      const [existing] = await transaction.select({ id: eventLiturgies.id }).from(eventLiturgies)
+        .where(eq(eventLiturgies.eventId, input.eventId)).limit(1);
+      if (existing) throw new ConflictException('This event already has a liturgy.');
+      let template;
+      if (input.templateId) {
+        [template] = await transaction.select().from(liturgyTemplates).where(and(
+          eq(liturgyTemplates.id, input.templateId),
+          eq(liturgyTemplates.churchId, input.churchId),
+          eq(liturgyTemplates.isActive, true),
+        )).limit(1);
+      } else {
+        const local = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Accra', weekday: 'short', day: 'numeric' }).formatToParts(event.startsAt);
+        const isFirstSunday = local.find((part) => part.type === 'weekday')?.value === 'Sun' && Number(local.find((part) => part.type === 'day')?.value) <= 7;
+        const candidates = await transaction.select().from(liturgyTemplates).where(and(
+          eq(liturgyTemplates.churchId, input.churchId),
+          eq(liturgyTemplates.isActive, true),
+          inArray(liturgyTemplates.recurrenceRule, isFirstSunday ? ['FIRST_SUNDAY', 'EVERY_SUNDAY'] : ['EVERY_SUNDAY']),
+        ));
+        template = candidates.sort((a, b) => b.priority - a.priority)[0];
+      }
+      if (!template) throw new NotFoundException('No applicable liturgy template was found.');
+      const templateItems = await transaction.select().from(liturgyTemplateItems)
+        .where(eq(liturgyTemplateItems.templateId, template.id)).orderBy(asc(liturgyTemplateItems.position));
+      const [liturgy] = await transaction.insert(eventLiturgies).values({
+        eventId: event.id,
+        sourceTemplateId: template.id,
+        preacherName: input.preacherName?.trim() || undefined,
+        sermonTitle: input.sermonTitle?.trim() || undefined,
+        preacherImageUrl: input.preacherImageUrl,
+        preacherImagePublicId: input.preacherImagePublicId,
+        createdBy: input.actorUserId,
+      }).returning();
+      const items = await transaction.insert(eventLiturgyItems).values(templateItems.map((item) => ({
+        liturgyId: liturgy.id,
+        position: item.position,
+        title: item.title,
+        plannedStartAt: new Date(event.startsAt.getTime() + item.plannedOffsetMinutes * 60_000),
+        plannedDurationMinutes: item.plannedDurationMinutes,
+        ownerLabel: item.ownerLabel,
+        notes: item.notes,
+        showOnProjection: item.showOnProjection,
+      }))).returning();
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'EVENT_LITURGY_GENERATED',
+        entityType: 'EVENT_LITURGY',
+        entityId: liturgy.id,
+        newData: { eventId: event.id, templateId: template.id, preacherName: input.preacherName, itemCount: items.length },
+      });
+      return { ...liturgy, items };
+    });
   }
 }

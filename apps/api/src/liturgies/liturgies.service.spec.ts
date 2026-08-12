@@ -13,4 +13,20 @@ describe('LiturgiesService', () => {
     expect(repository.ensureSundayDefaults).toHaveBeenCalledWith('church-id', 'admin-id');
     expect(repository.listTemplates).toHaveBeenCalledWith('church-id');
   });
+
+  it('generates an event liturgy after ensuring defaults', async () => {
+    const repository = {
+      ensureSundayDefaults: jest.fn().mockResolvedValue(undefined),
+      generateEventLiturgy: jest.fn().mockResolvedValue({ id: 'liturgy-id' }),
+    };
+    const service = new LiturgiesService(repository as never);
+    const admin = { id: 'admin-id', churchId: 'church-id', email: 'admin@example.com', roles: ['ADMIN'] };
+    await expect(service.generate('event-id', { preacherName: 'Pastor Ken' }, admin)).resolves.toEqual({ id: 'liturgy-id' });
+    expect(repository.generateEventLiturgy).toHaveBeenCalledWith(expect.objectContaining({
+      eventId: 'event-id',
+      churchId: 'church-id',
+      actorUserId: 'admin-id',
+      preacherName: 'Pastor Ken',
+    }));
+  });
 });

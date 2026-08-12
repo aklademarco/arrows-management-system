@@ -155,7 +155,7 @@ authorized teams, with recipient and SMS delivery records available to admins.
 **Work remaining:**
 
 - [x] Implement default liturgy templates and administration view.
-- [ ] Generate event liturgies from templates.
+- [x] Generate event liturgies from templates with preacher details and image.
 - [ ] Implement live timing state and audit history.
 - [ ] Implement operator and read-only projection interfaces.
 - [ ] Add reconnect and stale-state safeguards.

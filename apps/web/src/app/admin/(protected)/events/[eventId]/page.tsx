@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { FiArrowLeft, FiAlertTriangle } from "react-icons/fi";
+import Image from "next/image";
+import { FiArrowLeft, FiAlertTriangle, FiClock, FiMonitor } from "react-icons/fi";
 import { getAdminResource } from "../../registrations/admin-api";
 import { cancelEvent, finalizeAttendance, updateEvent } from "../actions";
+import { LiturgyGenerator } from "./liturgy-generator";
 
 type Event = {
   id: string;
@@ -20,6 +22,9 @@ type Event = {
   cancellationReason: string | null;
   attendanceFinalizedAt: string | null;
 };
+type Template = { id: string; name: string; recurrenceRule: string; items: { id: string }[] };
+type LiturgyItem = { id: string; position: number; title: string; plannedStartAt: string; plannedDurationMinutes: number; ownerLabel: string | null; status: string; showOnProjection: boolean };
+type Liturgy = { id: string; preacherName: string | null; sermonTitle: string | null; preacherImageUrl: string | null; projectionEnabled: boolean; items: LiturgyItem[] };
 const inputDate = (value: string | null) => (value ? value.slice(0, 16) : "");
 
 export default async function EventDetailPage({
@@ -28,7 +33,11 @@ export default async function EventDetailPage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = await params;
-  const event = await getAdminResource<Event>(`/events/${eventId}`);
+  const [event, templates, liturgy] = await Promise.all([
+    getAdminResource<Event>(`/events/${eventId}`),
+    getAdminResource<Template[]>("/liturgies/templates"),
+    getAdminResource<Liturgy | null>(`/liturgies/events/${eventId}`),
+  ]);
   const editable = event.status === "DRAFT" || event.status === "SCHEDULED";
   const cancellable = !["CANCELLED", "COMPLETED"].includes(event.status);
   const finalizable =
@@ -61,6 +70,10 @@ export default async function EventDetailPage({
         >
           View attendance roster
         </Link>
+        <section className="mt-8 rounded-2xl border border-white/10 bg-[#111318] p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-400">Service production</p><h2 className="mt-1 text-xl font-bold">Event liturgy</h2><p className="mt-2 text-sm text-slate-400">Generate a timed running order from the correct Sunday template.</p></div>{liturgy?.projectionEnabled ? <span className="inline-flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300"><FiMonitor /> Projection ready</span> : null}</div>
+          {!liturgy ? <LiturgyGenerator eventId={event.id} templates={templates} /> : <div className="mt-5"><div className="flex flex-wrap items-center gap-4 rounded-xl bg-violet-500/[0.08] p-4">{liturgy.preacherImageUrl ? <Image alt={liturgy.preacherName ?? "Preacher"} className="size-20 rounded-xl object-cover" height={80} src={liturgy.preacherImageUrl} unoptimized width={80} /> : null}<div><p className="text-xs font-bold uppercase tracking-wider text-violet-400">Preacher</p><p className="mt-1 font-bold">{liturgy.preacherName ?? "To be announced"}</p>{liturgy.sermonTitle ? <p className="mt-1 text-sm text-slate-400">{liturgy.sermonTitle}</p> : null}</div></div><ol className="mt-4 divide-y divide-white/[0.07]">{liturgy.items.map((item) => <li className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-3 py-3" key={item.id}><span className="grid size-8 place-items-center rounded-lg bg-violet-500/10 text-xs font-bold text-violet-300">{item.position}</span><div><p className="text-sm font-bold">{item.title}</p><p className="mt-1 text-xs text-slate-500">{item.ownerLabel ?? "To be assigned"}{item.showOnProjection ? " · Projected" : ""}</p></div><div className="text-right"><p className="text-xs font-bold text-slate-300">{new Intl.DateTimeFormat("en-GH", { hour: "numeric", minute: "2-digit", timeZone: "Africa/Accra" }).format(new Date(item.plannedStartAt))}</p><p className="mt-1 flex items-center justify-end gap-1 text-[10px] font-bold text-slate-500"><FiClock />{item.plannedDurationMinutes}m</p></div></li>)}</ol></div>}
+        </section>
         {editable ? (
           <form
             action={updateEvent}
