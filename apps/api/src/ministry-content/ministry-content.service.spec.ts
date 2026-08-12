@@ -37,4 +37,42 @@ describe('MinistryContentService', () => {
       BadRequestException,
     );
   });
+
+  it('prevents a non-choir leader from publishing song lists', async () => {
+    const repository = {
+      getAccess: jest.fn().mockResolvedValue({ canSubmitSongList: false }),
+      createSongList: jest.fn(),
+    };
+    const service = new MinistryContentService(repository as never);
+    await expect(
+      service.createSongList(
+        { title: 'Sunday worship', songs: [{ title: 'Way Maker' }] },
+        user,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('publishes an ordered song list for an active choir leader', async () => {
+    const repository = {
+      getAccess: jest.fn().mockResolvedValue({
+        canSubmitSongList: true,
+        choirDepartment: { id: 'choir-id' },
+        mediaDepartment: { id: 'media-id' },
+      }),
+      createSongList: jest.fn().mockResolvedValue({ id: 'content-id' }),
+    };
+    const service = new MinistryContentService(repository as never);
+    await expect(
+      service.createSongList(
+        { title: 'Sunday worship', songs: [{ title: 'Way Maker' }] },
+        user,
+      ),
+    ).resolves.toEqual({ id: 'content-id' });
+    expect(repository.createSongList).toHaveBeenCalledWith(
+      expect.objectContaining({
+        choirDepartmentId: 'choir-id',
+        mediaDepartmentId: 'media-id',
+      }),
+    );
+  });
 });

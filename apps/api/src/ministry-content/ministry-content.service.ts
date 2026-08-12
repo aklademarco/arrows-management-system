@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import type { CreatePublicityFlyerDto } from './dto/create-publicity-flyer.dto';
+import type { CreateSongListDto } from './dto/create-song-list.dto';
 import { MinistryContentRepository } from './ministry-content.repository';
 
 @Injectable()
@@ -45,6 +46,25 @@ export class MinistryContentService {
       churchId: user.churchId,
       senderUserId: user.id,
       targetDepartmentId: access.mediaDepartment.id,
+    });
+  }
+
+  async createSongList(body: CreateSongListDto, user: AuthenticatedPrincipal) {
+    const access = await this.repository.getAccess(user.id, user.churchId);
+    if (!access.canSubmitSongList)
+      throw new ForbiddenException(
+        'Only an active Choir department leader can publish song lists.',
+      );
+    if (!access.choirDepartment || !access.mediaDepartment)
+      throw new BadRequestException(
+        'Active Choir and Media departments are required before publishing a song list.',
+      );
+    return this.repository.createSongList({
+      ...body,
+      churchId: user.churchId,
+      senderUserId: user.id,
+      choirDepartmentId: access.choirDepartment.id,
+      mediaDepartmentId: access.mediaDepartment.id,
     });
   }
 }

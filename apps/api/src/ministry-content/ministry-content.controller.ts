@@ -5,6 +5,7 @@ import {
   type AuthenticatedPrincipal,
 } from '../auth/authenticated.guard';
 import { CreatePublicityFlyerDto } from './dto/create-publicity-flyer.dto';
+import { CreateSongListDto } from './dto/create-song-list.dto';
 import { MinistryContentService } from './ministry-content.service';
 
 @Controller('ministry-content')
@@ -30,6 +31,18 @@ export class MinistryContentController {
       success: true,
       message: 'Flyer sent to the Media team.',
       data: await this.service.createFlyer(body, user),
+    };
+  }
+
+  @Post('song-lists')
+  async createSongList(
+    @Body() body: CreateSongListDto,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Song list sent to the Choir and Media teams.',
+      data: await this.service.createSongList(body, user),
     };
   }
 }
