@@ -9,7 +9,7 @@ type Liturgy = { id: string; preacherName: string | null; sermonTitle: string | 
 export default async function EventLiturgyPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await params;
   const [event, liturgy] = await Promise.all([
-    getAdminResource<Event>(`/events/${eventId}`),
+    getAdminResource<Event>(`/events/${eventId}`, { notFoundOn404: true }),
     getAdminResource<Liturgy | null>(`/live-liturgies/events/${eventId}`),
   ]);
   return <main className="min-h-screen bg-[#090a0d] px-5 py-8 text-slate-100"><div className="mx-auto max-w-6xl">

@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
-export async function getAdminResource<T>(path: string): Promise<T> {
+export async function getAdminResource<T>(
+  path: string,
+  options: { notFoundOn404?: boolean } = {},
+): Promise<T> {
   const token = (await cookies()).get("acms_admin_session")?.value;
   if (!token) {
     redirect("/admin/login");
@@ -19,7 +22,7 @@ export async function getAdminResource<T>(path: string): Promise<T> {
     redirect("/admin/login");
   }
   if (response.status === 404) {
-    notFound();
+    if (options.notFoundOn404) notFound();
   }
   if (!response.ok) {
     const message = Array.isArray(body?.message)

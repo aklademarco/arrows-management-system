@@ -34,7 +34,7 @@ export default async function EventDetailPage({
 }) {
   const { eventId } = await params;
   const [event, templates, liturgy] = await Promise.all([
-    getAdminResource<Event>(`/events/${eventId}`),
+    getAdminResource<Event>(`/events/${eventId}`, { notFoundOn404: true }),
     getAdminResource<Template[]>("/liturgies/templates"),
     getAdminResource<Liturgy | null>(`/liturgies/events/${eventId}`),
   ]);

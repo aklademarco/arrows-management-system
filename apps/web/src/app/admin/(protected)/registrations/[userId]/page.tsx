@@ -31,6 +31,7 @@ export default async function RegistrationDetailPage({
   const { userId } = await params;
   const registration = await getAdminResource<RegistrationDetail>(
     `/admin/registrations/${userId}`,
+    { notFoundOn404: true },
   );
   const fullName = [
     registration.firstName,
