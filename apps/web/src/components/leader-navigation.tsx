@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiBell, FiGrid, FiHeart, FiMusic, FiUsers } from "react-icons/fi";
+import { FiBell, FiGrid, FiMessageCircle, FiMusic, FiUsers } from "react-icons/fi";
 
 const items = [
   { href: "/leader", label: "Overview", icon: FiGrid },
   { href: "/leader/people", label: "People", icon: FiUsers },
-  { href: "/leader#care", label: "Care", icon: FiHeart },
+  { href: "/leader/messages", label: "Messages", icon: FiMessageCircle },
   { href: "/leader/ministry", label: "Ministry", icon: FiMusic },
   { href: "/leader/inbox", label: "Inbox", icon: FiBell },
 ];

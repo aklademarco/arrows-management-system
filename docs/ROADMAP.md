@@ -32,6 +32,7 @@ Already implemented:
 - Member notification inbox and unread indicators
 - Initial Publicity-to-Media flyer handoff and Media Hub
 - Choir-to-Media ordered song lists with lyrics, keys, notes, and notifications
+- Scoped pastor and department-leader dashboard messaging with recipient records
 - Pastoral care queue for repeated absences and private follow-up records
 
 Still requiring launch verification or implementation:
@@ -127,8 +128,8 @@ with no critical attendance or authorization failures.
 **Work remaining:**
 
 - [x] Implement Choir-to-Media song-list API and interface.
-- [ ] Implement scoped leadership messaging permissions.
-- [ ] Implement dashboard message recipients and read state.
+- [x] Implement scoped leadership messaging permissions.
+- [x] Implement dashboard message recipients and read state.
 - [ ] Select and configure an SMS provider.
 - [ ] Add background SMS jobs, callbacks, retries, and delivery reporting.
 - [ ] Add messaging audit logs and cost protections.

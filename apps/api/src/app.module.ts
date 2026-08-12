@@ -17,6 +17,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { MinistryContentModule } from './ministry-content/ministry-content.module';
+import { LeadershipMessagesModule } from './leadership-messages/leadership-messages.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { MinistryContentModule } from './ministry-content/ministry-content.modul
     NotificationsModule,
     PastoralCareModule,
     MinistryContentModule,
+    LeadershipMessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
