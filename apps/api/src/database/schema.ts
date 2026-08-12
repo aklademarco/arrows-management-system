@@ -878,6 +878,8 @@ export const leadershipMessageRecipients = pgTable(
       .default('NOT_REQUESTED'),
     smsProviderId: varchar('sms_provider_id', { length: 255 }),
     smsAttemptedAt: timestamp('sms_attempted_at', { withTimezone: true }),
+    smsRetryCount: integer('sms_retry_count').notNull().default(0),
+    smsNextAttemptAt: timestamp('sms_next_attempt_at', { withTimezone: true }),
     smsDeliveredAt: timestamp('sms_delivered_at', { withTimezone: true }),
     smsFailureReason: text('sms_failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true })

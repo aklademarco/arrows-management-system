@@ -1,6 +1,7 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsOptional,
   IsString,
@@ -29,4 +30,7 @@ export class CreateLeadershipMessageDto {
   @ArrayMaxSize(20)
   @IsUUID('4', { each: true })
   departmentIds?: string[];
+
+  @IsOptional() @IsBoolean()
+  smsRequested?: boolean;
 }

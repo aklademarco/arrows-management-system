@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, desc, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gt, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   auditLogs,
@@ -41,7 +41,12 @@ export class LeadershipMessagesRepository {
       title: leadershipMessages.title,
       body: leadershipMessages.body,
       sentAt: leadershipMessages.sentAt,
+      smsRequested: leadershipMessages.smsRequested,
       recipientCount: count(leadershipMessageRecipients.id),
+      smsQueuedCount: sql<number>`count(*) filter (where ${leadershipMessageRecipients.smsStatus} = 'QUEUED')::int`,
+      smsSentCount: sql<number>`count(*) filter (where ${leadershipMessageRecipients.smsStatus} in ('SENT', 'DELIVERED'))::int`,
+      smsDeliveredCount: sql<number>`count(*) filter (where ${leadershipMessageRecipients.smsStatus} = 'DELIVERED')::int`,
+      smsFailedCount: sql<number>`count(*) filter (where ${leadershipMessageRecipients.smsStatus} = 'FAILED')::int`,
     }).from(leadershipMessages)
       .leftJoin(leadershipMessageRecipients, eq(leadershipMessageRecipients.messageId, leadershipMessages.id))
       .where(and(eq(leadershipMessages.senderUserId, userId), eq(leadershipMessages.churchId, churchId)))
@@ -57,6 +62,7 @@ export class LeadershipMessagesRepository {
     title: string;
     body: string;
     departmentIds: string[];
+    smsRequested: boolean;
   }) {
     const today = new Date().toISOString().slice(0, 10);
     return this.database.transaction(async (transaction) => {
@@ -66,6 +72,7 @@ export class LeadershipMessagesRepository {
         audience: input.audience,
         title: input.title,
         body: input.body,
+        smsRequested: input.smsRequested,
       }).returning();
       if (input.departmentIds.length)
         await transaction.insert(leadershipMessageDepartments).values(
@@ -91,6 +98,8 @@ export class LeadershipMessagesRepository {
           messageId: message.id,
           recipientUserId: recipient.userId,
           phoneSnapshot: recipient.phone,
+          smsStatus: input.smsRequested && recipient.phone ? 'QUEUED' : 'NOT_REQUESTED',
+          smsNextAttemptAt: input.smsRequested && recipient.phone ? new Date() : undefined,
         })));
         await transaction.insert(notifications).values(recipients.map((recipient) => ({
           churchId: input.churchId,
@@ -111,7 +120,86 @@ export class LeadershipMessagesRepository {
         newData: { audience: input.audience, title: input.title, departmentIds: input.departmentIds },
         metadata: { recipientCount: recipients.length },
       });
-      return { ...message, recipientCount: recipients.length };
+      return {
+        ...message,
+        recipientCount: recipients.length,
+        smsQueuedCount: input.smsRequested
+          ? recipients.filter((recipient) => recipient.phone).length
+          : 0,
+      };
     });
+  }
+
+  async claimSmsBatch(limit = 25) {
+    const now = new Date();
+    const leaseExpiredAt = new Date(now.getTime() - 5 * 60_000);
+    const candidates = await this.database.select({
+      id: leadershipMessageRecipients.id,
+      phone: leadershipMessageRecipients.phoneSnapshot,
+      retryCount: leadershipMessageRecipients.smsRetryCount,
+      title: leadershipMessages.title,
+      message: leadershipMessages.body,
+    }).from(leadershipMessageRecipients)
+      .innerJoin(leadershipMessages, eq(leadershipMessages.id, leadershipMessageRecipients.messageId))
+      .where(and(
+        eq(leadershipMessageRecipients.smsStatus, 'QUEUED'),
+        lte(leadershipMessageRecipients.smsNextAttemptAt, now),
+        or(isNull(leadershipMessageRecipients.smsAttemptedAt), lt(leadershipMessageRecipients.smsAttemptedAt, leaseExpiredAt)),
+      ))
+      .orderBy(leadershipMessageRecipients.createdAt)
+      .limit(limit);
+    const claimed = [];
+    for (const candidate of candidates) {
+      const [row] = await this.database.update(leadershipMessageRecipients)
+        .set({ smsAttemptedAt: now })
+        .where(and(
+          eq(leadershipMessageRecipients.id, candidate.id),
+          eq(leadershipMessageRecipients.smsStatus, 'QUEUED'),
+          or(isNull(leadershipMessageRecipients.smsAttemptedAt), lt(leadershipMessageRecipients.smsAttemptedAt, leaseExpiredAt)),
+        ))
+        .returning({ id: leadershipMessageRecipients.id });
+      if (row) claimed.push(candidate);
+    }
+    return claimed;
+  }
+
+  async markSmsSent(id: string, providerId: string) {
+    await this.database.update(leadershipMessageRecipients).set({
+      smsStatus: 'SENT',
+      smsProviderId: providerId,
+      smsFailureReason: null,
+      smsNextAttemptAt: null,
+    }).where(eq(leadershipMessageRecipients.id, id));
+  }
+
+  async markSmsFailed(id: string, retryCount: number, reason: string, retryable: boolean) {
+    const shouldRetry = retryable && retryCount < 3;
+    await this.database.update(leadershipMessageRecipients).set({
+      smsStatus: shouldRetry ? 'QUEUED' : 'FAILED',
+      smsRetryCount: retryCount,
+      smsFailureReason: reason.slice(0, 2_000),
+      smsNextAttemptAt: shouldRetry ? new Date(Date.now() + 2 ** retryCount * 60_000) : null,
+    }).where(eq(leadershipMessageRecipients.id, id));
+  }
+
+  async sentSmsAwaitingDelivery(limit = 50) {
+    return this.database.select({
+      id: leadershipMessageRecipients.id,
+      providerId: leadershipMessageRecipients.smsProviderId,
+    }).from(leadershipMessageRecipients)
+      .where(and(
+        eq(leadershipMessageRecipients.smsStatus, 'SENT'),
+        sql`${leadershipMessageRecipients.smsProviderId} is not null`,
+      ))
+      .orderBy(leadershipMessageRecipients.smsAttemptedAt)
+      .limit(limit);
+  }
+
+  async markSmsDelivered(id: string) {
+    await this.database.update(leadershipMessageRecipients).set({
+      smsStatus: 'DELIVERED',
+      smsDeliveredAt: new Date(),
+      smsFailureReason: null,
+    }).where(eq(leadershipMessageRecipients.id, id));
   }
 }

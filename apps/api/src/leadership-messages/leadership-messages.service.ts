@@ -15,7 +15,13 @@ export class LeadershipMessagesService {
     const canMessageChurch = user.roles.includes('PASTOR');
     if (!canMessageChurch && departments.length === 0)
       throw new ForbiddenException('Only pastors and active department leaders can send messages.');
-    return { canMessageChurch, departments };
+    return {
+      canMessageChurch,
+      departments,
+      smsAvailable:
+        process.env.SMS_ENABLED === 'true' &&
+        Boolean(process.env.ARKESEL_API_KEY && process.env.ARKESEL_SENDER_ID),
+    };
   }
 
   async sent(user: AuthenticatedPrincipal) {
@@ -25,6 +31,8 @@ export class LeadershipMessagesService {
 
   async create(body: CreateLeadershipMessageDto, user: AuthenticatedPrincipal) {
     const context = await this.composeContext(user);
+    if (body.smsRequested && !context.smsAvailable)
+      throw new BadRequestException('SMS delivery is not configured. Send this as a dashboard message instead.');
     let departmentIds: string[] = [];
     if (body.audience === LeadershipMessageAudience.CHURCH) {
       if (!context.canMessageChurch)
@@ -46,6 +54,7 @@ export class LeadershipMessagesService {
       title: body.title.trim(),
       body: body.body.trim(),
       departmentIds,
+      smsRequested: body.smsRequested === true,
     });
   }
 }

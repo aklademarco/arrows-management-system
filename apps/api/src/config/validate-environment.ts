@@ -34,4 +34,16 @@ export function validateEnvironment(
       throw new Error(`${name} must use HTTPS in production.`);
     }
   }
+
+  if (environment.SMS_ENABLED === 'true') {
+    const missingSms = ['ARKESEL_API_KEY', 'ARKESEL_SENDER_ID'].filter(
+      (name) => !environment[name]?.trim(),
+    );
+    if (missingSms.length)
+      throw new Error(
+        `SMS_ENABLED requires: ${missingSms.join(', ')}`,
+      );
+    if ((environment.ARKESEL_SENDER_ID?.length ?? 0) > 11)
+      throw new Error('ARKESEL_SENDER_ID must contain at most 11 characters.');
+  }
 }

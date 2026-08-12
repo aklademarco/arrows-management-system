@@ -130,9 +130,9 @@ with no critical attendance or authorization failures.
 - [x] Implement Choir-to-Media song-list API and interface.
 - [x] Implement scoped leadership messaging permissions.
 - [x] Implement dashboard message recipients and read state.
-- [ ] Select and configure an SMS provider.
-- [ ] Add background SMS jobs, callbacks, retries, and delivery reporting.
-- [ ] Add messaging audit logs and cost protections.
+- [x] Select and integrate an SMS provider (Arkesel V2; credentials remain a deployment task).
+- [x] Add background SMS jobs, delivery polling, retries, and delivery reporting.
+- [x] Add messaging audit logs and cost protections.
 
 **Release gate:** Pastors can reach the church and leaders can reach only their
 authorized teams, with recipient and SMS delivery records available to admins.

@@ -12,6 +12,7 @@ const schema = z.object({
   title: z.string().trim().min(1, "Add a message title.").max(180),
   body: z.string().trim().min(1, "Write the message before sending.").max(5_000),
   departmentIds: z.array(z.uuid()).max(20),
+  smsRequested: z.boolean(),
 });
 
 export async function sendLeadershipMessage(
@@ -25,6 +26,7 @@ export async function sendLeadershipMessage(
     title: formData.get("title"),
     body: formData.get("body"),
     departmentIds: formData.getAll("departmentIds"),
+    smsRequested: formData.get("smsRequested") === "on",
   });
   if (!parsed.success)
     return { status: "error", message: parsed.error.issues[0]?.message ?? "Check the message details." };
@@ -43,7 +45,7 @@ export async function sendLeadershipMessage(
     const body = (await response.json()) as { data: { recipientCount: number } };
     revalidatePath("/leader/messages");
     revalidatePath("/leader", "layout");
-    return { status: "success", message: `Message delivered to ${body.data.recipientCount} recipient${body.data.recipientCount === 1 ? "" : "s"}.` };
+    return { status: "success", message: `Dashboard message delivered to ${body.data.recipientCount} recipient${body.data.recipientCount === 1 ? "" : "s"}${parsed.data.smsRequested ? "; SMS delivery has been queued." : "."}` };
   } catch {
     return { status: "error", message: "The messaging service is unavailable. Try again shortly." };
   }
