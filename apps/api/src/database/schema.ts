@@ -309,6 +309,9 @@ export const events = pgTable(
       .references(() => churches.id),
     name: varchar('name', { length: 180 }).notNull(),
     eventType: varchar('event_type', { length: 80 }).notNull(),
+    recurringTemplateId: uuid('recurring_template_id').references(
+      () => recurringServiceTemplates.id,
+    ),
     description: text('description'),
     startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
     endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
@@ -348,6 +351,10 @@ export const events = pgTable(
       .defaultNow(),
   },
   (table) => [
+    uniqueIndex('events_recurring_template_start_unique').on(
+      table.recurringTemplateId,
+      table.startsAt,
+    ),
     index('events_status_start_idx').on(table.status, table.startsAt),
     index('events_attendance_window_idx').on(
       table.attendanceOpensAt,

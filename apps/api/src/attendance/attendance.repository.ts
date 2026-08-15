@@ -13,6 +13,7 @@ import {
   gte,
   inArray,
   isNull,
+  lt,
   lte,
   or,
 } from 'drizzle-orm';
@@ -24,6 +25,7 @@ import {
   auditLogs,
   events,
   memberProfiles,
+  recurringServiceTemplates,
   users,
 } from '../database/schema';
 import {
@@ -51,7 +53,104 @@ function isUniqueViolation(error: unknown): boolean {
 export class AttendanceRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
+  private async ensureRecurringEvents(churchId: string, now: Date) {
+    const [templates, [eventDefaults]] = await Promise.all([
+      this.database
+        .select()
+        .from(recurringServiceTemplates)
+        .where(
+          and(
+            eq(recurringServiceTemplates.churchId, churchId),
+            eq(recurringServiceTemplates.isActive, true),
+          ),
+        )
+        .orderBy(desc(recurringServiceTemplates.priority)),
+      this.database
+        .select({
+          createdBy: events.createdBy,
+          locationName: events.locationName,
+          latitude: events.latitude,
+          longitude: events.longitude,
+          geofenceRadiusMeters: events.geofenceRadiusMeters,
+          maximumAccuracyMeters: events.maximumAccuracyMeters,
+        })
+        .from(events)
+        .where(eq(events.churchId, churchId))
+        .orderBy(desc(events.startsAt))
+        .limit(1),
+    ]);
+    if (!templates.length || !eventDefaults) return;
+
+    const today = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const daysUntilSunday = (7 - today.getUTCDay()) % 7;
+    const firstSunday = new Date(today);
+    firstSunday.setUTCDate(firstSunday.getUTCDate() + daysUntilSunday);
+    const horizon = new Date(firstSunday);
+    horizon.setUTCDate(horizon.getUTCDate() + 8 * 7);
+    const existing = await this.database
+      .select({ startsAt: events.startsAt })
+      .from(events)
+      .where(
+        and(
+          eq(events.churchId, churchId),
+          gte(events.startsAt, firstSunday),
+          lt(events.startsAt, horizon),
+        ),
+      );
+    const occupiedDates = new Set(
+      existing.map((event) => eventStartDate(event.startsAt)),
+    );
+
+    for (let week = 0; week < 8; week += 1) {
+      const serviceDate = new Date(firstSunday);
+      serviceDate.setUTCDate(serviceDate.getUTCDate() + week * 7);
+      const dateKey = eventStartDate(serviceDate);
+      if (occupiedDates.has(dateKey)) continue;
+      const isFirstSunday = serviceDate.getUTCDate() <= 7;
+      const template = templates.find((candidate) =>
+        isFirstSunday
+          ? candidate.recurrenceRule === 'FIRST_SUNDAY'
+          : candidate.recurrenceRule === 'EVERY_SUNDAY',
+      );
+      if (!template) continue;
+      const [hours, minutes] = template.startsAtLocal.split(':').map(Number);
+      const startsAt = new Date(serviceDate);
+      startsAt.setUTCHours(hours, minutes, 0, 0);
+      const endsAt = new Date(
+        startsAt.getTime() + template.durationMinutes * 60_000,
+      );
+      const attendanceOpensAt = new Date(startsAt.getTime() - 30 * 60_000);
+      const lateAfter = new Date(startsAt.getTime() + 10 * 60_000);
+      await this.database
+        .insert(events)
+        .values({
+          churchId,
+          name: template.name,
+          eventType: 'SUNDAY_SERVICE',
+          recurringTemplateId: template.id,
+          startsAt,
+          endsAt,
+          attendanceOpensAt,
+          attendanceClosesAt: endsAt,
+          earlyUntil: startsAt,
+          lateAfter,
+          locationName: eventDefaults.locationName,
+          latitude: eventDefaults.latitude,
+          longitude: eventDefaults.longitude,
+          geofenceRadiusMeters: eventDefaults.geofenceRadiusMeters,
+          maximumAccuracyMeters: eventDefaults.maximumAccuracyMeters,
+          status: 'SCHEDULED',
+          createdBy: eventDefaults.createdBy,
+        })
+        .onConflictDoNothing();
+      occupiedDates.add(dateKey);
+    }
+  }
+
   async listActiveEvents(userId: string, churchId: string, now: Date) {
+    await this.ensureRecurringEvents(churchId, now);
     const [member] = await this.database
       .select({ id: memberProfiles.id })
       .from(memberProfiles)
@@ -83,6 +182,7 @@ export class AttendanceRepository {
   }
 
   async listUpcomingEvents(userId: string, churchId: string, now: Date) {
+    await this.ensureRecurringEvents(churchId, now);
     const [member] = await this.database
       .select({ id: memberProfiles.id })
       .from(memberProfiles)
