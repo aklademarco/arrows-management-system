@@ -46,7 +46,7 @@ export default async function MemberDirectoryPage({
         </header>
 
         <form className="mt-7" method="get" role="search">
-          <label className="relative">
+          <label className="relative block w-full">
             <span className="sr-only">Search people by name</span>
             <input className="h-14 w-full rounded-2xl border border-purple-100 bg-white px-4 pr-14 text-sm font-semibold shadow-sm outline-none focus:border-purple-300 focus:ring-4 focus:ring-purple-100" defaultValue={parameters.search} name="search" placeholder="Search by name" type="search" />
             <button aria-label="Search people" className="absolute right-1.5 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-xl text-xl text-[#6b21a8] transition hover:bg-purple-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-100" type="submit">

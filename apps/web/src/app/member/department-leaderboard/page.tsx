@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { FiAward, FiUsers } from "react-icons/fi";
 import { getMemberResource } from "../member-api";
-import { LeaderboardFilters } from "../leaderboard-filters";
 
 type DepartmentLeaderboardItem = {
   rank: number | null;
@@ -24,16 +23,9 @@ type DepartmentLeaderboard = {
   items: DepartmentLeaderboardItem[];
 };
 
-export default async function DepartmentLeaderboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ period?: string; date?: string }>;
-}) {
-  const parameters = await searchParams;
-  const query = new URLSearchParams({ period: parameters.period ?? "MONTHLY" });
-  if (parameters.date) query.set("date", parameters.date);
+export default async function DepartmentLeaderboardPage() {
   const leaderboard = await getMemberResource<DepartmentLeaderboard>(
-    `/leaderboards/departments?${query}`,
+    "/leaderboards/departments?period=MONTHLY",
   );
 
   return (
@@ -69,11 +61,6 @@ export default async function DepartmentLeaderboardPage({
             Departments
           </span>
         </nav>
-
-        <LeaderboardFilters
-          date={parameters.date}
-          period={leaderboard.period}
-        />
 
         <p className="mt-4 text-xs font-bold text-slate-400">
           {leaderboard.startsOn} – {leaderboard.endsOn} · At least{" "}

@@ -96,6 +96,7 @@ export class LeaderboardsService {
         rank: null as number | null,
         memberId,
         displayName: `${first.firstName} ${first.lastName[0]}.`,
+        profilePhotoUrl: first.profilePhotoUrl,
         expectedEvents: scored.length,
         attendedEvents: attended.length,
         attendanceRate: round(attendanceRate),

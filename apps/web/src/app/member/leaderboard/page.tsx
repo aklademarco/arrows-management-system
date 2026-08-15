@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { FiAward, FiStar } from "react-icons/fi";
-import { MemberStreak } from "@/components/member-streak";
+import { ProfileAvatar } from "@/components/profile-avatar";
 import { getMemberResource } from "../member-api";
-import { LeaderboardFilters } from "../leaderboard-filters";
 
 type LeaderboardItem = {
   rank: number | null;
   memberId: string;
   displayName: string;
+  profilePhotoUrl: string | null;
   expectedEvents: number;
   attendedEvents: number;
   attendanceRate: number;
@@ -25,26 +25,10 @@ type Leaderboard = {
   minimumQualifyingEvents: number;
   items: LeaderboardItem[];
 };
-type Department = { id: string; name: string; isActive: boolean };
-
-export default async function LeaderboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    period?: string;
-    date?: string;
-    departmentId?: string;
-  }>;
-}) {
-  const parameters = await searchParams;
-  const query = new URLSearchParams({ period: parameters.period ?? "MONTHLY" });
-  if (parameters.date) query.set("date", parameters.date);
-  if (parameters.departmentId)
-    query.set("departmentId", parameters.departmentId);
-  const [leaderboard, departments] = await Promise.all([
-    getMemberResource<Leaderboard>(`/leaderboards/individual?${query}`),
-    getMemberResource<Department[]>("/departments"),
-  ]);
+export default async function LeaderboardPage() {
+  const leaderboard = await getMemberResource<Leaderboard>(
+    "/leaderboards/individual?period=MONTHLY",
+  );
 
   return (
     <main className="min-h-screen bg-[#f8f7fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-10 lg:py-9">
@@ -77,13 +61,6 @@ export default async function LeaderboardPage({
             Departments
           </Link>
         </nav>
-        <LeaderboardFilters
-          date={parameters.date}
-          departmentId={parameters.departmentId}
-          departments={departments}
-          period={leaderboard.period}
-          showDepartments
-        />
         <p className="mt-4 text-xs font-bold text-slate-400">
           {leaderboard.startsOn} – {leaderboard.endsOn} · At least{" "}
           {leaderboard.minimumQualifyingEvents} expected events to rank
@@ -98,64 +75,38 @@ export default async function LeaderboardPage({
             </div>
           </section>
         ) : (
-          <section className="mt-7 overflow-hidden rounded-[2rem] border border-purple-100 bg-white shadow-[0_18px_45px_rgba(70,40,100,0.07)]">
+          <section className="mt-7 overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-[0_18px_45px_rgba(70,40,100,0.07)]">
             {leaderboard.items.map((item) => (
               <article
-                className="grid gap-4 border-b border-purple-50 p-5 last:border-b-0 sm:grid-cols-[3rem_1fr_auto] sm:items-center"
+                className="flex min-h-24 items-center gap-3 border-b border-purple-50 px-4 py-3 last:border-b-0 sm:gap-4 sm:px-5"
                 key={item.memberId}
               >
-                <span
-                  className={
-                    item.rank && item.rank <= 3
-                      ? "grid size-11 place-items-center rounded-2xl bg-[#efffce] text-lg font-black text-[#497016]"
-                      : "grid size-11 place-items-center rounded-2xl bg-purple-50 font-black text-[#6b21a8]"
-                  }
-                >
-                  {item.rank ?? "—"}
-                </span>
-                <div>
-                  <h2 className="font-extrabold">{item.displayName}</h2>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-bold text-slate-400">
-                    <span>
-                      {item.attendedEvents}/{item.expectedEvents} attended
-                    </span>
-                    <span>{item.attendanceRate}% attendance</span>
-                    <span>{item.punctualityRate ?? "—"}% punctuality</span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-extrabold">
-                    <MemberStreak
-                      compact
-                      current={item.currentAttendanceStreak}
-                      longest={item.longestAttendanceStreak}
-                    />
+                <div className="relative shrink-0">
+                  <ProfileAvatar imageUrl={item.profilePhotoUrl} name={item.displayName} size="lg" />
+                  <span aria-label={`${item.currentAttendanceStreak} attendance streak`} className="absolute -bottom-1 -right-2 inline-flex h-6 min-w-7 items-center justify-center gap-0.5 rounded-full border-2 border-white bg-purple-100 px-1 text-[10px] font-black text-[#6b21a8]">
+                    <span aria-hidden="true">🔥</span>{item.currentAttendanceStreak}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-base font-extrabold">{item.displayName}</h2>
+                  <div className="mt-1.5 flex items-center text-xs font-extrabold">
                     <span className="inline-flex items-center gap-1 text-[#6b21a8]">
                       <FiStar /> {item.secondaryPoints} pts
                     </span>
                   </div>
                 </div>
-                <div className="sm:text-right">
-                  <p className="text-2xl font-black text-[#240046]">
+                <div className="shrink-0 text-right">
+                  <p className="text-xl font-black text-[#240046] sm:text-2xl">
                     {item.score}
                   </p>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+                  <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">
                     Score
                   </p>
-                  {!item.qualified ? (
-                    <span className="mt-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800">
-                      Building eligibility
-                    </span>
-                  ) : null}
                 </div>
               </article>
             ))}
           </section>
         )}
-        <Link
-          className="mt-5 inline-flex text-sm font-extrabold text-[#6b21a8]"
-          href="/member/attendance"
-        >
-          View your attendance history →
-        </Link>
       </div>
     </main>
   );

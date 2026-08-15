@@ -38,6 +38,7 @@ export class LeaderboardsRepository {
         memberId: memberProfiles.id,
         firstName: memberProfiles.firstName,
         lastName: memberProfiles.lastName,
+        profilePhotoUrl: memberProfiles.profilePhotoUrl,
         eventId: events.id,
         eventStartsAt: events.startsAt,
         status: attendanceRecords.status,
