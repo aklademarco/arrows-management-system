@@ -6,7 +6,6 @@ import {
   FiCheckCircle,
   FiClock,
   FiMapPin,
-  FiZap,
 } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getMemberProfile, getMemberResource } from "./member-api";
@@ -144,7 +143,7 @@ export default async function MemberPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="flex items-center gap-2 text-sm font-extrabold text-[#ff5a1f]">
-                  <FiZap aria-hidden="true" /> Check-ins
+                  Check-ins
                 </p>
               </div>
               <Link

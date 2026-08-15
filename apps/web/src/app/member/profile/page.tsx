@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { FiArrowLeft, FiCheckCircle, FiPhone } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiBell,
+  FiCheckCircle,
+  FiChevronRight,
+  FiFileText,
+  FiImage,
+  FiPhone,
+} from "react-icons/fi";
 import { getMemberProfile } from "../member-api";
 import type { MemberProfile } from "../member-types";
 import { updateOwnProfile } from "../profile-actions";
@@ -61,6 +69,12 @@ export default async function MemberProfilePage({
             </div>
           </section>
         </div>
+
+        <nav aria-label="More member pages" className="mx-4 mt-5 overflow-hidden rounded-3xl border border-purple-100 bg-white shadow-sm sm:mx-6 lg:hidden">
+          <ProfileLink href="/member/absences" icon={<FiFileText />} label="Absences" />
+          <ProfileLink href="/member/media-hub" icon={<FiImage />} label="Media hub" />
+          <ProfileLink href="/member/notifications" icon={<FiBell />} label="Notifications" />
+        </nav>
 
         <form
           action={updateOwnProfile}
@@ -184,6 +198,24 @@ export default async function MemberProfilePage({
         </form>
       </div>
     </main>
+  );
+}
+
+function ProfileLink({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Link className="flex min-h-14 items-center gap-3 border-b border-purple-50 px-4 text-sm font-semibold last:border-b-0 hover:bg-purple-50/70" href={href}>
+      <span className="grid size-9 place-items-center rounded-xl bg-purple-50 text-lg text-[#6b21a8]">{icon}</span>
+      <span className="flex-1">{label}</span>
+      <FiChevronRight aria-hidden="true" className="text-slate-300" />
+    </Link>
   );
 }
 

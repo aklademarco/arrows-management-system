@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { FiArrowUpRight, FiBell, FiCalendar, FiHeart, FiSearch, FiUsers } from "react-icons/fi";
-import { ProfileAvatar } from "@/components/profile-avatar";
 import { getLeaderResource } from "./leader-api";
 
 type Account = {
@@ -58,7 +57,6 @@ export default async function LeaderDashboard() {
         </div>
 
         <aside className="grid content-start gap-5">
-          <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#24202e]"><div className="bg-gradient-to-r from-[#7e22ce] to-[#9333ea] px-6 py-4 text-xs font-black uppercase tracking-[0.15em] text-purple-100">My profile</div><div className="p-6"><div className="flex items-center gap-4"><ProfileAvatar name={profile ? `${profile.firstName} ${profile.lastName}` : "Church leader"} size="lg" variant="admin" /><div><p className="font-black">{profile ? `${profile.firstName} ${profile.lastName}` : "Church leader"}</p><p className="mt-1 text-xs font-bold text-purple-300">{isPastor ? "Pastor" : "Department leader"}</p></div></div><Link className="mt-5 inline-flex text-sm font-bold text-lime-300" href="/leader/profile">View profile →</Link></div></section>
           <section id="calendar" className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#24202e]"><div className="flex items-center justify-between bg-gradient-to-r from-[#7e22ce] to-[#9333ea] px-6 py-4"><p className="text-xs font-black uppercase tracking-[0.15em]">Church calendar</p><FiCalendar /></div><div className="divide-y divide-white/[0.07] px-5">{upcoming.slice(0, 5).map((event) => <div className="py-4" key={event.id}><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold">{event.name}</p><time className="shrink-0 text-xs font-bold text-purple-300">{time.format(new Date(event.startsAt))}</time></div><p className="mt-1 text-xs text-slate-500">{date.format(new Date(event.startsAt))} · {event.locationName ?? "Church"}</p></div>)}{upcoming.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">No upcoming events.</p> : null}</div></section>
         </aside>
       </div>
