@@ -22,13 +22,13 @@ export default async function LeaderLayout({ children }: { children: React.React
       <ProfileAvatar name={name} size="sm" variant="admin" />
     </header>
     <div className="mx-auto flex min-h-screen max-w-[1600px]">
-      <aside className="sticky top-0 hidden h-screen w-[76px] shrink-0 flex-col items-center border-r border-purple-100 bg-white px-3 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen w-[76px] shrink-0 flex-col items-center bg-gradient-to-b from-[#7e22ce] to-[#5b148d] px-3 py-5 lg:flex">
         <Link className="relative mb-10 block size-12 overflow-hidden rounded-2xl bg-white shadow-lg" href="/leader"><Image alt="Arrows church" className="object-contain scale-[1.35]" fill sizes="48px" src="/assets/arrows.PNG" /></Link>
         <LeaderNavigation />
-        <form action={leaderLogout} className="mt-auto"><button aria-label="Sign out" className="grid size-11 place-items-center rounded-xl text-lg text-slate-400 hover:bg-purple-50 hover:text-[#6b21a8]"><FiLogOut /></button></form>
+        <form action={leaderLogout} className="mt-auto"><button aria-label="Sign out" className="grid size-11 place-items-center rounded-xl text-lg text-white hover:bg-white/15"><FiLogOut /></button></form>
       </aside>
       <div className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</div>
     </div>
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-purple-100 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"><LeaderNavigation mobile /></div>
+    <div className="fixed inset-x-0 bottom-0 z-30 bg-[#6b21a8]/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"><LeaderNavigation mobile /></div>
   </div>;
 }
