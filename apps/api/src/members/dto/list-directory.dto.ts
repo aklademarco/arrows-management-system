@@ -3,7 +3,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -14,10 +13,6 @@ export class ListDirectoryDto {
   @IsString()
   @MaxLength(100)
   search?: string;
-
-  @IsOptional()
-  @IsUUID()
-  departmentId?: string;
 
   @IsOptional()
   @Type(() => Number)

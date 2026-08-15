@@ -238,5 +238,4 @@ describe('MembersService', () => {
 
     expect(directoryProfile).toHaveBeenCalledWith('member-id', 'church-id');
   });
-
 });

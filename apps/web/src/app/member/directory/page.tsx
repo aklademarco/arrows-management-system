@@ -21,14 +21,11 @@ type DirectoryPage = {
   limit: number;
   totalPages: number;
 };
-type Department = { id: string; name: string; isActive: boolean };
-
 export default async function MemberDirectoryPage({
   searchParams,
 }: {
   searchParams: Promise<{
     search?: string;
-    departmentId?: string;
     page?: string;
   }>;
 }) {
@@ -37,11 +34,7 @@ export default async function MemberDirectoryPage({
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const query = new URLSearchParams({ page: String(page), limit: "24" });
   if (parameters.search?.trim()) query.set("search", parameters.search.trim());
-  if (parameters.departmentId) query.set("departmentId", parameters.departmentId);
-  const [directory, departments] = await Promise.all([
-    getMemberResource<DirectoryPage>(`/members/directory?${query}`),
-    getMemberResource<Department[]>("/departments"),
-  ]);
+  const directory = await getMemberResource<DirectoryPage>(`/members/directory?${query}`);
 
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
@@ -52,26 +45,24 @@ export default async function MemberDirectoryPage({
           <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500">Learn names, recognize faces, and discover the teams people serve with.</p>
         </header>
 
-        <form className="mt-7 grid gap-3 rounded-[1.75rem] border border-purple-100 bg-white p-4 shadow-sm md:grid-cols-[1fr_16rem_auto]" method="get">
+        <form className="mt-7" method="get" role="search">
           <label className="relative">
-            <FiSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input className="h-12 w-full rounded-2xl border border-slate-200 bg-[#f8f7fb] pl-11 pr-4 text-sm font-semibold outline-none focus:border-purple-300 focus:ring-4 focus:ring-purple-100" defaultValue={parameters.search} name="search" placeholder="Search by name" />
+            <span className="sr-only">Search people by name</span>
+            <input className="h-14 w-full rounded-2xl border border-purple-100 bg-white px-4 pr-14 text-sm font-semibold shadow-sm outline-none focus:border-purple-300 focus:ring-4 focus:ring-purple-100" defaultValue={parameters.search} name="search" placeholder="Search by name" type="search" />
+            <button aria-label="Search people" className="absolute right-1.5 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-xl text-xl text-[#6b21a8] transition hover:bg-purple-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-100" type="submit">
+              <FiSearch aria-hidden="true" />
+            </button>
           </label>
-          <select className="h-12 rounded-2xl border border-slate-200 bg-[#f8f7fb] px-4 text-sm font-semibold outline-none focus:border-purple-300 focus:ring-4 focus:ring-purple-100" defaultValue={parameters.departmentId ?? ""} name="departmentId">
-            <option value="">All departments</option>
-            {departments.filter((department) => department.isActive).map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
-          </select>
-          <button className="member-primary-action h-12 px-6" type="submit">Find people</button>
         </form>
 
         <div className="mt-6 flex items-center justify-between">
           <p className="text-sm font-bold text-slate-500">{directory.total} {directory.total === 1 ? "member" : "members"}</p>
-          {(parameters.search || parameters.departmentId) && <Link className="text-sm font-extrabold text-[#6b21a8]" href="/member/directory">Clear filters</Link>}
+          {parameters.search && <Link className="text-sm font-extrabold text-[#6b21a8]" href="/member/directory">Clear search</Link>}
         </div>
 
         {directory.items.length === 0 ? (
           <section className="mt-4 grid min-h-72 place-items-center rounded-[2rem] border border-dashed border-purple-200 bg-white text-center">
-            <div><FiUsers className="mx-auto text-5xl text-purple-300" /><h2 className="mt-4 text-xl font-black">No one found</h2><p className="mt-2 text-sm font-medium text-slate-500">Try another name or department.</p></div>
+            <div><FiUsers className="mx-auto text-5xl text-purple-300" /><h2 className="mt-4 text-xl font-black">No one found</h2><p className="mt-2 text-sm font-medium text-slate-500">Try another name.</p></div>
           </section>
         ) : (
           <ul aria-label="Church members" className="mt-4 overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-sm">

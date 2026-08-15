@@ -296,18 +296,6 @@ export class MembersRepository {
         )!,
       );
     }
-    if (query.departmentId) {
-      const departmentMemberIds = this.database
-        .select({ id: departmentMembers.memberId })
-        .from(departmentMembers)
-        .where(
-          and(
-            eq(departmentMembers.departmentId, query.departmentId),
-            isNull(departmentMembers.leftAt),
-          ),
-        );
-      filters.push(inArray(memberProfiles.id, departmentMemberIds));
-    }
     const where = and(...filters);
     const [members, [{ total }]] = await Promise.all([
       this.database
