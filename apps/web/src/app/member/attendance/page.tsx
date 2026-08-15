@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { FiArrowLeft, FiCalendar, FiMapPin } from "react-icons/fi";
+import { FiCalendar, FiMapPin } from "react-icons/fi";
 import { getMemberResource } from "../member-api";
 import type { Attendance } from "../member-types";
 
@@ -15,10 +14,7 @@ export default async function AttendanceHistoryPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
       <div className="mx-auto max-w-5xl">
-        <Link className="inline-flex items-center gap-2 text-sm font-bold text-[#6b21a8] hover:text-[#240046]" href="/member">
-          <FiArrowLeft aria-hidden="true" /> Back to dashboard
-        </Link>
-        <header className="mt-6">
+        <header>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">Your records</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight">Attendance history</h1>
           <p className="mt-2 max-w-2xl text-slate-600">Review your recorded attendance, check-in method, and points for recent church events.</p>

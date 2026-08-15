@@ -285,12 +285,6 @@ export default async function MemberPage() {
             )}
           </article>
         </section>
-
-        <h2 className="mb-4 mt-10 text-2xl font-black tracking-[-0.03em]">Highlights</h2>
-        <Link className="flex items-center justify-between rounded-[1.75rem] border border-purple-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" href="/member/leaderboard">
-          <span><span className="flex items-center gap-2 font-black text-[#ff6b35]"><FiZap /> Keep your rhythm going</span><span className="mt-1 block text-sm font-medium text-slate-500">View your streak, attendance rank, and progress.</span></span>
-          <FiArrowRight className="text-xl text-slate-400" />
-        </Link>
       </div>
     </main>
   );

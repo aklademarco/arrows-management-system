@@ -73,7 +73,7 @@ export default async function MemberDirectoryPage({
                   <Link className="flex min-h-20 items-center gap-4 px-4 py-3 transition hover:bg-purple-50/70 focus-visible:bg-purple-50 focus-visible:outline-none sm:px-5" href={`/member/directory/${member.id}`}>
                     <ProfileAvatar imageUrl={member.profilePhotoUrl} name={name} size="lg" />
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-base font-black tracking-tight text-slate-950 sm:text-lg">{name}</h2>
+                      <h2 className="truncate text-base font-medium tracking-tight text-slate-950 sm:text-lg">{name}</h2>
                       {member.otherNames ? <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">{member.otherNames}</p> : null}
                     </div>
                     <FiChevronRight aria-hidden="true" className="shrink-0 text-xl text-slate-300" />
