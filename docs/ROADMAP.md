@@ -28,7 +28,7 @@ Already implemented:
 - Absence requests and review
 - Individual and department leaderboards
 - Attendance reports, CSV export, and audit logs
-- Member profile and cover photos through Cloudinary
+- Member profile photos through Cloudinary
 - Member notification inbox and unread indicators
 - Initial Publicity-to-Media flyer handoff and Media Hub
 - Choir-to-Media ordered song lists with lyrics, keys, notes, and notifications
@@ -62,7 +62,7 @@ possible.
 - Member attendance history
 - Basic absence requests
 - Admin attendance reports and CSV export
-- Profile and cover photos
+- Profile photos
 
 **Work remaining before pilot:**
 

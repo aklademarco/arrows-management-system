@@ -49,7 +49,7 @@ export function ProfilePhotoPicker({
     startTransition(async () => {
       try {
         setMessage("Uploading to Cloudinary…");
-        const url = await uploadMemberPhoto("profile", data);
+        const url = await uploadMemberPhoto(data);
         setPreview(url);
         setMessage("Profile photo saved.");
         router.refresh();
@@ -65,7 +65,7 @@ export function ProfilePhotoPicker({
     startTransition(async () => {
       try {
         setMessage("Removing photo…");
-        await removeMemberPhoto("profile");
+        await removeMemberPhoto();
         setPreview(null);
         setMessage("Profile photo removed.");
         router.refresh();
@@ -92,7 +92,7 @@ export function ProfilePhotoPicker({
   };
   return (
     <div className={compact ? "relative flex flex-col items-center" : "flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left"}>
-      <div className={compact ? "relative -mt-14 w-fit rounded-full bg-white p-1.5 sm:-mt-16" : "relative"}>
+      <div className={compact ? "relative w-fit rounded-full bg-white p-1.5" : "relative"}>
         {preview ? (
           <Image
             alt={`${name} profile photo`}

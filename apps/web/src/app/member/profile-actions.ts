@@ -77,10 +77,7 @@ export async function updateOwnProfile(formData: FormData) {
   redirect("/member/profile?updated=1");
 }
 
-export async function uploadMemberPhoto(
-  kind: "profile" | "cover",
-  imageData: string,
-) {
+export async function uploadMemberPhoto(imageData: string) {
   const token = (await cookies()).get("acms_member_session")?.value;
   if (!token) redirect("/login");
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
@@ -105,7 +102,7 @@ export async function uploadMemberPhoto(
     data: { id: string };
   };
   const folder = "acms/members",
-    publicId = `${profileBody.data.id}-${kind}`,
+    publicId = `${profileBody.data.id}-profile`,
     timestamp = Math.floor(Date.now() / 1000);
   const signature = createHash("sha1")
     .update(
@@ -135,14 +132,13 @@ export async function uploadMemberPhoto(
     throw new Error(
       uploaded?.error?.message ?? "Photo could not be uploaded to Cloudinary.",
     );
-  const field = kind === "cover" ? "coverPhotoUrl" : "profilePhotoUrl";
-  const response = await fetch(`${apiUrl}/members/me/${kind}-photo`, {
+  const response = await fetch(`${apiUrl}/members/me/profile-photo`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ [field]: uploaded.secure_url }),
+    body: JSON.stringify({ profilePhotoUrl: uploaded.secure_url }),
     cache: "no-store",
   });
   if (response.status === 401 || response.status === 403) redirect("/login");
@@ -161,7 +157,7 @@ export async function uploadMemberPhoto(
   return uploaded.secure_url;
 }
 
-export async function removeMemberPhoto(kind: "profile" | "cover") {
+export async function removeMemberPhoto() {
   const token = (await cookies()).get("acms_member_session")?.value;
   if (!token) redirect("/login");
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
@@ -179,7 +175,7 @@ export async function removeMemberPhoto(kind: "profile" | "cover") {
     apiSecret = process.env.CLOUDINARY_API_SECRET;
   if (!cloudName || !apiKey || !apiSecret)
     throw new Error("Cloudinary photo storage is not configured.");
-  const publicId = `acms/members/${profileBody.data.id}-${kind}`,
+  const publicId = `acms/members/${profileBody.data.id}-profile`,
     timestamp = Math.floor(Date.now() / 1000);
   const signature = createHash("sha1")
     .update(
@@ -201,14 +197,13 @@ export async function removeMemberPhoto(kind: "profile" | "cover") {
   );
   if (!destroyed.ok)
     throw new Error("The Cloudinary photo could not be removed.");
-  const field = kind === "cover" ? "coverPhotoUrl" : "profilePhotoUrl";
-  const response = await fetch(`${apiUrl}/members/me/${kind}-photo`, {
+  const response = await fetch(`${apiUrl}/members/me/profile-photo`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ [field]: null }),
+    body: JSON.stringify({ profilePhotoUrl: null }),
     cache: "no-store",
   });
   if (!response.ok)

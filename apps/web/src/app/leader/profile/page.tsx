@@ -8,7 +8,6 @@ type Profile = {
   email: string;
   phone: string | null;
   profilePhotoUrl: string | null;
-  coverPhotoUrl: string | null;
   directoryBio: string | null;
   skills: string[];
 };
@@ -37,9 +36,8 @@ export default async function LeaderProfilePage() {
         </header>
 
         <section className="relative mt-6 overflow-hidden rounded-[2rem] border border-white/10 bg-[#24202e]">
-          <div className="h-40 bg-gradient-to-br from-purple-700 via-purple-600 to-fuchsia-700 bg-cover bg-center sm:h-52" style={profile.coverPhotoUrl ? { backgroundImage: `linear-gradient(rgba(72,20,120,.35),rgba(23,19,31,.7)),url(${profile.coverPhotoUrl})` } : undefined} />
-          <div className="px-5 pb-6 sm:px-8">
-            <div className="-mt-12 flex flex-wrap items-end justify-between gap-4">
+          <div className="px-5 py-7 sm:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
               <ProfileAvatar imageUrl={profile.profilePhotoUrl} name={name} size="xl" variant="admin" />
               <span className="mb-1 inline-flex items-center gap-2 rounded-full bg-purple-500/15 px-4 py-2 text-xs font-black text-purple-200"><FiShield /> {role}</span>
             </div>

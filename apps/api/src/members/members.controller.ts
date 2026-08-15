@@ -23,7 +23,6 @@ import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { SetPrimaryDepartmentDto } from './dto/set-primary-department.dto';
-import { UpdateCoverPhotoDto } from './dto/update-cover-photo.dto';
 import { UpdateProfilePhotoDto } from './dto/update-profile-photo.dto';
 import { UpdateMinistryRolesDto } from './dto/update-ministry-roles.dto';
 
@@ -51,21 +50,6 @@ export class MembersController {
       success: true,
       message: 'Profile updated.',
       data: await this.service.updateOwnProfile(user, body),
-    };
-  }
-
-  @Patch('me/cover-photo')
-  @UseGuards(AuthenticatedGuard)
-  async updateCoverPhoto(
-    @Body() body: UpdateCoverPhotoDto,
-    @AuthenticatedUser() user: AuthenticatedPrincipal,
-  ) {
-    return {
-      success: true,
-      message: body.coverPhotoUrl
-        ? 'Cover photo updated.'
-        : 'Cover photo removed.',
-      data: await this.service.updateCoverPhoto(user, body.coverPhotoUrl),
     };
   }
 
@@ -120,19 +104,6 @@ export class MembersController {
       success: true,
       message: 'Directory profile retrieved.',
       data: await this.service.directoryProfile(memberId, viewer),
-    };
-  }
-
-  @Post('directory/:memberId/hello')
-  @UseGuards(AuthenticatedGuard)
-  async greetDirectoryMember(
-    @Param('memberId', ParseUUIDPipe) memberId: string,
-    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
-  ) {
-    return {
-      success: true,
-      message: 'Your hello was sent.',
-      data: await this.service.greetDirectoryMember(memberId, viewer),
     };
   }
 

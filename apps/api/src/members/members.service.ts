@@ -33,14 +33,6 @@ export class MembersService {
     return this.repository.directoryProfile(memberId, viewer.churchId);
   }
 
-  greetDirectoryMember(memberId: string, viewer: AuthenticatedPrincipal) {
-    return this.repository.greetDirectoryMember(
-      memberId,
-      viewer.id,
-      viewer.churchId,
-    );
-  }
-
   async findById(memberId: string, viewer: AuthenticatedPrincipal) {
     const restrictToDepartmentIds = await this.resolveReadScope(viewer);
     return this.repository.findById(
@@ -97,15 +89,6 @@ export class MembersService {
       userId: user.id,
       churchId: user.churchId,
       updates: normalizedUpdates,
-    });
-  }
-
-  updateCoverPhoto(user: AuthenticatedPrincipal, coverPhotoUrl: string | null) {
-    this.validateCloudinaryUrl(coverPhotoUrl);
-    return this.repository.updateCoverPhoto({
-      userId: user.id,
-      churchId: user.churchId,
-      coverPhotoUrl,
     });
   }
 

@@ -3,7 +3,6 @@ import { FiArrowLeft, FiCheckCircle, FiPhone } from "react-icons/fi";
 import { getMemberProfile } from "../member-api";
 import type { MemberProfile } from "../member-types";
 import { updateOwnProfile } from "../profile-actions";
-import { CoverPhotoPicker } from "./cover-photo-picker";
 import { ProfilePhotoPicker } from "./profile-photo-picker";
 
 const fieldClass =
@@ -45,7 +44,7 @@ export default async function MemberProfilePage({
         ) : null}
 
         <div className="px-4 sm:px-6">
-          <CoverPhotoPicker currentCover={member.coverPhotoUrl}>
+          <section className="mt-7 rounded-[1.75rem] border border-purple-100 bg-white px-5 py-7 shadow-[0_18px_45px_rgba(70,40,100,0.07)]">
             <ProfilePhotoPicker
               compact
               currentPhoto={member.profilePhotoUrl}
@@ -60,7 +59,7 @@ export default async function MemberProfilePage({
                 Use the camera button to edit your picture
               </p>
             </div>
-          </CoverPhotoPicker>
+          </section>
         </div>
 
         <form

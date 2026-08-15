@@ -6,7 +6,6 @@ export type MemberProfile = {
   phone?: string | null;
   membershipStatus: string;
   profilePhotoUrl?: string | null;
-  coverPhotoUrl?: string | null;
   directoryBio?: string | null;
   directoryVisible: boolean;
   directoryPhoneVisible: boolean;

@@ -9,7 +9,6 @@ type DirectoryMember = {
   lastName: string;
   otherNames: string | null;
   profilePhotoUrl: string | null;
-  coverPhotoUrl: string | null;
   directoryBio: string | null;
   phone: string | null;
   skills: string[];

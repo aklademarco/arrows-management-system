@@ -116,7 +116,7 @@ Responsible for attendance verification.
 - Edit members
 - Activate/deactivate accounts
 - Assign departments
-- Upload profile and cover photos through Cloudinary.
+- Upload profile photos through Cloudinary.
   **Department Management**
 - Create departments
 - Assign leaders
@@ -198,7 +198,7 @@ Cancelling an event will preserve any attendance already submitted for audit, ex
 
 **Media Storage**
 
-- Profile photos, cover photos, publicity flyers, preacher images, and other approved image assets shall be stored in Cloudinary rather than PostgreSQL.
+- Profile photos, publicity flyers, preacher images, and other approved image assets shall be stored in Cloudinary rather than PostgreSQL.
 - Uploads must be authenticated, restricted to approved image formats and file sizes, and organized under church/member or church/event asset folders.
 - Only Cloudinary secure URLs and asset identifiers are stored in the database.
 - Replacing or removing an asset must invalidate the previous Cloudinary resource where applicable.

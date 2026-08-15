@@ -10,7 +10,6 @@ import {
   asc,
   count,
   eq,
-  gte,
   gt,
   ilike,
   inArray,
@@ -26,9 +25,7 @@ import {
   departmentLeaders,
   departmentMembers,
   departments,
-  directoryGreetings,
   memberProfiles,
-  notifications,
   primaryDepartmentAssignments,
   roles,
   userRoles,
@@ -86,7 +83,6 @@ export class MembersRepository {
         lastName: memberProfiles.lastName,
         otherNames: memberProfiles.otherNames,
         profilePhotoUrl: memberProfiles.profilePhotoUrl,
-        coverPhotoUrl: memberProfiles.coverPhotoUrl,
         directoryBio: memberProfiles.directoryBio,
         directoryVisible: memberProfiles.directoryVisible,
         directoryPhoneVisible: memberProfiles.directoryPhoneVisible,
@@ -103,47 +99,6 @@ export class MembersRepository {
       throw new NotFoundException('Member profile not found.');
     }
     return member;
-  }
-
-  async updateCoverPhoto(input: {
-    userId: string;
-    churchId: string;
-    coverPhotoUrl: string | null;
-  }) {
-    return this.database.transaction(async (transaction) => {
-      const [member] = await transaction
-        .select({
-          id: memberProfiles.id,
-          coverPhotoUrl: memberProfiles.coverPhotoUrl,
-        })
-        .from(memberProfiles)
-        .innerJoin(users, eq(users.id, memberProfiles.userId))
-        .where(
-          and(eq(users.id, input.userId), eq(users.churchId, input.churchId)),
-        )
-        .limit(1)
-        .for('update');
-      if (!member) throw new NotFoundException('Member profile not found.');
-      const [updated] = await transaction
-        .update(memberProfiles)
-        .set({ coverPhotoUrl: input.coverPhotoUrl, updatedAt: new Date() })
-        .where(eq(memberProfiles.id, member.id))
-        .returning({
-          id: memberProfiles.id,
-          coverPhotoUrl: memberProfiles.coverPhotoUrl,
-        });
-      await transaction.insert(auditLogs).values({
-        churchId: input.churchId,
-        actorUserId: input.userId,
-        action: input.coverPhotoUrl
-          ? 'MEMBER_COVER_PHOTO_UPDATED'
-          : 'MEMBER_COVER_PHOTO_REMOVED',
-        entityType: 'MEMBER_PROFILE',
-        entityId: member.id,
-        metadata: { hadPreviousCover: member.coverPhotoUrl !== null },
-      });
-      return updated;
-    });
   }
 
   async updateProfilePhoto(input: {
@@ -362,7 +317,6 @@ export class MembersRepository {
           lastName: memberProfiles.lastName,
           otherNames: memberProfiles.otherNames,
           profilePhotoUrl: memberProfiles.profilePhotoUrl,
-          coverPhotoUrl: memberProfiles.coverPhotoUrl,
           directoryBio: memberProfiles.directoryBio,
           phone: sql<
             string | null
@@ -424,7 +378,6 @@ export class MembersRepository {
         lastName: memberProfiles.lastName,
         otherNames: memberProfiles.otherNames,
         profilePhotoUrl: memberProfiles.profilePhotoUrl,
-        coverPhotoUrl: memberProfiles.coverPhotoUrl,
         directoryBio: memberProfiles.directoryBio,
         phone: sql<
           string | null
@@ -461,78 +414,6 @@ export class MembersRepository {
       )
       .orderBy(asc(departments.name));
     return { ...member, departments: memberships };
-  }
-
-  async greetDirectoryMember(
-    recipientMemberId: string,
-    senderUserId: string,
-    churchId: string,
-  ) {
-    return this.database.transaction(async (transaction) => {
-      const [sender] = await transaction
-        .select({
-          memberId: memberProfiles.id,
-          firstName: memberProfiles.firstName,
-          lastName: memberProfiles.lastName,
-        })
-        .from(memberProfiles)
-        .innerJoin(users, eq(users.id, memberProfiles.userId))
-        .where(and(eq(users.id, senderUserId), eq(users.churchId, churchId)))
-        .limit(1);
-      const [recipient] = await transaction
-        .select({ userId: users.id })
-        .from(memberProfiles)
-        .innerJoin(users, eq(users.id, memberProfiles.userId))
-        .where(
-          and(
-            eq(memberProfiles.id, recipientMemberId),
-            eq(users.churchId, churchId),
-            eq(users.accountStatus, 'ACTIVE'),
-            eq(memberProfiles.membershipStatus, 'ACTIVE'),
-            eq(memberProfiles.directoryVisible, true),
-          ),
-        )
-        .limit(1);
-      if (!sender || !recipient)
-        throw new NotFoundException('Directory profile not found.');
-      if (recipient.userId === senderUserId)
-        throw new BadRequestException('You cannot send a hello to yourself.');
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const [recent] = await transaction
-        .select({ id: directoryGreetings.id })
-        .from(directoryGreetings)
-        .where(
-          and(
-            eq(directoryGreetings.senderUserId, senderUserId),
-            eq(directoryGreetings.recipientUserId, recipient.userId),
-            gte(directoryGreetings.createdAt, oneDayAgo),
-          ),
-        )
-        .limit(1);
-      if (recent)
-        throw new ConflictException(
-          'You already said hello to this member today.',
-        );
-      const [greeting] = await transaction
-        .insert(directoryGreetings)
-        .values({
-          churchId,
-          senderUserId,
-          recipientUserId: recipient.userId,
-        })
-        .returning({ id: directoryGreetings.id });
-      const senderName = `${sender.firstName} ${sender.lastName}`;
-      await transaction.insert(notifications).values({
-        churchId,
-        recipientUserId: recipient.userId,
-        actorUserId: senderUserId,
-        type: 'DIRECTORY_GREETING',
-        title: `${sender.firstName} said hello`,
-        body: `${senderName} noticed you in the church directory and sent a friendly hello.`,
-        link: `/member/directory/${sender.memberId}`,
-      });
-      return greeting;
-    });
   }
 
   async findById(

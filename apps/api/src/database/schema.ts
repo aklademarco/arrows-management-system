@@ -277,7 +277,6 @@ export const memberProfiles = pgTable('member_profiles', {
   lastName: varchar('last_name', { length: 100 }).notNull(),
   otherNames: varchar('other_names', { length: 150 }),
   profilePhotoUrl: text('profile_photo_url'),
-  coverPhotoUrl: text('cover_photo_url'),
   directoryBio: varchar('directory_bio', { length: 300 }),
   directoryVisible: boolean('directory_visible').notNull().default(true),
   directoryPhoneVisible: boolean('directory_phone_visible')
@@ -540,32 +539,6 @@ export const pastoralFollowUps = pgTable(
     index('pastoral_follow_ups_member_contacted_idx').on(
       table.memberId,
       table.contactedAt,
-    ),
-  ],
-);
-
-export const directoryGreetings = pgTable(
-  'directory_greetings',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    churchId: uuid('church_id')
-      .notNull()
-      .references(() => churches.id),
-    senderUserId: uuid('sender_user_id')
-      .notNull()
-      .references(() => users.id),
-    recipientUserId: uuid('recipient_user_id')
-      .notNull()
-      .references(() => users.id),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    index('directory_greetings_sender_recipient_created_idx').on(
-      table.senderUserId,
-      table.recipientUserId,
-      table.createdAt,
     ),
   ],
 );
