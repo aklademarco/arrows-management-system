@@ -144,10 +144,7 @@ export class RefreshTokenRepository {
       .update(refreshTokens)
       .set({ revokedAt: now })
       .where(
-        and(
-          eq(refreshTokens.userId, userId),
-          isNull(refreshTokens.revokedAt),
-        ),
+        and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)),
       );
   }
 }

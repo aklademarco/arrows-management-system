@@ -19,10 +19,14 @@ export class CreateLeadershipMessageDto {
   @IsEnum(LeadershipMessageAudience)
   audience!: LeadershipMessageAudience;
 
-  @IsString() @MinLength(1) @MaxLength(180)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(180)
   title!: string;
 
-  @IsString() @MinLength(1) @MaxLength(5_000)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(5_000)
   body!: string;
 
   @IsOptional()
@@ -31,6 +35,7 @@ export class CreateLeadershipMessageDto {
   @IsUUID('4', { each: true })
   departmentIds?: string[];
 
-  @IsOptional() @IsBoolean()
+  @IsOptional()
+  @IsBoolean()
   smsRequested?: boolean;
 }

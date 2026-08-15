@@ -111,12 +111,7 @@ export class PasswordResetRepository {
         .limit(1)
         .for('update');
 
-      if (
-        !match ||
-        match.revokedAt ||
-        match.usedAt ||
-        match.expiresAt <= now
-      ) {
+      if (!match || match.revokedAt || match.usedAt || match.expiresAt <= now) {
         throw new BadRequestException(
           'This password-reset link is invalid or has expired.',
         );

@@ -101,9 +101,9 @@ leaders.
 
 **Work remaining:**
 
-- [ ] Complete flyer acknowledgement and completion states.
-- [ ] Add Media Hub outstanding-work indicators.
-- [ ] Add administrator controls for ministry workflow failures.
+- [x] Complete flyer acknowledgement and completion states.
+- [x] Add Media Hub outstanding-work indicators.
+- [x] Add administrator controls for stalled ministry workflows.
 - [ ] Complete browser and responsive UI testing.
 - [ ] Collect pilot feedback and correct high-priority usability issues.
 - [ ] Document support, rollback, and incident procedures.

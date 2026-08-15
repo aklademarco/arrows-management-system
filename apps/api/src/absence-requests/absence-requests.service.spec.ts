@@ -23,6 +23,8 @@ describe('AbsenceRequestsService cancellation', () => {
 
     await service.cancel('request-id', member);
 
+    // Repository methods are Jest mocks in this focused unit test.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repository.cancel).toHaveBeenCalledWith(
       'request-id',
       'member-id',
@@ -40,6 +42,7 @@ describe('AbsenceRequestsService cancellation', () => {
     await expect(service.cancel('request-id', member)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repository.cancel).not.toHaveBeenCalled();
   });
 });

@@ -4,7 +4,10 @@ import { LiturgiesRepository } from './liturgies.repository';
 import type { GenerateEventLiturgyDto } from './dto/generate-event-liturgy.dto';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
-import type { ControlLiturgyItemDto } from './dto/control-liturgy-item.dto';
+import {
+  LiturgyControlAction,
+  type ControlLiturgyItemDto,
+} from './dto/control-liturgy-item.dto';
 
 @Injectable()
 export class LiturgiesService {
@@ -19,11 +22,22 @@ export class LiturgiesService {
     return this.repository.eventLiturgy(eventId, admin.churchId);
   }
 
-  async generate(eventId: string, body: GenerateEventLiturgyDto, admin: AdminPrincipal) {
+  async generate(
+    eventId: string,
+    body: GenerateEventLiturgyDto,
+    admin: AdminPrincipal,
+  ) {
     if (body.preacherImageUrl) {
       const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-      if (!cloudName || !body.preacherImageUrl.startsWith(`https://res.cloudinary.com/${cloudName}/`))
-        throw new BadRequestException('The preacher image must use the configured Cloudinary account.');
+      if (
+        !cloudName ||
+        !body.preacherImageUrl.startsWith(
+          `https://res.cloudinary.com/${cloudName}/`,
+        )
+      )
+        throw new BadRequestException(
+          'The preacher image must use the configured Cloudinary account.',
+        );
     }
     await this.repository.ensureSundayDefaults(admin.churchId, admin.id);
     return this.repository.generateEventLiturgy({
@@ -35,9 +49,16 @@ export class LiturgiesService {
   }
 
   private async assertOperator(user: AuthenticatedPrincipal) {
-    if (user.roles.some((role) => ['SUPER_ADMIN', 'ADMIN', 'PASTOR'].includes(role))) return;
+    if (
+      user.roles.some((role) =>
+        ['SUPER_ADMIN', 'ADMIN', 'PASTOR'].includes(role),
+      )
+    )
+      return;
     if (!(await this.repository.isActiveMediaMember(user.id, user.churchId)))
-      throw new ForbiddenException('Only administrators, pastors, and active Media members can operate a service liturgy.');
+      throw new ForbiddenException(
+        'Only administrators, pastors, and active Media members can operate a service liturgy.',
+      );
   }
 
   async liveEvent(eventId: string, user: AuthenticatedPrincipal) {
@@ -45,9 +66,13 @@ export class LiturgiesService {
     return this.repository.eventLiturgy(eventId, user.churchId);
   }
 
-  async control(itemId: string, body: ControlLiturgyItemDto, user: AuthenticatedPrincipal) {
+  async control(
+    itemId: string,
+    body: ControlLiturgyItemDto,
+    user: AuthenticatedPrincipal,
+  ) {
     await this.assertOperator(user);
-    if (body.action === 'EXTEND' && !body.extensionMinutes)
+    if (body.action === LiturgyControlAction.EXTEND && !body.extensionMinutes)
       throw new BadRequestException('Choose how many minutes to add.');
     return this.repository.controlItem({
       itemId,

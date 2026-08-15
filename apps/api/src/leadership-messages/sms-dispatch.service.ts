@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ArkeselSmsProvider } from './arkesel-sms.provider';
 import { LeadershipMessagesRepository } from './leadership-messages.repository';
 
@@ -34,21 +39,40 @@ export class SmsDispatchService implements OnModuleInit, OnModuleDestroy {
       const queued = await this.repository.claimSmsBatch();
       for (const item of queued) {
         if (!item.phone) {
-          await this.repository.markSmsFailed(item.id, item.retryCount + 1, 'Recipient has no phone number.', false);
+          await this.repository.markSmsFailed(
+            item.id,
+            item.retryCount + 1,
+            'Recipient has no phone number.',
+            false,
+          );
           continue;
         }
-        const result = await this.provider.send(item.phone, `${item.title}\n${item.message}`);
-        if (result.success) await this.repository.markSmsSent(item.id, result.providerId);
-        else await this.repository.markSmsFailed(item.id, item.retryCount + 1, result.error, result.retryable);
+        const result = await this.provider.send(
+          item.phone,
+          `${item.title}\n${item.message}`,
+        );
+        if (result.success)
+          await this.repository.markSmsSent(item.id, result.providerId);
+        else
+          await this.repository.markSmsFailed(
+            item.id,
+            item.retryCount + 1,
+            result.error,
+            result.retryable,
+          );
       }
       const awaiting = await this.repository.sentSmsAwaitingDelivery();
       for (const item of awaiting) {
         if (!item.providerId) continue;
         const status = await this.provider.deliveryStatus(item.providerId);
-        if (status === 'DELIVERED') await this.repository.markSmsDelivered(item.id);
+        if (status === 'DELIVERED')
+          await this.repository.markSmsDelivered(item.id);
       }
     } catch (error) {
-      this.logger.error('SMS delivery cycle failed.', error instanceof Error ? error.stack : undefined);
+      this.logger.error(
+        'SMS delivery cycle failed.',
+        error instanceof Error ? error.stack : undefined,
+      );
     } finally {
       this.processing = false;
     }

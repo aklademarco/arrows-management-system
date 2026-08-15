@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminUser } from '../auth/admin-user.decorator';
 import { AdminGuard, type AdminPrincipal } from '../auth/admin.guard';
 import { LiturgiesService } from './liturgies.service';
@@ -23,7 +31,11 @@ export class LiturgiesController {
     @Param('eventId', ParseUUIDPipe) eventId: string,
     @AdminUser() admin: AdminPrincipal,
   ) {
-    return { success: true, message: 'Event liturgy retrieved.', data: await this.service.eventLiturgy(eventId, admin) };
+    return {
+      success: true,
+      message: 'Event liturgy retrieved.',
+      data: await this.service.eventLiturgy(eventId, admin),
+    };
   }
 
   @Post('events/:eventId/generate')
@@ -32,6 +44,10 @@ export class LiturgiesController {
     @Body() body: GenerateEventLiturgyDto,
     @AdminUser() admin: AdminPrincipal,
   ) {
-    return { success: true, message: 'Event liturgy generated.', data: await this.service.generate(eventId, body, admin) };
+    return {
+      success: true,
+      message: 'Event liturgy generated.',
+      data: await this.service.generate(eventId, body, admin),
+    };
   }
 }

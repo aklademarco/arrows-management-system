@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { FiCheckCircle, FiMusic, FiPlus, FiTrash2 } from "react-icons/fi";
 import { publishSongList, type SongListState } from "./actions";
 
@@ -10,8 +10,11 @@ const initialState: SongListState = { status: "idle", message: "" };
 
 export function SongListForm() {
   const [songs, setSongs] = useState<Song[]>([emptySong()]);
-  const [state, action, pending] = useActionState(publishSongList, initialState);
-  useEffect(() => { if (state.status === "success") setSongs([emptySong()]); }, [state.status]);
+  const [state, action, pending] = useActionState(async (previousState: SongListState, formData: FormData) => {
+    const nextState = await publishSongList(previousState, formData);
+    if (nextState.status === "success") setSongs([emptySong()]);
+    return nextState;
+  }, initialState);
   const update = (index: number, field: keyof Song, value: string) => setSongs((current) => current.map((song, songIndex) => songIndex === index ? { ...song, [field]: value } : song));
 
   return (

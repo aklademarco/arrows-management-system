@@ -66,6 +66,7 @@ describe('AttendanceService.checkIn eligibility', () => {
     await expect(service.checkIn(user, validLocation)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repository.isMemberEligibleForEvent).not.toHaveBeenCalled();
   });
 
@@ -81,17 +82,20 @@ describe('AttendanceService.checkIn eligibility', () => {
     expect((error as HttpException).getResponse()).toMatchObject({
       code: 'EVENT_NOT_ELIGIBLE',
     });
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repository.checkIn).not.toHaveBeenCalled();
   });
 
   it('checks eligibility with the resolved member profile id', async () => {
     const { service, repository } = buildService();
     await service.checkIn(user, validLocation);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repository.isMemberEligibleForEvent).toHaveBeenCalledWith(
       'member-1',
       'event-1',
       'church-1',
     );
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(repository.checkIn).toHaveBeenCalledWith(
       expect.objectContaining({ memberId: 'member-1', eventId: 'event-1' }),
     );

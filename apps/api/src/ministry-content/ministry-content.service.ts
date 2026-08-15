@@ -7,6 +7,8 @@ import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import type { CreatePublicityFlyerDto } from './dto/create-publicity-flyer.dto';
 import type { CreateSongListDto } from './dto/create-song-list.dto';
 import { MinistryContentRepository } from './ministry-content.repository';
+import type { MinistryContentAction } from './dto/update-content-status.dto';
+import type { AdminPrincipal } from '../auth/admin.guard';
 
 @Injectable()
 export class MinistryContentService {
@@ -18,6 +20,10 @@ export class MinistryContentService {
       this.repository.list(user.id, user.churchId),
     ]);
     return { ...access, items };
+  }
+
+  adminOverview(admin: AdminPrincipal) {
+    return this.repository.listAll(admin.churchId);
   }
 
   async createFlyer(
@@ -65,6 +71,27 @@ export class MinistryContentService {
       senderUserId: user.id,
       choirDepartmentId: access.choirDepartment.id,
       mediaDepartmentId: access.mediaDepartment.id,
+    });
+  }
+
+  async updateStatus(
+    contentId: string,
+    action: MinistryContentAction,
+    user: AuthenticatedPrincipal,
+  ) {
+    const access = await this.repository.getAccess(user.id, user.churchId);
+    if (
+      !access.canManageMediaWork &&
+      !user.roles.some((role) => role === 'ADMIN' || role === 'SUPER_ADMIN')
+    )
+      throw new ForbiddenException(
+        'Only active Media members can update ministry work.',
+      );
+    return this.repository.updateStatus({
+      contentId,
+      churchId: user.churchId,
+      actorUserId: user.id,
+      action,
     });
   }
 }

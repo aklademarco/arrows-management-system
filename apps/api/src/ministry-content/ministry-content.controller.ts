@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import {
   AuthenticatedGuard,
@@ -7,6 +16,10 @@ import {
 import { CreatePublicityFlyerDto } from './dto/create-publicity-flyer.dto';
 import { CreateSongListDto } from './dto/create-song-list.dto';
 import { MinistryContentService } from './ministry-content.service';
+import {
+  MinistryContentAction,
+  UpdateContentStatusDto,
+} from './dto/update-content-status.dto';
 
 @Controller('ministry-content')
 @UseGuards(AuthenticatedGuard)
@@ -43,6 +56,22 @@ export class MinistryContentController {
       success: true,
       message: 'Song list sent to the Choir and Media teams.',
       data: await this.service.createSongList(body, user),
+    };
+  }
+
+  @Patch(':contentId/status')
+  async updateStatus(
+    @Param('contentId', ParseUUIDPipe) contentId: string,
+    @Body() body: UpdateContentStatusDto,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message:
+        body.action === MinistryContentAction.ACKNOWLEDGE
+          ? 'Work acknowledged.'
+          : 'Work completed.',
+      data: await this.service.updateStatus(contentId, body.action, user),
     };
   }
 }

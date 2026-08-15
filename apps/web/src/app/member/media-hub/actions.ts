@@ -17,7 +17,8 @@ const flyerSchema = z.object({
 
 export async function sendPublicityFlyer(input: z.infer<typeof flyerSchema>) {
   const data = flyerSchema.parse(input);
-  const token = (await cookies()).get("acms_member_session")?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("acms_leader_session")?.value ?? cookieStore.get("acms_member_session")?.value;
   if (!token) redirect("/login");
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -56,4 +57,27 @@ export async function sendPublicityFlyer(input: z.infer<typeof flyerSchema>) {
   }
   revalidatePath("/member/media-hub");
   revalidatePath("/member", "layout");
+  revalidatePath("/leader/ministry");
+}
+
+export async function updateMinistryWorkStatus(formData: FormData) {
+  const contentId = z.uuid().parse(formData.get("contentId"));
+  const action = z.enum(["ACKNOWLEDGE", "COMPLETE"]).parse(formData.get("action"));
+  const cookieStore = await cookies();
+  const token = cookieStore.get("acms_leader_session")?.value ?? cookieStore.get("acms_member_session")?.value;
+  if (!token) redirect("/login");
+  const response = await fetch(`${process.env.API_URL ?? "http://localhost:4000/api/v1"}/ministry-content/${contentId}/status`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ action }),
+    cache: "no-store",
+  });
+  if (response.status === 401 || response.status === 403) redirect("/login");
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { message?: string | string[] } | null;
+    throw new Error(Array.isArray(body?.message) ? body.message.join(" ") : body?.message ?? "The work item could not be updated.");
+  }
+  revalidatePath("/member/media-hub");
+  revalidatePath("/leader/ministry");
+  revalidatePath("/leader", "layout");
 }

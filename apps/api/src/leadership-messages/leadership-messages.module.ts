@@ -9,6 +9,11 @@ import { SmsDispatchService } from './sms-dispatch.service';
 @Module({
   imports: [AuthModule],
   controllers: [LeadershipMessagesController],
-  providers: [LeadershipMessagesRepository, LeadershipMessagesService, ArkeselSmsProvider, SmsDispatchService],
+  providers: [
+    LeadershipMessagesRepository,
+    LeadershipMessagesService,
+    ArkeselSmsProvider,
+    SmsDispatchService,
+  ],
 })
 export class LeadershipMessagesModule {}

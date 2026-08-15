@@ -75,4 +75,28 @@ describe('MinistryContentService', () => {
       }),
     );
   });
+
+  it('prevents non-Media members from changing workflow status', async () => {
+    const repository = {
+      getAccess: jest.fn().mockResolvedValue({ canManageMediaWork: false }),
+      updateStatus: jest.fn(),
+    };
+    const service = new MinistryContentService(repository as never);
+    await expect(
+      service.updateStatus('content-id', 'ACKNOWLEDGE' as never, user),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('allows an active Media member to acknowledge work', async () => {
+    const repository = {
+      getAccess: jest.fn().mockResolvedValue({ canManageMediaWork: true }),
+      updateStatus: jest
+        .fn()
+        .mockResolvedValue({ id: 'content-id', status: 'ACKNOWLEDGED' }),
+    };
+    const service = new MinistryContentService(repository as never);
+    await expect(
+      service.updateStatus('content-id', 'ACKNOWLEDGE' as never, user),
+    ).resolves.toEqual({ id: 'content-id', status: 'ACKNOWLEDGED' });
+  });
 });

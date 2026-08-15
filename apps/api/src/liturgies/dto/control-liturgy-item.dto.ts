@@ -13,6 +13,9 @@ export class ControlLiturgyItemDto {
   @IsEnum(LiturgyControlAction)
   action!: LiturgyControlAction;
 
-  @IsOptional() @IsInt() @Min(1) @Max(60)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(60)
   extensionMinutes?: number;
 }

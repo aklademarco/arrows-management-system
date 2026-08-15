@@ -40,9 +40,7 @@ export function validateEnvironment(
       (name) => !environment[name]?.trim(),
     );
     if (missingSms.length)
-      throw new Error(
-        `SMS_ENABLED requires: ${missingSms.join(', ')}`,
-      );
+      throw new Error(`SMS_ENABLED requires: ${missingSms.join(', ')}`);
     if ((environment.ARKESEL_SENDER_ID?.length ?? 0) > 11)
       throw new Error('ARKESEL_SENDER_ID must contain at most 11 characters.');
   }

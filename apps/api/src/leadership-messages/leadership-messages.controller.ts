@@ -14,12 +14,20 @@ export class LeadershipMessagesController {
 
   @Get('compose-context')
   async composeContext(@AuthenticatedUser() user: AuthenticatedPrincipal) {
-    return { success: true, message: 'Message permissions retrieved.', data: await this.service.composeContext(user) };
+    return {
+      success: true,
+      message: 'Message permissions retrieved.',
+      data: await this.service.composeContext(user),
+    };
   }
 
   @Get('sent')
   async sent(@AuthenticatedUser() user: AuthenticatedPrincipal) {
-    return { success: true, message: 'Sent messages retrieved.', data: await this.service.sent(user) };
+    return {
+      success: true,
+      message: 'Sent messages retrieved.',
+      data: await this.service.sent(user),
+    };
   }
 
   @Post()
@@ -27,6 +35,10 @@ export class LeadershipMessagesController {
     @Body() body: CreateLeadershipMessageDto,
     @AuthenticatedUser() user: AuthenticatedPrincipal,
   ) {
-    return { success: true, message: 'Message sent.', data: await this.service.create(body, user) };
+    return {
+      success: true,
+      message: 'Message sent.',
+      data: await this.service.create(body, user),
+    };
   }
 }
