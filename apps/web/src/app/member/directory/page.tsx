@@ -75,28 +75,24 @@ export default async function MemberDirectoryPage({
             <div><FiUsers className="mx-auto text-5xl text-purple-300" /><h2 className="mt-4 text-xl font-black">No one found</h2><p className="mt-2 text-sm font-medium text-slate-500">Try another name or department.</p></div>
           </section>
         ) : (
-          <section aria-label="Church members" className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <ul aria-label="Church members" className="mt-4 overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-sm">
             {directory.items.map((member) => {
               const name = `${member.firstName} ${member.lastName}`;
               return (
-                <Link className="block overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" href={`/member/directory/${member.id}`} key={member.id}>
-                  <div className="h-24 bg-gradient-to-br from-[#4c0d72] via-[#6b21a8] to-[#9d4edd] bg-cover bg-center" style={member.coverPhotoUrl ? { backgroundImage: `linear-gradient(rgba(76,13,114,.3), rgba(76,13,114,.3)), url(${member.coverPhotoUrl})` } : undefined} />
-                  <div className="px-5 pb-5">
-                    <div className="-mt-10"><ProfileAvatar imageUrl={member.profilePhotoUrl} name={name} size="xl" /></div>
-                    <h2 className="mt-3 text-lg font-black tracking-tight">{name}</h2>
-                    {member.otherNames ? <p className="mt-0.5 text-xs font-semibold text-slate-400">Also known as {member.otherNames}</p> : null}
-                    {member.directoryBio ? <p className="mt-3 line-clamp-3 text-sm font-medium leading-6 text-slate-600">{member.directoryBio}</p> : null}
-                    {member.skills.length ? <div className="mt-3 flex flex-wrap gap-1.5">{member.skills.map((skill) => <span className="rounded-full bg-lime-100 px-2.5 py-1 text-[11px] font-extrabold text-lime-800" key={skill}>{skill}</span>)}</div> : null}
-                    <div className="mt-4 flex min-h-7 flex-wrap gap-2">
-                      {member.departments.length ? member.departments.map((department) => <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold text-[#6b21a8]" key={department.id}>{department.name}</span>) : <span className="text-xs font-semibold text-slate-400">Church member</span>}
+                <li className="border-b border-purple-50 last:border-b-0" key={member.id}>
+                  <Link className="flex min-h-20 items-center gap-4 px-4 py-3 transition hover:bg-purple-50/70 focus-visible:bg-purple-50 focus-visible:outline-none sm:px-5" href={`/member/directory/${member.id}`}>
+                    <ProfileAvatar imageUrl={member.profilePhotoUrl} name={name} size="lg" />
+                    <div className="min-w-0 flex-1">
+                      <h2 className="truncate text-base font-black tracking-tight text-slate-950 sm:text-lg">{name}</h2>
+                      {member.otherNames ? <p className="mt-0.5 truncate text-xs font-semibold text-slate-400">{member.otherNames}</p> : null}
                     </div>
-                    {member.phone ? <div className="mt-4 flex gap-2 border-t border-purple-100 pt-4"><a className="member-primary-action h-10 flex-1 px-3 text-sm" href={`tel:${member.phone}`}>Call</a><a className="inline-flex h-10 flex-1 items-center justify-center rounded-full bg-purple-100 px-3 text-sm font-extrabold text-[#6b21a8]" href={`sms:${member.phone}`}>Message</a></div> : null}
-                  </div>
-                  <span className="sr-only">View {name}&apos;s profile</span>
-                </Link>
+                    <FiChevronRight aria-hidden="true" className="shrink-0 text-xl text-slate-300" />
+                    <span className="sr-only">View {name}&apos;s profile</span>
+                  </Link>
+                </li>
               );
             })}
-          </section>
+          </ul>
         )}
 
         {directory.totalPages > 1 && (
