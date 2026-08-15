@@ -20,10 +20,6 @@ export class LeadershipMessagesService {
       user.churchId,
     );
     const canMessageChurch = user.roles.includes('PASTOR');
-    if (!canMessageChurch && departments.length === 0)
-      throw new ForbiddenException(
-        'Only pastors and active department leaders can send messages.',
-      );
     return {
       canMessageChurch,
       departments,
@@ -40,6 +36,10 @@ export class LeadershipMessagesService {
 
   async create(body: CreateLeadershipMessageDto, user: AuthenticatedPrincipal) {
     const context = await this.composeContext(user);
+    if (!context.canMessageChurch && context.departments.length === 0)
+      throw new ForbiddenException(
+        'An administrator must assign you to an active department before you can send messages.',
+      );
     if (body.smsRequested && !context.smsAvailable)
       throw new BadRequestException(
         'SMS delivery is not configured. Send this as a dashboard message instead.',

@@ -11,6 +11,38 @@ describe('LeadershipMessagesService', () => {
   };
   const pastor = { ...leader, roles: ['PASTOR'] };
 
+  it('opens the message workspace for a leader awaiting a department assignment', async () => {
+    const repository = {
+      activeLedDepartments: jest.fn().mockResolvedValue([]),
+      sent: jest.fn().mockResolvedValue([]),
+    };
+    const service = new LeadershipMessagesService(repository as never);
+
+    await expect(service.composeContext(leader)).resolves.toMatchObject({
+      canMessageChurch: false,
+      departments: [],
+    });
+    await expect(service.sent(leader)).resolves.toEqual([]);
+  });
+
+  it('prevents an unassigned leader from sending a message', async () => {
+    const repository = {
+      activeLedDepartments: jest.fn().mockResolvedValue([]),
+    };
+    const service = new LeadershipMessagesService(repository as never);
+
+    await expect(
+      service.create(
+        {
+          audience: LeadershipMessageAudience.DEPARTMENT,
+          title: 'Notice',
+          body: 'Message',
+        },
+        leader,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
   it('prevents a department leader from messaging the whole church', async () => {
     const repository = {
       activeLedDepartments: jest

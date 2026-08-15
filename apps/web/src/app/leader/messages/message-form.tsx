@@ -12,6 +12,14 @@ export function MessageForm({ canMessageChurch, departments, smsAvailable }: { c
   const [state, action, pending] = useActionState(sendLeadershipMessage, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => { if (state.status === "success") formRef.current?.reset(); }, [state.status]);
+  if (!canMessageChurch && departments.length === 0) {
+    return <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 text-slate-900 sm:p-6">
+      <div className="flex items-start gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-amber-100 text-xl text-amber-700"><FiAlertCircle /></span>
+        <div><h2 className="font-black">No team assigned yet</h2><p className="mt-1 text-sm leading-6 text-slate-600">Your Messages page is ready, but an administrator must assign you as an active department leader before you can message a team.</p></div>
+      </div>
+    </section>;
+  }
   return <form action={action} className="rounded-[1.75rem] border border-white/10 bg-[#24202e] p-5 sm:p-6" ref={formRef}>
     <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-xl bg-purple-500/15 text-xl text-purple-300"><FiSend /></span><div><h2 className="font-black">New message</h2><p className="text-sm text-slate-400">This appears immediately in each recipient&apos;s church inbox.</p></div></div>
     <div className="mt-5 grid gap-4">
