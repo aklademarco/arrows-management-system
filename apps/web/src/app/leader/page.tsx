@@ -30,13 +30,13 @@ export default async function LeaderDashboard() {
   return <main className="min-h-screen p-4 sm:p-6 xl:p-8">
     <div className="mx-auto max-w-[1450px]">
       <div className="flex items-center gap-3">
-        <div className="relative flex h-12 flex-1 items-center rounded-2xl border border-white/10 bg-[#24202e] pl-12 pr-4 text-sm text-slate-300"><FiSearch className="absolute left-4 text-slate-500" /><span>Search people, ministries, and events</span></div>
-        <Link aria-label="Notifications" className="relative grid size-12 place-items-center rounded-2xl border border-white/10 bg-[#24202e] text-slate-300" href="/leader/inbox"><FiBell />{unread.count ? <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-lime-400 px-1 text-[10px] font-black text-[#240046]">{unread.count}</span> : null}</Link>
+        <div className="relative flex h-12 flex-1 items-center rounded-2xl border border-purple-100 bg-white pl-12 pr-4 text-sm text-slate-500 shadow-sm"><FiSearch className="absolute left-4 text-slate-400" /><span>Search people, ministries, and events</span></div>
+        <Link aria-label="Notifications" className="relative grid size-12 place-items-center rounded-2xl border border-purple-100 bg-white text-slate-500 shadow-sm" href="/leader/inbox"><FiBell />{unread.count ? <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-lime-400 px-1 text-[10px] font-black text-[#240046]">{unread.count}</span> : null}</Link>
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_360px]">
         <div className="grid gap-5">
-          <section className="relative isolate min-h-64 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#5b148d] via-[#7e22ce] to-[#9d4edd] p-7 sm:p-9">
+          <section className="relative isolate min-h-64 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#5b148d] via-[#7e22ce] to-[#9d4edd] p-7 text-white sm:p-9">
             <div className="absolute -right-20 -top-20 -z-10 size-80 rounded-full bg-white/10 blur-2xl" />
             <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-200">{isPastor ? "Pastoral workspace" : "Ministry leadership"}</p>
             <h1 className="mt-8 max-w-xl text-4xl font-black tracking-[-0.05em] sm:text-5xl">Good day, {firstName}.</h1>
@@ -57,7 +57,7 @@ export default async function LeaderDashboard() {
         </div>
 
         <aside className="grid content-start gap-5">
-          <section id="calendar" className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#24202e]"><div className="flex items-center justify-between bg-gradient-to-r from-[#7e22ce] to-[#9333ea] px-6 py-4"><p className="text-xs font-black uppercase tracking-[0.15em]">Church calendar</p><FiCalendar /></div><div className="divide-y divide-white/[0.07] px-5">{upcoming.slice(0, 5).map((event) => <div className="py-4" key={event.id}><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold">{event.name}</p><time className="shrink-0 text-xs font-bold text-purple-300">{time.format(new Date(event.startsAt))}</time></div><p className="mt-1 text-xs text-slate-500">{date.format(new Date(event.startsAt))} · {event.locationName ?? "Church"}</p></div>)}{upcoming.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">No upcoming events.</p> : null}</div></section>
+          <section id="calendar" className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#24202e]"><div className="flex items-center justify-between bg-gradient-to-r from-[#7e22ce] to-[#9333ea] px-6 py-4 text-white"><p className="text-xs font-black uppercase tracking-[0.15em]">Church calendar</p><FiCalendar /></div><div className="divide-y divide-white/[0.07] px-5">{upcoming.slice(0, 5).map((event) => <div className="py-4" key={event.id}><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold">{event.name}</p><time className="shrink-0 text-xs font-bold text-purple-600">{time.format(new Date(event.startsAt))}</time></div><p className="mt-1 text-xs text-slate-500">{date.format(new Date(event.startsAt))} · {event.locationName ?? "Church"}</p></div>)}{upcoming.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">No upcoming events.</p> : null}</div></section>
         </aside>
       </div>
     </div>

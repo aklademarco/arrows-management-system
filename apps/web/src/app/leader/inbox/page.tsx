@@ -65,7 +65,7 @@ export default async function LeaderInboxPage({
               </div>
             </div>
           ) : notifications.items.map((item) => (
-            <article className={`rounded-[1.5rem] border p-5 sm:p-6 ${item.readAt ? "border-white/10 bg-[#24202e]" : "border-purple-500/40 bg-gradient-to-r from-purple-900/40 to-[#24202e]"}`} key={item.id}>
+            <article className={`rounded-[1.5rem] border p-5 sm:p-6 ${item.readAt ? "border-white/10 bg-[#24202e]" : "border-purple-200 bg-purple-50"}`} key={item.id}>
               <div className="flex gap-4">
                 <span className={`mt-1.5 size-2.5 shrink-0 rounded-full ${item.readAt ? "bg-slate-600" : "bg-lime-300 shadow-[0_0_0_5px_rgba(190,242,100,0.12)]"}`} />
                 <div className="min-w-0 flex-1">

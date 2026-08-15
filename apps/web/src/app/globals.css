@@ -44,6 +44,42 @@ body {
   color-scheme: dark;
 }
 
+.leader-shell {
+  color-scheme: light;
+}
+
+.leader-shell .bg-\[\#24202e\],
+.leader-shell .bg-\[\#1d1926\],
+.leader-shell .bg-\[\#17131f\] {
+  background-color: #ffffff;
+}
+
+.leader-shell .border-white\/10,
+.leader-shell .border-white\/15,
+.leader-shell .divide-white\/\[0\.07\] > :not(:last-child) {
+  border-color: #ede9f4;
+}
+
+.leader-shell .text-slate-300 {
+  color: #475569;
+}
+
+.leader-shell .text-slate-400,
+.leader-shell .text-slate-500 {
+  color: #64748b;
+}
+
+.leader-shell input,
+.leader-shell select,
+.leader-shell textarea {
+  background-color: #fbf9fd;
+  color: #0f172a;
+}
+
+.leader-shell .bg-purple-600 {
+  color: white;
+}
+
 .admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .admin-shell select,
 .admin-shell textarea {
