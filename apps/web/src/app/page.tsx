@@ -31,7 +31,7 @@ export default function Home() {
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-3">
           <Link className="inline-flex h-12 items-center rounded-lg bg-amber-400 px-7 font-bold text-[#240046] transition hover:bg-amber-300" href="/login">Member sign in</Link>
-          <Link className="inline-flex h-12 items-center rounded-lg border border-white px-7 font-bold text-white transition hover:bg-white/10" href="/register">Create member account</Link>
+          <Link className="inline-flex h-12 items-center rounded-lg border px-7 font-bold text-white transition hover:bg-white/10" href="/register">Create member account</Link>
         </div>
       </section>
     </main>
