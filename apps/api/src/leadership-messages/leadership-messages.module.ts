@@ -3,7 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { LeadershipMessagesController } from './leadership-messages.controller';
 import { LeadershipMessagesRepository } from './leadership-messages.repository';
 import { LeadershipMessagesService } from './leadership-messages.service';
-import { ArkeselSmsProvider } from './arkesel-sms.provider';
+import { MoolreSmsProvider } from './moolre-sms.provider';
 import { SmsDispatchService } from './sms-dispatch.service';
 
 @Module({
@@ -12,7 +12,7 @@ import { SmsDispatchService } from './sms-dispatch.service';
   providers: [
     LeadershipMessagesRepository,
     LeadershipMessagesService,
-    ArkeselSmsProvider,
+    MoolreSmsProvider,
     SmsDispatchService,
   ],
 })

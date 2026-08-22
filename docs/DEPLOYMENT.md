@@ -455,9 +455,11 @@ CLOUDINARY_API_SECRET=...
 
 # Optional SMS (enables the 30s dispatch poller)
 SMS_ENABLED=true
-SMS_PROVIDER=arkesel
-ARKESEL_API_KEY=...
-ARKESEL_SENDER_ID=ARROWS            # ≤11 chars, enforced
+MOOLRE_SMS_VAS_KEY=<Moolre SMS service VAS key>
+MOOLRE_SENDER_ID=ARROWS            # ≤11 chars, enforced
+# Integer Moolre reports for delivered messages; verify with one test send
+# against /open/sms/status before launch (docs do not publish the legend).
+MOOLRE_DELIVERED_STATUS=2
 DEFAULT_CHURCH_ID=<uuid-of-church>
 ```
 

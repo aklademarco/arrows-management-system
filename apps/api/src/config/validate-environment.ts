@@ -3,7 +3,6 @@ const PRODUCTION_REQUIRED = [
   'CORS_ORIGIN',
   'WEB_URL',
   'JWT_ACCESS_SECRET',
-  'SMTP_HOST',
   'SMTP_FROM',
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
@@ -35,13 +34,19 @@ export function validateEnvironment(
     }
   }
 
+  if (!environment.RESEND_API_KEY?.trim() && !environment.SMTP_HOST?.trim()) {
+    throw new Error(
+      'Email delivery requires RESEND_API_KEY or SMTP_HOST to be configured.',
+    );
+  }
+
   if (environment.SMS_ENABLED === 'true') {
-    const missingSms = ['ARKESEL_API_KEY', 'ARKESEL_SENDER_ID'].filter(
+    const missingSms = ['MOOLRE_SMS_VAS_KEY', 'MOOLRE_SENDER_ID'].filter(
       (name) => !environment[name]?.trim(),
     );
     if (missingSms.length)
       throw new Error(`SMS_ENABLED requires: ${missingSms.join(', ')}`);
-    if ((environment.ARKESEL_SENDER_ID?.length ?? 0) > 11)
-      throw new Error('ARKESEL_SENDER_ID must contain at most 11 characters.');
+    if ((environment.MOOLRE_SENDER_ID?.length ?? 0) > 11)
+      throw new Error('MOOLRE_SENDER_ID must contain at most 11 characters.');
   }
 }

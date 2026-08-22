@@ -9,6 +9,7 @@ import {
   type CreateLeadershipMessageDto,
 } from './dto/create-leadership-message.dto';
 import { LeadershipMessagesRepository } from './leadership-messages.repository';
+import { isMoolreConfigured } from './moolre-sms.provider';
 
 @Injectable()
 export class LeadershipMessagesService {
@@ -23,9 +24,7 @@ export class LeadershipMessagesService {
     return {
       canMessageChurch,
       departments,
-      smsAvailable:
-        process.env.SMS_ENABLED === 'true' &&
-        Boolean(process.env.ARKESEL_API_KEY && process.env.ARKESEL_SENDER_ID),
+      smsAvailable: isMoolreConfigured(),
     };
   }
 
