@@ -50,7 +50,8 @@ export default async function LeaderDashboard() {
             <Metric icon={FiHeart} label="Care focus" value="People" detail="Follow up and connect" />
           </section>
 
-          <section className="grid gap-5 lg:grid-cols-2">
+          <section className="grid gap-5 lg:grid-cols-3">
+            <article className="rounded-[1.75rem] border border-white/10 bg-[#24202e] p-6"><p className="text-xs font-black uppercase tracking-[0.15em] text-purple-300">Attendance</p><h2 className="mt-3 text-xl font-black">Be counted too</h2><p className="mt-2 text-sm leading-6 text-slate-400">Check in when the service window opens and keep your own record strong.</p><Link className="mt-5 inline-flex items-center gap-2 font-bold text-lime-300" href="/leader/attendance">Open my attendance <FiArrowUpRight /></Link></article>
             <article className="rounded-[1.75rem] border border-white/10 bg-[#24202e] p-6"><p className="text-xs font-black uppercase tracking-[0.15em] text-purple-300">People and care</p><h2 className="mt-3 text-xl font-black">Know the people you lead</h2><p className="mt-2 text-sm leading-6 text-slate-400">Find members, learn their gifts, and stay connected beyond Sunday.</p><Link className="mt-5 inline-flex items-center gap-2 font-bold text-lime-300" href="/leader/people">Open people directory <FiArrowUpRight /></Link></article>
             <article className="rounded-[1.75rem] border border-white/10 bg-[#24202e] p-6"><p className="text-xs font-black uppercase tracking-[0.15em] text-purple-300">Communication</p><h2 className="mt-3 text-xl font-black">Reach your people</h2><p className="mt-2 text-sm leading-6 text-slate-400">Send a clear update to the church or the ministry teams you lead.</p><Link className="mt-5 inline-flex items-center gap-2 font-bold text-lime-300" href="/leader/messages">Compose message <FiArrowUpRight /></Link></article>
           </section>

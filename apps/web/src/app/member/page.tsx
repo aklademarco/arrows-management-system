@@ -9,14 +9,15 @@ import {
 } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getMemberProfile, getMemberResource } from "./member-api";
+import { checkIn } from "./actions";
 import type {
   ActiveEvent,
   Attendance,
   MemberProfile,
   UpcomingEvent,
 } from "./member-types";
-import CheckInButton from "./check-in-button";
-import { CheckInHero } from "./check-in-hero";
+import CheckInButton from "@/components/check-in-button";
+import { CheckInHero } from "@/components/check-in-hero";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GH", {
   dateStyle: "medium",
@@ -130,7 +131,7 @@ export default async function MemberPage() {
                           {existing.status.replaceAll("_", " ")}
                         </p>
                       ) : (
-                        <CheckInButton eventId={event.id} />
+                        <CheckInButton eventId={event.id} onCheckIn={checkIn} />
                       )}
                     </div>
                   );

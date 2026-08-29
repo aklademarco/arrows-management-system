@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiBell, FiGrid, FiMessageCircle, FiMusic, FiUsers } from "react-icons/fi";
+import { FiBell, FiCheckCircle, FiGrid, FiMessageCircle, FiMusic, FiUsers } from "react-icons/fi";
 
 const items = [
   { href: "/leader", label: "Overview", icon: FiGrid },
+  { href: "/leader/attendance", label: "Attendance", icon: FiCheckCircle },
   { href: "/leader/people", label: "People", icon: FiUsers },
   { href: "/leader/messages", label: "Messages", icon: FiMessageCircle },
   { href: "/leader/ministry", label: "Ministry", icon: FiMusic },
@@ -15,7 +16,7 @@ const items = [
 export function LeaderNavigation({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Leadership workspace" className={mobile ? "grid grid-cols-5" : "grid gap-2"}>
+    <nav aria-label="Leadership workspace" className={mobile ? "grid grid-cols-6" : "grid gap-2"}>
       {items.map(({ href, label, icon: Icon }) => {
         const target = href.split("#")[0];
         const active = target === "/leader" ? pathname === "/leader" : pathname.startsWith(target);
