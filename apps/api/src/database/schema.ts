@@ -6,6 +6,7 @@ import {
   inet,
   pgEnum,
   pgTable,
+  time,
   timestamp,
   uniqueIndex,
   uuid,
@@ -105,6 +106,28 @@ export const liturgyItemStatus = pgEnum('liturgy_item_status', [
   'PAUSED',
   'COMPLETED',
   'SKIPPED',
+]);
+
+export const smallGroupMeetingDay = pgEnum('small_group_meeting_day', [
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+]);
+
+export const groupMeetingStatus = pgEnum('group_meeting_status', [
+  'SCHEDULED',
+  'COMPLETED',
+  'CANCELLED',
+]);
+
+export const groupAttendanceStatus = pgEnum('group_attendance_status', [
+  'PRESENT',
+  'ABSENT',
+  'EXCUSED',
 ]);
 
 export const pastoralFollowUpMethod = pgEnum('pastoral_follow_up_method', [
@@ -720,6 +743,167 @@ export const departmentLeaders = pgTable(
       'department_leaders_valid_revocation',
       sql`(${table.revokedAt} is null and ${table.revokedBy} is null and ${table.revocationReason} is null) or (${table.revokedAt} is not null and ${table.revokedBy} is not null and ${table.revocationReason} is not null and char_length(btrim(${table.revocationReason})) > 0)`,
     ),
+  ],
+);
+
+export const smallGroups = pgTable(
+  'small_groups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    name: varchar('name', { length: 150 }).notNull(),
+    assignedLeaderId: uuid('assigned_leader_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    meetingDay: smallGroupMeetingDay('meeting_day').notNull(),
+    meetingTime: time('meeting_time', { precision: 0 }).notNull(),
+    location: varchar('location', { length: 255 }),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('small_groups_church_name_unique').on(
+      table.churchId,
+      sql`lower(${table.name})`,
+    ),
+    index('small_groups_church_active_idx').on(
+      table.churchId,
+      table.isActive,
+    ),
+    index('small_groups_leader_active_idx').on(
+      table.assignedLeaderId,
+      table.isActive,
+    ),
+  ],
+);
+
+export const groupMemberships = pgTable(
+  'group_memberships',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => smallGroups.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    startsOn: date('starts_on').notNull(),
+    endsOn: date('ends_on'),
+    assignedBy: uuid('assigned_by')
+      .notNull()
+      .references(() => users.id),
+    endedBy: uuid('ended_by').references(() => users.id),
+    endReason: text('end_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('group_memberships_member_current_unique')
+      .on(table.memberId)
+      .where(sql`${table.endsOn} is null`),
+    index('group_memberships_group_dates_idx').on(
+      table.groupId,
+      table.startsOn,
+      table.endsOn,
+    ),
+    index('group_memberships_member_dates_idx').on(
+      table.memberId,
+      table.startsOn,
+      table.endsOn,
+    ),
+    check(
+      'group_memberships_valid_date_range',
+      sql`${table.endsOn} is null or ${table.endsOn} >= ${table.startsOn}`,
+    ),
+    check(
+      'group_memberships_valid_end_metadata',
+      sql`(${table.endsOn} is null and ${table.endedBy} is null and ${table.endReason} is null) or (${table.endsOn} is not null and ${table.endedBy} is not null and ${table.endReason} is not null and char_length(btrim(${table.endReason})) > 0)`,
+    ),
+  ],
+);
+
+export const groupMeetings = pgTable(
+  'group_meetings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    groupId: uuid('group_id')
+      .notNull()
+      .references(() => smallGroups.id),
+    meetingDate: date('meeting_date').notNull(),
+    status: groupMeetingStatus('status').notNull().default('SCHEDULED'),
+    notes: text('notes'),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    cancelledBy: uuid('cancelled_by').references(() => users.id),
+    cancellationReason: text('cancellation_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('group_meetings_group_date_unique').on(
+      table.groupId,
+      table.meetingDate,
+    ),
+    index('group_meetings_group_status_date_idx').on(
+      table.groupId,
+      table.status,
+      table.meetingDate,
+    ),
+    check(
+      'group_meetings_valid_cancellation_metadata',
+      sql`(${table.status} = 'CANCELLED' and ${table.cancelledAt} is not null and ${table.cancelledBy} is not null and ${table.cancellationReason} is not null and char_length(btrim(${table.cancellationReason})) between 3 and 1000) or (${table.status} <> 'CANCELLED' and ${table.cancelledAt} is null and ${table.cancelledBy} is null and ${table.cancellationReason} is null)`,
+    ),
+  ],
+);
+
+export const groupAttendanceRecords = pgTable(
+  'group_attendance_records',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    meetingId: uuid('meeting_id')
+      .notNull()
+      .references(() => groupMeetings.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    status: groupAttendanceStatus('status').notNull(),
+    markedBy: uuid('marked_by')
+      .notNull()
+      .references(() => users.id),
+    markedAt: timestamp('marked_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('group_attendance_meeting_member_unique').on(
+      table.meetingId,
+      table.memberId,
+    ),
+    index('group_attendance_meeting_status_idx').on(
+      table.meetingId,
+      table.status,
+    ),
+    index('group_attendance_member_idx').on(table.memberId),
   ],
 );
 
