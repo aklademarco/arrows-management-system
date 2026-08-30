@@ -776,10 +776,7 @@ export const smallGroups = pgTable(
       table.churchId,
       sql`lower(${table.name})`,
     ),
-    index('small_groups_church_active_idx').on(
-      table.churchId,
-      table.isActive,
-    ),
+    index('small_groups_church_active_idx').on(table.churchId, table.isActive),
     index('small_groups_leader_active_idx').on(
       table.assignedLeaderId,
       table.isActive,
