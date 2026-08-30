@@ -157,6 +157,14 @@ export const churches = pgTable('churches', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 150 }).notNull(),
   slug: varchar('slug', { length: 100 }).notNull().unique(),
+  // NEW: IANA timezone identifier (e.g. "Africa/Accra"). Every local-time
+  // calculation for recurring events must resolve through this instead of
+  // assuming UTC == local time. Ghana is UTC+0 today, so this defaults
+  // safely, but multi-branch support (PRD future feature) will break
+  // silently without this column existing now.
+  timezone: varchar('timezone', { length: 60 })
+    .notNull()
+    .default('Africa/Accra'),
 });
 
 export const users = pgTable(
@@ -424,6 +432,21 @@ export const recurringServiceTemplates = pgTable(
     durationMinutes: integer('duration_minutes').notNull(),
     priority: integer('priority').notNull().default(0),
     isActive: boolean('is_active').notNull().default(true),
+    // NEW: these five columns used to be inferred at generation time by
+    // querying "whatever event has the latest startsAt" — fragile, and
+    // wrong the moment a one-off event with a later date exists. The
+    // template is now the single source of truth for where/how a
+    // recurring service's geofence is configured.
+    locationName: varchar('location_name', { length: 180 }),
+    latitude: numeric('latitude', { precision: 9, scale: 6 }).notNull(),
+    longitude: numeric('longitude', { precision: 9, scale: 6 }).notNull(),
+    geofenceRadiusMeters: integer('geofence_radius_meters').notNull(),
+    maximumAccuracyMeters: integer('maximum_accuracy_meters')
+      .notNull()
+      .default(50),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -456,6 +479,14 @@ export const attendanceRecords = pgTable(
       .references(() => memberProfiles.id),
     status: attendanceStatus('status').notNull(),
     method: attendanceMethod('method').notNull(),
+    // punctualityStatus intentionally kept separate from `status`:
+    // `status` is the *current, possibly-corrected* outcome (can become
+    // ABSENT/EXCUSED via finalization or admin correction), while
+    // `punctualityStatus` preserves what actually happened at arrival
+    // (EARLY/ON_TIME/LATE) and is never touched by later corrections.
+    // NOTE: this requires a service-layer fix — checkIn() and markManual()
+    // currently do not populate this column. Flagging so it isn't
+    // silently dropped later; happy to patch the service in the next pass.
     punctualityStatus: attendancePunctualityStatus('punctuality_status'),
     absenceRequestId: uuid('absence_request_id').references(
       () => absenceRequests.id,
