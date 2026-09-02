@@ -41,7 +41,7 @@ export default async function MemberAbsencesPage() {
     <main className="min-h-screen bg-[#f8f7fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-10 lg:py-9">
       <div className="mx-auto max-w-6xl">
         <header>
-          <p className="text-sm font-extrabold text-[#6b21a8]">Time away</p>
+         
           <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
             Request an excused absence.
           </h1>
@@ -53,11 +53,8 @@ export default async function MemberAbsencesPage() {
         <section className="mt-7 grid gap-5 lg:grid-cols-2">
           <form
             action={submitEventAbsence}
-            className="grid content-start gap-4 rounded-[2rem] border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)]"
+            className="grid content-start gap-4 rounded-4xl border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)]"
           >
-            <span className="grid size-11 place-items-center rounded-2xl bg-purple-100 text-[#6b21a8]">
-              <FiCalendar aria-hidden="true" />
-            </span>
             <div>
               <h2 className="text-xl font-black">Specific event</h2>
               <p className="mt-1 text-sm text-slate-500">
@@ -99,9 +96,6 @@ export default async function MemberAbsencesPage() {
             action={submitDateRangeAbsence}
             className="grid content-start gap-4 rounded-[2rem] border border-purple-100 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)]"
           >
-            <span className="grid size-11 place-items-center rounded-2xl bg-[#efffce] text-[#497016]">
-              <FiClock aria-hidden="true" />
-            </span>
             <div>
               <h2 className="text-xl font-black">Date range</h2>
               <p className="mt-1 text-sm text-slate-500">
@@ -148,13 +142,12 @@ export default async function MemberAbsencesPage() {
           </form>
         </section>
 
-        <section className="mt-7 rounded-[2rem] border border-purple-100 bg-white p-6 sm:p-8">
+        <section className="mt-7 rounded-4xl border border-purple-100 bg-white p-6 sm:p-8">
           <div className="flex items-center gap-3">
-            <FiFileText className="text-[#6b21a8]" aria-hidden="true" />
             <h2 className="text-2xl font-black">Your requests</h2>
           </div>
           {requests.length === 0 ? (
-            <p className="mt-6 rounded-2xl bg-purple-50 p-6 text-sm text-slate-500">
+            <p className="mt-6 rounded-2xl bg-black/20 p-6 text-sm text-slate-500">
               You have not submitted an absence request.
             </p>
           ) : (

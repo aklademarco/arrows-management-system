@@ -30,7 +30,7 @@ export default async function MemberLayout({
             <span className="relative block size-10 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-purple-100">
               <Image
                 alt="The Arrows church logo"
-                className="object-contain scale-[1.45]"
+                className="object-contain scale-[1.45"
                 fill
                 sizes="40px"
                 src="/assets/arrows.PNG"
@@ -54,7 +54,7 @@ export default async function MemberLayout({
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1500px]">
+      <div className="mx-auto flex max-w-375">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-purple-100 bg-white px-5 py-6 lg:flex">
           <Link className="flex items-center gap-3 px-2" href="/member">
             <span className="relative block size-12 shrink-0 overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(107,33,168,0.14)] ring-1 ring-purple-100">
