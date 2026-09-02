@@ -4,7 +4,6 @@ import {
   FiCalendar,
   FiCheck,
   FiCheckCircle,
-  FiClock,
   FiMapPin,
 } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -24,6 +23,19 @@ const dateFormatter = new Intl.DateTimeFormat("en-GH", {
   timeStyle: "short",
   timeZone: "Africa/Accra",
 });
+
+const accraHourFormatter = new Intl.DateTimeFormat("en-GH", {
+  hour: "numeric",
+  hourCycle: "h23",
+  timeZone: "Africa/Accra",
+});
+
+function timeOfDayGreeting(now: Date) {
+  const hour = Number(accraHourFormatter.format(now));
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 function SummaryBars({ count }: { count: number }) {
   const activeBars = Math.min(7, count);
@@ -51,6 +63,7 @@ export default async function MemberPage() {
     ],
   );
   const memberName = `${member.firstName} ${member.lastName}`;
+  const greeting = timeOfDayGreeting(new Date());
   const totalPoints = attendanceHistory.reduce(
     (sum, attendance) => sum + attendance.pointsAwarded,
     0,
@@ -64,7 +77,7 @@ export default async function MemberPage() {
           <div>
             <p className="text-sm font-extrabold text-[#6b21a8]">Summary</p>
             <h1 className="mt-1 text-3xl font-black tracking-[-0.04em] sm:text-4xl">
-              Good to see you, {member.firstName}.
+              {greeting}, {member.firstName}.
             </h1>
             <p className="mt-2 text-sm font-medium text-slate-500">
               Every check-in is one more step in serving consistently.
@@ -234,16 +247,9 @@ export default async function MemberPage() {
               </Link>
             </div>
             {recentAttendance.length === 0 ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-purple-200 bg-purple-50/50 p-8 text-center">
-                <FiClock
-                  aria-hidden="true"
-                  className="mx-auto text-3xl text-purple-300"
-                />
-                <p className="mt-3 font-extrabold">Your activity starts here</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Completed check-ins will appear in this timeline.
-                </p>
-              </div>
+              <p className="mt-6 text-sm text-slate-500">
+                You have no recent check-ins.
+              </p>
             ) : (
               <div className="mt-5 divide-y divide-slate-100">
                 {recentAttendance.map((attendance) => (
