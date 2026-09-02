@@ -32,6 +32,7 @@ import {
   eligibleEventCondition,
   eligibleMemberCondition,
 } from '../events/event-eligibility';
+import { sundayAttendanceWindow } from '../events/sunday-attendance-window';
 import type { CorrectAttendanceDto } from './dto/correct-attendance.dto';
 import type { ManualAttendanceDto } from './dto/manual-attendance.dto';
 
@@ -121,7 +122,9 @@ export class AttendanceRepository {
       const endsAt = new Date(
         startsAt.getTime() + template.durationMinutes * 60_000,
       );
-      const attendanceOpensAt = new Date(startsAt.getTime() - 30 * 60_000);
+      const attendanceWindow = sundayAttendanceWindow(startsAt, endsAt);
+      const attendanceOpensAt =
+        attendanceWindow?.opensAt ?? new Date(startsAt.getTime() - 30 * 60_000);
       const lateAfter = new Date(startsAt.getTime() + 10 * 60_000);
       await this.database
         .insert(events)
@@ -133,7 +136,7 @@ export class AttendanceRepository {
           startsAt,
           endsAt,
           attendanceOpensAt,
-          attendanceClosesAt: endsAt,
+          attendanceClosesAt: attendanceWindow?.closesAt ?? endsAt,
           earlyUntil: startsAt,
           lateAfter,
           locationName: eventDefaults.locationName,

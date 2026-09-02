@@ -9,6 +9,7 @@ import type { CancelEventDto } from './dto/cancel-event.dto';
 import type { UpdateEventDto } from './dto/update-event.dto';
 import { EventsRepository } from './events.repository';
 import type { ListEventsDto } from './dto/list-events.dto';
+import { sundayAttendanceWindow } from './sunday-attendance-window';
 
 @Injectable()
 export class EventsService {
@@ -34,8 +35,16 @@ export class EventsService {
   create(dto: CreateEventDto, admin: AdminPrincipal) {
     const startsAt = new Date(dto.startsAt);
     const endsAt = new Date(dto.endsAt);
-    const opensAt = new Date(dto.attendanceOpensAt);
-    const closesAt = new Date(dto.attendanceClosesAt);
+    const sundayWindow = sundayAttendanceWindow(startsAt, endsAt);
+    const normalizedDto = sundayWindow
+      ? {
+          ...dto,
+          attendanceOpensAt: sundayWindow.opensAt.toISOString(),
+          attendanceClosesAt: sundayWindow.closesAt.toISOString(),
+        }
+      : dto;
+    const opensAt = new Date(normalizedDto.attendanceOpensAt);
+    const closesAt = new Date(normalizedDto.attendanceClosesAt);
     const lateAfter = new Date(dto.lateAfter);
     const earlyUntil = dto.earlyUntil ? new Date(dto.earlyUntil) : null;
     if (endsAt <= startsAt)
@@ -52,7 +61,7 @@ export class EventsService {
       throw new BadRequestException(
         'Early threshold must fall within the attendance window.',
       );
-    return this.repository.create(dto, admin);
+    return this.repository.create(normalizedDto, admin);
   }
 
   async update(eventId: string, dto: UpdateEventDto, admin: AdminPrincipal) {
@@ -63,17 +72,34 @@ export class EventsService {
       throw new ConflictException(
         'Only draft or scheduled events can be edited.',
       );
+    const startsAt = new Date(dto.startsAt ?? current.startsAt.toISOString());
+    const endsAt = new Date(dto.endsAt ?? current.endsAt.toISOString());
+    const sundayWindow = sundayAttendanceWindow(startsAt, endsAt);
+    const normalizedDto: UpdateEventDto = sundayWindow
+      ? {
+          ...dto,
+          attendanceOpensAt: sundayWindow.opensAt.toISOString(),
+          attendanceClosesAt: sundayWindow.closesAt.toISOString(),
+        }
+      : dto;
     this.validateTiming({
       startsAt: dto.startsAt ?? current.startsAt.toISOString(),
       endsAt: dto.endsAt ?? current.endsAt.toISOString(),
       attendanceOpensAt:
-        dto.attendanceOpensAt ?? current.attendanceOpensAt.toISOString(),
+        normalizedDto.attendanceOpensAt ??
+        current.attendanceOpensAt.toISOString(),
       attendanceClosesAt:
-        dto.attendanceClosesAt ?? current.attendanceClosesAt.toISOString(),
+        normalizedDto.attendanceClosesAt ??
+        current.attendanceClosesAt.toISOString(),
       earlyUntil: dto.earlyUntil ?? current.earlyUntil?.toISOString(),
       lateAfter: dto.lateAfter ?? current.lateAfter.toISOString(),
     });
-    return this.repository.update(eventId, admin.churchId, dto, admin.id);
+    return this.repository.update(
+      eventId,
+      admin.churchId,
+      normalizedDto,
+      admin.id,
+    );
   }
 
   async cancel(eventId: string, dto: CancelEventDto, admin: AdminPrincipal) {

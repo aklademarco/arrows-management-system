@@ -31,3 +31,60 @@ describe('EventsService event filters', () => {
     ).toThrow('The event filter end date cannot precede its start date.');
   });
 });
+
+describe('EventsService Sunday attendance windows', () => {
+  it('opens a Sunday event at midnight and closes it when church ends', async () => {
+    const create = jest.fn().mockResolvedValue({ id: 'event-id' });
+    const service = new EventsService({
+      create,
+    } as unknown as EventsRepository);
+    const dto = {
+      name: 'Sunday Service',
+      eventType: 'SUNDAY_SERVICE',
+      startsAt: '2026-09-06T08:40:00.000Z',
+      endsAt: '2026-09-06T12:00:00.000Z',
+      attendanceOpensAt: '2026-09-06T08:10:00.000Z',
+      attendanceClosesAt: '2026-09-06T12:30:00.000Z',
+      earlyUntil: '2026-09-06T08:40:00.000Z',
+      lateAfter: '2026-09-06T08:50:00.000Z',
+      latitude: 5.6,
+      longitude: -0.2,
+      geofenceRadiusMeters: 200,
+      maximumAccuracyMeters: 50,
+    };
+
+    await service.create(dto, admin);
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attendanceOpensAt: '2026-09-06T00:00:00.000Z',
+        attendanceClosesAt: '2026-09-06T12:00:00.000Z',
+      }),
+      admin,
+    );
+  });
+
+  it('keeps the configured window for a non-Sunday event', async () => {
+    const create = jest.fn().mockResolvedValue({ id: 'event-id' });
+    const service = new EventsService({
+      create,
+    } as unknown as EventsRepository);
+    const dto = {
+      name: 'Prayer Meeting',
+      eventType: 'MEETING',
+      startsAt: '2026-09-09T18:00:00.000Z',
+      endsAt: '2026-09-09T20:00:00.000Z',
+      attendanceOpensAt: '2026-09-09T17:30:00.000Z',
+      attendanceClosesAt: '2026-09-09T20:00:00.000Z',
+      lateAfter: '2026-09-09T18:10:00.000Z',
+      latitude: 5.6,
+      longitude: -0.2,
+      geofenceRadiusMeters: 200,
+      maximumAccuracyMeters: 50,
+    };
+
+    await service.create(dto, admin);
+
+    expect(create).toHaveBeenCalledWith(dto, admin);
+  });
+});
