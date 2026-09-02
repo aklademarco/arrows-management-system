@@ -71,7 +71,8 @@ export default async function MemberPage() {
             </p>
           </div>
           <Link
-            className="hidden items-center gap-3 rounded-2xl border border-purple-100 bg-white p-2 pr-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:flex"
+            aria-label="Open your profile"
+            className="hidden rounded-full transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-200 sm:block"
             href="/member/profile"
           >
             <ProfileAvatar
@@ -79,12 +80,6 @@ export default async function MemberPage() {
               name={memberName}
               size="md"
             />
-            <span>
-              <span className="block text-sm font-extrabold">{memberName}</span>
-              <span className="block text-xs font-semibold capitalize text-slate-400">
-                {member.membershipStatus.toLowerCase()} member
-              </span>
-            </span>
           </Link>
         </header>
 
