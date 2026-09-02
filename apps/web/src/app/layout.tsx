@@ -38,8 +38,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html
+      lang="en"
+      className="h-full antialiased"
+      data-theme="light"
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=matchMedia("(prefers-color-scheme: dark)"),s=function(e){document.documentElement.dataset.theme=e.matches?"dark":"light"};s(m);m.addEventListener("change",s)}catch(e){}})()`,
+          }}
+        />
+      </head>
+      <body className="app-shell min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

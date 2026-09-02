@@ -23,7 +23,7 @@ export default async function MemberLayout({
     redirect("/leader");
   const memberName = `${member.firstName} ${member.lastName}`;
   return (
-    <div className="min-h-screen bg-[#f8f7fb] text-slate-950">
+    <div className="member-shell min-h-screen bg-[#f8f7fb] text-slate-950">
       <header className="sticky top-0 z-20 border-b border-purple-100/80 bg-[#f8f7fb]/90 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-5 py-3">
           <Link className="flex items-center gap-2" href="/member">
