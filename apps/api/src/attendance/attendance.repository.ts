@@ -55,32 +55,17 @@ export class AttendanceRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
   private async ensureRecurringEvents(churchId: string, now: Date) {
-    const [templates, [eventDefaults]] = await Promise.all([
-      this.database
-        .select()
-        .from(recurringServiceTemplates)
-        .where(
-          and(
-            eq(recurringServiceTemplates.churchId, churchId),
-            eq(recurringServiceTemplates.isActive, true),
-          ),
-        )
-        .orderBy(desc(recurringServiceTemplates.priority)),
-      this.database
-        .select({
-          createdBy: events.createdBy,
-          locationName: events.locationName,
-          latitude: events.latitude,
-          longitude: events.longitude,
-          geofenceRadiusMeters: events.geofenceRadiusMeters,
-          maximumAccuracyMeters: events.maximumAccuracyMeters,
-        })
-        .from(events)
-        .where(eq(events.churchId, churchId))
-        .orderBy(desc(events.startsAt))
-        .limit(1),
-    ]);
-    if (!templates.length || !eventDefaults) return;
+    const templates = await this.database
+      .select()
+      .from(recurringServiceTemplates)
+      .where(
+        and(
+          eq(recurringServiceTemplates.churchId, churchId),
+          eq(recurringServiceTemplates.isActive, true),
+        ),
+      )
+      .orderBy(desc(recurringServiceTemplates.priority));
+    if (!templates.length) return;
 
     const today = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
@@ -116,6 +101,13 @@ export class AttendanceRepository {
           : candidate.recurrenceRule === 'EVERY_SUNDAY',
       );
       if (!template) continue;
+      if (
+        template.latitude === null ||
+        template.longitude === null ||
+        template.geofenceRadiusMeters === null ||
+        template.createdBy === null
+      )
+        continue;
       const [hours, minutes] = template.startsAtLocal.split(':').map(Number);
       const startsAt = new Date(serviceDate);
       startsAt.setUTCHours(hours, minutes, 0, 0);
@@ -139,13 +131,13 @@ export class AttendanceRepository {
           attendanceClosesAt: attendanceWindow?.closesAt ?? endsAt,
           earlyUntil: startsAt,
           lateAfter,
-          locationName: eventDefaults.locationName,
-          latitude: eventDefaults.latitude,
-          longitude: eventDefaults.longitude,
-          geofenceRadiusMeters: eventDefaults.geofenceRadiusMeters,
-          maximumAccuracyMeters: eventDefaults.maximumAccuracyMeters,
+          locationName: template.locationName,
+          latitude: template.latitude,
+          longitude: template.longitude,
+          geofenceRadiusMeters: template.geofenceRadiusMeters,
+          maximumAccuracyMeters: template.maximumAccuracyMeters,
           status: 'SCHEDULED',
-          createdBy: eventDefaults.createdBy,
+          createdBy: template.createdBy,
         })
         .onConflictDoNothing();
       occupiedDates.add(dateKey);

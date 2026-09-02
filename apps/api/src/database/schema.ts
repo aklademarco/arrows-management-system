@@ -438,15 +438,13 @@ export const recurringServiceTemplates = pgTable(
     // template is now the single source of truth for where/how a
     // recurring service's geofence is configured.
     locationName: varchar('location_name', { length: 180 }),
-    latitude: numeric('latitude', { precision: 9, scale: 6 }).notNull(),
-    longitude: numeric('longitude', { precision: 9, scale: 6 }).notNull(),
-    geofenceRadiusMeters: integer('geofence_radius_meters').notNull(),
+    latitude: numeric('latitude', { precision: 9, scale: 6 }),
+    longitude: numeric('longitude', { precision: 9, scale: 6 }),
+    geofenceRadiusMeters: integer('geofence_radius_meters'),
     maximumAccuracyMeters: integer('maximum_accuracy_meters')
       .notNull()
       .default(50),
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id),
+    createdBy: uuid('created_by').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
