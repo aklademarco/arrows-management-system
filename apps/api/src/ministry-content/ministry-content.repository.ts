@@ -67,6 +67,7 @@ export class MinistryContentRepository {
           and(
             eq(memberProfiles.userId, userId),
             eq(departments.churchId, churchId),
+            eq(departments.isActive, true),
             sql`lower(${departments.name}) like '%publicity%'`,
             isNull(departmentLeaders.revokedAt),
             lte(departmentLeaders.startsAt, today),

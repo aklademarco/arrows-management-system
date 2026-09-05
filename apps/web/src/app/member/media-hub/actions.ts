@@ -20,6 +20,23 @@ export async function sendPublicityFlyer(input: z.infer<typeof flyerSchema>) {
   const cookieStore = await cookies();
   const token = cookieStore.get("acms_leader_session")?.value ?? cookieStore.get("acms_member_session")?.value;
   if (!token) redirect("/login");
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  // A cookie's presence is not proof of access. Check the current API-backed
+  // permission before signing or sending anything to Cloudinary.
+  const accessResponse = await fetch(`${apiUrl}/ministry-content`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (accessResponse.status === 401 || accessResponse.status === 403) redirect("/login");
+  if (!accessResponse.ok) throw new Error("Unable to verify your flyer upload permissions. Try again shortly.");
+  const access = z.object({
+    success: z.literal(true),
+    data: z.object({
+      canSubmitFlyer: z.literal(true),
+      mediaDepartment: z.object({ id: z.uuid() }),
+    }),
+  }).safeParse(await accessResponse.json().catch(() => null));
+  if (!access.success) throw new Error("An active Publicity leadership assignment and Media department are required to send flyers.");
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
   const apiKey = process.env.CLOUDINARY_API_KEY;
   const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -35,7 +52,6 @@ export async function sendPublicityFlyer(input: z.infer<typeof flyerSchema>) {
   const upload = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: form });
   const uploaded = (await upload.json().catch(() => null)) as { secure_url?: string; public_id?: string; error?: { message?: string } } | null;
   if (!upload.ok || !uploaded?.secure_url || !uploaded.public_id) throw new Error(uploaded?.error?.message ?? "Flyer could not be uploaded.");
-  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
   const response = await fetch(`${apiUrl}/ministry-content/publicity-flyers`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
