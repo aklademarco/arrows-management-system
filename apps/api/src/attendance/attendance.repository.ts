@@ -54,7 +54,7 @@ function isUniqueViolation(error: unknown): boolean {
 export class AttendanceRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  private async ensureRecurringEvents(churchId: string, now: Date) {
+  async ensureRecurringEvents(churchId: string, now: Date) {
     const templates = await this.database
       .select()
       .from(recurringServiceTemplates)
@@ -142,6 +142,35 @@ export class AttendanceRepository {
         .onConflictDoNothing();
       occupiedDates.add(dateKey);
     }
+  }
+
+  async materializeRecurringEvents(now: Date) {
+    const churches = await this.database
+      .selectDistinct({ churchId: recurringServiceTemplates.churchId })
+      .from(recurringServiceTemplates)
+      .where(eq(recurringServiceTemplates.isActive, true));
+    for (const church of churches)
+      await this.ensureRecurringEvents(church.churchId, now);
+    return churches.length;
+  }
+
+  dueEventsForFinalization(now: Date) {
+    return this.database
+      .select({
+        id: events.id,
+        churchId: events.churchId,
+        createdBy: events.createdBy,
+      })
+      .from(events)
+      .where(
+        and(
+          inArray(events.status, ['SCHEDULED', 'ACTIVE']),
+          lte(events.attendanceClosesAt, now),
+          isNull(events.attendanceFinalizedAt),
+        ),
+      )
+      .orderBy(asc(events.attendanceClosesAt))
+      .limit(100);
   }
 
   async listActiveEvents(userId: string, churchId: string, now: Date) {
