@@ -11,6 +11,35 @@ describe('LeadershipMessagesService', () => {
   };
   const pastor = { ...leader, roles: ['PASTOR'] };
 
+  it('rejects a member without a leadership role', async () => {
+    const repository = {
+      activeLedDepartments: jest.fn().mockResolvedValue([
+        { id: '11111111-1111-4111-8111-111111111111', name: 'Choir' },
+      ]),
+    };
+    const service = new LeadershipMessagesService(repository as never);
+
+    await expect(
+      service.composeContext({ ...leader, roles: ['MEMBER'] }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(repository.activeLedDepartments).not.toHaveBeenCalled();
+  });
+
+  it('does not grant department scope to a pastor without the department leader role', async () => {
+    const repository = {
+      activeLedDepartments: jest.fn().mockResolvedValue([
+        { id: '11111111-1111-4111-8111-111111111111', name: 'Choir' },
+      ]),
+    };
+    const service = new LeadershipMessagesService(repository as never);
+
+    await expect(service.composeContext(pastor)).resolves.toMatchObject({
+      canMessageChurch: true,
+      departments: [],
+    });
+    expect(repository.activeLedDepartments).not.toHaveBeenCalled();
+  });
+
   it('opens the message workspace for a leader awaiting a department assignment', async () => {
     const repository = {
       activeLedDepartments: jest.fn().mockResolvedValue([]),

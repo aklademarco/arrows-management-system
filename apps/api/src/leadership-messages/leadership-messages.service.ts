@@ -16,11 +16,15 @@ export class LeadershipMessagesService {
   constructor(private readonly repository: LeadershipMessagesRepository) {}
 
   async composeContext(user: AuthenticatedPrincipal) {
-    const departments = await this.repository.activeLedDepartments(
-      user.id,
-      user.churchId,
-    );
     const canMessageChurch = user.roles.includes('PASTOR');
+    const canMessageDepartments = user.roles.includes('DEPARTMENT_LEADER');
+    if (!canMessageChurch && !canMessageDepartments)
+      throw new ForbiddenException(
+        'A pastor or department leader role is required to use messaging.',
+      );
+    const departments = canMessageDepartments
+      ? await this.repository.activeLedDepartments(user.id, user.churchId)
+      : [];
     return {
       canMessageChurch,
       departments,
