@@ -9,17 +9,14 @@ export function MemberStreak({
   longest,
   compact = false,
 }: MemberStreakProps) {
-  const active = current > 0;
+  if (current <= 0) return null;
   return (
     <span
       aria-label={`${current} event attendance streak${longest !== undefined ? `; longest streak ${longest}` : ""}`}
-      className={`inline-flex items-center rounded-2xl border font-black shadow-sm ${compact ? "gap-1.5 px-2.5 py-1.5 text-xs" : "gap-2 px-3 py-2 text-sm"} ${active ? "border-amber-200 bg-[#fffc00] text-[#251900] shadow-[0_6px_18px_rgba(255,187,0,0.18)]" : "border-slate-200 bg-slate-100 text-slate-500"}`}
+      className={`inline-flex items-center rounded-2xl border border-amber-200 bg-[#fffc00] font-black text-[#251900] shadow-sm shadow-[0_6px_18px_rgba(255,187,0,0.18)] ${compact ? "gap-1.5 px-2.5 py-1.5 text-xs" : "gap-2 px-3 py-2 text-sm"}`}
       title={longest !== undefined ? `Longest streak: ${longest}` : undefined}
     >
-      <span
-        aria-hidden="true"
-        className={active ? "drop-shadow-sm" : "grayscale"}
-      >
+      <span aria-hidden="true" className="drop-shadow-sm">
         🔥
       </span>
       <span>{current}</span>

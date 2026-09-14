@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, desc, eq, gte, isNull, lt, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   attendanceRecords,
@@ -74,7 +74,31 @@ export class LeaderboardsRepository {
         ),
       )
       .groupBy(leaderboardEntries.memberId);
-    return { rows, points };
+    const memberIds = [...new Set(rows.map((row) => row.memberId))];
+    const streakRows = memberIds.length
+      ? await this.database
+          .select({
+            memberId: memberProfiles.id,
+            eventStartsAt: events.startsAt,
+            status: attendanceRecords.status,
+          })
+          .from(attendanceRecords)
+          .innerJoin(events, eq(events.id, attendanceRecords.eventId))
+          .innerJoin(
+            memberProfiles,
+            eq(memberProfiles.id, attendanceRecords.memberId),
+          )
+          .innerJoin(users, eq(users.id, memberProfiles.userId))
+          .where(
+            and(
+              eq(users.churchId, input.churchId),
+              eq(events.status, 'COMPLETED'),
+              inArray(memberProfiles.id, memberIds),
+            ),
+          )
+          .orderBy(asc(events.startsAt))
+      : [];
+    return { rows, points, streakRows };
   }
 
   departments(input: { churchId: string; startsAt: Date; endsAt: Date }) {

@@ -42,7 +42,7 @@ export class LeaderboardsService {
 
   async individual(query: LeaderboardQueryDto, user: AuthenticatedPrincipal) {
     const { start, end } = periodRange(query.period, query.date);
-    const { rows, points } = await this.repository.individual({
+    const { rows, points, streakRows } = await this.repository.individual({
       churchId: user.churchId,
       startsAt: start,
       endsAt: end,
@@ -75,18 +75,21 @@ export class LeaderboardsService {
         punctualityRate === null
           ? attendanceRate
           : attendanceRate * 0.7 + punctualityRate * 0.3;
+      const streakHistory = (streakRows ?? rows).filter(
+        (row) => row.memberId === memberId,
+      );
       let current = 0,
         longest = 0,
         run = 0;
-      for (const row of history) {
+      for (const row of streakHistory) {
         if (row.status === 'EXCUSED') continue;
         if (attendedStatuses.has(row.status)) {
           run += 1;
           longest = Math.max(longest, run);
         } else run = 0;
       }
-      for (let index = history.length - 1; index >= 0; index -= 1) {
-        const status = history[index].status;
+      for (let index = streakHistory.length - 1; index >= 0; index -= 1) {
+        const status = streakHistory[index].status;
         if (status === 'EXCUSED') continue;
         if (attendedStatuses.has(status)) current += 1;
         else break;

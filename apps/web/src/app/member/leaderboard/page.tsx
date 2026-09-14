@@ -83,9 +83,11 @@ export default async function LeaderboardPage() {
               >
                 <div className="relative shrink-0">
                   <ProfileAvatar imageUrl={item.profilePhotoUrl} name={item.displayName} size="lg" />
-                  <span aria-label={`${item.currentAttendanceStreak} attendance streak`} className="absolute -bottom-1 -right-2 inline-flex h-6 min-w-7 items-center justify-center gap-0.5 rounded-full border-2 border-white bg-purple-100 px-1 text-[10px] font-black text-[#6b21a8]">
-                    <span aria-hidden="true">🔥</span>{item.currentAttendanceStreak}
-                  </span>
+                  {item.currentAttendanceStreak > 0 ? (
+                    <span aria-label={`${item.currentAttendanceStreak} attendance streak`} className="absolute -bottom-1 -right-2 inline-flex h-6 min-w-7 items-center justify-center gap-0.5 rounded-full border-2 border-white bg-purple-100 px-1 text-[10px] font-black text-[#6b21a8]">
+                      <span aria-hidden="true">🔥</span>{item.currentAttendanceStreak}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-base font-extrabold">{item.displayName}</h2>

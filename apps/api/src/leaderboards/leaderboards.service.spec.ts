@@ -70,6 +70,71 @@ describe('LeaderboardsService', () => {
     expect(result.items[0]).toMatchObject({ rank: null, qualified: false });
   });
 
+  it('continues a streak across leaderboard period boundaries', async () => {
+    const repository = {
+      individual: jest.fn().mockResolvedValue({
+        rows: [
+          {
+            memberId: 'one',
+            firstName: 'Ama',
+            lastName: 'Mensah',
+            status: 'LATE',
+            punctualityStatus: 'LATE',
+          },
+        ],
+        points: [],
+        streakRows: [
+          { memberId: 'one', status: 'ON_TIME' },
+          { memberId: 'one', status: 'EARLY' },
+          { memberId: 'one', status: 'EXCUSED' },
+          { memberId: 'one', status: 'LATE' },
+        ],
+      }),
+    } as unknown as LeaderboardsRepository;
+    const service = new LeaderboardsService(repository);
+    const result = await service.individual(
+      { period: 'MONTHLY', date: '2026-09-15', limit: 50 },
+      { id: 'user', churchId: 'church', email: 'a@b.com', roles: ['MEMBER'] },
+    );
+
+    expect(result.items[0]).toMatchObject({
+      currentAttendanceStreak: 3,
+      longestAttendanceStreak: 3,
+    });
+  });
+
+  it('removes the active streak after an absence', async () => {
+    const repository = {
+      individual: jest.fn().mockResolvedValue({
+        rows: [
+          {
+            memberId: 'one',
+            firstName: 'Ama',
+            lastName: 'Mensah',
+            status: 'ABSENT',
+            punctualityStatus: null,
+          },
+        ],
+        points: [],
+        streakRows: [
+          { memberId: 'one', status: 'ON_TIME' },
+          { memberId: 'one', status: 'EARLY' },
+          { memberId: 'one', status: 'ABSENT' },
+        ],
+      }),
+    } as unknown as LeaderboardsRepository;
+    const service = new LeaderboardsService(repository);
+    const result = await service.individual(
+      { period: 'MONTHLY', date: '2026-09-15', limit: 50 },
+      { id: 'user', churchId: 'church', email: 'a@b.com', roles: ['MEMBER'] },
+    );
+
+    expect(result.items[0]).toMatchObject({
+      currentAttendanceStreak: 0,
+      longestAttendanceStreak: 2,
+    });
+  });
+
   it('ranks departments from expected member slots and punctuality', async () => {
     const repository = {
       departments: jest.fn().mockResolvedValue([
