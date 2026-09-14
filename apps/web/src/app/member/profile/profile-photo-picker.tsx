@@ -107,7 +107,7 @@ export function ProfilePhotoPicker({
         )}
         <label
           aria-label="Change profile photo"
-          className="absolute bottom-0 right-0 grid size-9 cursor-pointer place-items-center rounded-full border-2 border-white bg-[#6b21a8] text-white shadow-md transition hover:scale-105 hover:bg-[#8b3bc0]"
+          className="absolute bottom-0 right-0 grid size-9 cursor-pointer place-items-center rounded-full border-2 border-white bg-[#52336c] text-white shadow-md transition hover:scale-105 hover:bg-[#8b3bc0]"
           title="Change profile photo"
         >
           <FiCamera aria-hidden="true" />
