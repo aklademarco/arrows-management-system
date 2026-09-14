@@ -107,13 +107,13 @@ export default async function MemberDirectoryPage({
         ) : (
           <ul
             aria-label="Church members"
-            className="mt-4 overflow-hidden rounded-[1.75rem] border border-purple-100 bg-white shadow-sm"
+            className="mt-4 overflow-hidden "
           >
             {directory.items.map((member) => {
               const name = `${member.firstName} ${member.lastName}`;
               return (
                 <li
-                  className="border-b border-purple-50 last:border-b-0"
+                  className="border-b border-gray-200 last:border-b-0"
                   key={member.id}
                 >
                   <Link
@@ -123,10 +123,10 @@ export default async function MemberDirectoryPage({
                     <ProfileAvatar
                       imageUrl={member.profilePhotoUrl}
                       name={name}
-                      size="lg"
+                      size="sm"
                     />
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-base font-medium capitalize tracking-tight text-slate-950 sm:text-lg">
+                      <h2 className="truncate text-base font-sm capitalize tracking-tight text-slate-600 sm:text-sm">
                         {name}
                       </h2>
                       {member.otherNames ? (
@@ -137,7 +137,7 @@ export default async function MemberDirectoryPage({
                     </div>
                     <FiChevronRight
                       aria-hidden="true"
-                      className="shrink-0 text-xl text-slate-300"
+                      className="shrink-0 text-s text-slate-300"
                     />
                     <span className="sr-only">View {name}&apos;s profile</span>
                   </Link>
