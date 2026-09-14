@@ -12,6 +12,7 @@ import { getMemberProfile } from "../member-api";
 import type { MemberProfile } from "../member-types";
 import { updateOwnProfile } from "../profile-actions";
 import { ProfilePhotoPicker } from "./profile-photo-picker";
+import { ThemeSetting } from "./theme-setting";
 
 const fieldClass =
   "min-h-14 w-full border-0 border-b border-slate-200 bg-transparent px-0 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 focus:border-[#8b3bc0] focus:ring-0";
@@ -75,6 +76,8 @@ export default async function MemberProfilePage({
           <ProfileLink href="/member/media-hub" icon={<FiImage />} label="Media hub" />
           <ProfileLink href="/member/notifications" icon={<FiBell />} label="Notifications" />
         </nav>
+
+        <ThemeSetting />
 
         <form
           action={updateOwnProfile}
