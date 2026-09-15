@@ -41,7 +41,7 @@ export default async function LeaderboardPage() {
             Attendance leaderboard
           </h1>
           <p className="mt-2 text-sm font-medium text-slate-500">
-            Rank is based on attendance and punctuality rates—not points alone.
+            Rank is based on attendance and punctuality rates, not points alone.
           </p>
         </header>
         <nav
@@ -66,7 +66,7 @@ export default async function LeaderboardPage() {
           {leaderboard.minimumQualifyingEvents} expected events to rank
         </p>
         {leaderboard.items.length === 0 ? (
-          <section className="mt-7 grid min-h-64 place-items-center rounded-[2rem] border border-dashed border-purple-200 bg-white text-center">
+          <section className="mt-7 grid min-h-64 place-items-center rounded-3xl border border-dashed border-purple-200 bg-white text-center">
             <div>
               <FiAward className="mx-auto text-5xl text-purple-300" />
               <h2 className="mt-4 text-xl font-black">
@@ -82,7 +82,7 @@ export default async function LeaderboardPage() {
                 key={item.memberId}
               >
                 <div className="relative shrink-0">
-                  <ProfileAvatar imageUrl={item.profilePhotoUrl} name={item.displayName} size="lg" />
+                  <ProfileAvatar imageUrl={item.profilePhotoUrl} name={item.displayName} size="sm" />
                   {item.currentAttendanceStreak > 0 ? (
                     <span aria-label={`${item.currentAttendanceStreak} attendance streak`} className="absolute -bottom-1 -right-2 inline-flex h-6 min-w-7 items-center justify-center gap-0.5 rounded-full border-2 border-white bg-purple-100 px-1 text-[10px] font-black text-[#6b21a8]">
                       <span aria-hidden="true">🔥</span>{item.currentAttendanceStreak}
