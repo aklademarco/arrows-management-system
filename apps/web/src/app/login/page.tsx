@@ -20,13 +20,13 @@ export default function MemberLoginPage() {
               </div>
               <div className="mt-7 border-t border-slate-100 pt-6 text-center sm:text-left">
                 <Link
-                  className="mt-4 inline-flex text-sm  text-slate-500 hover:text-[#6b21a8]"
+                  className="mt-4 inline-flex text-sm underline  text-slate-500 hover:text-[#6b21a8]"
                   href="/register"
                 >
                   New Here? Create member account
                 </Link>
                 <Link
-                  className="mt-4 inline-flex text-sm  text-slate-500 hover:text-[#6b21a8]"
+                  className="mt-4 inline-flex text-sm underline text-slate-500 hover:text-[#6b21a8]"
                   href="/account-status"
                 >
                   Already registered? Check approval status...

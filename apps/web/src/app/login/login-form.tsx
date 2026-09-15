@@ -14,9 +14,9 @@ export default function MemberLoginForm() {
   );
   const [passwordVisible, setPasswordVisible] = useState(false);
   return (
-    <form action={formAction} className="mt-8 grid gap-5" noValidate>
+    <form action={formAction} className="mt-4 grid gap-5" noValidate>
       <label className="grid gap-2 text-sm font-extrabold text-slate-800">
-        Email address
+        <span className="flex items-center justify-between">Email address</span>
         <span className="relative">
           <FiMail
             aria-hidden="true"
@@ -25,7 +25,7 @@ export default function MemberLoginForm() {
           <input
             aria-invalid={Boolean(state.errors?.email)}
             autoComplete="email"
-            className="h-13 w-full rounded-2xl border border-slate-200 bg-[#fbfafc] pl-11 pr-4 text-base outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
+            className="h-12 sm:h-13 w-full min-w-0 rounded-2xl border border-slate-200 bg-[#fbfafc] pl-8 pr-4 text-slate-600 placeholder:text-slate-400 text-base sm:text-base outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
             name="email"
             required
             type="email"
@@ -55,7 +55,7 @@ export default function MemberLoginForm() {
           <input
             aria-invalid={Boolean(state.errors?.password)}
             autoComplete="current-password"
-            className="h-13 w-full rounded-2xl border border-slate-200 bg-[#fbfafc] pl-11 pr-12 text-base outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
+            className="h-12 sm:h-13 w-full min-w-0 rounded-2xl border border-slate-200 bg-[#fbfafc] pl-8 pr-12 text-slate-600 placeholder:text-slate-400 text-base sm:text-base outline-none transition focus:border-[#6b21a8] focus:bg-white focus:ring-4 focus:ring-purple-100"
             name="password"
             required
             type={passwordVisible ? "text" : "password"}
@@ -88,7 +88,7 @@ export default function MemberLoginForm() {
         </p>
       ) : null}
       <button
-        className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl bg-[#6b21a8] px-6 font-extrabold text-white shadow-[0_6px_0_#4c1677] transition hover:bg-[#7e22ce] active:translate-y-1 active:shadow-[0_2px_0_#4c1677] disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none"
+        className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl bg-[#492666] px-6 font-extrabold text-white shadow-[0_6px_0_#4c1677] transition hover:bg-[#7e22ce] active:translate-y-1 active:shadow-[0_2px_0_#4c1677] disabled:translate-y-0 disabled:opacity-60 disabled:shadow-none"
         disabled={pending}
         type="submit"
       >
