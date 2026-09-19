@@ -161,8 +161,8 @@ pnpm dev:api
 
 The web application runs at `http://localhost:3000`. The API runs at
 `http://localhost:4000`. Database connectivity can be checked at
-`http://localhost:4000/api/v1/health`. Development emails are captured by
-Mailpit and can be opened at `http://localhost:8025`.
+`http://localhost:4000/api/v1/health`. All transactional email is delivered
+through Resend using `RESEND_API_KEY` and `EMAIL_FROM`.
 
 Useful database commands:
 
@@ -171,8 +171,6 @@ pnpm db:start
 pnpm db:stop
 pnpm db:logs
 pnpm db:migrate
-pnpm mail:start
-pnpm mail:stop
 pnpm services:start
 ```
 

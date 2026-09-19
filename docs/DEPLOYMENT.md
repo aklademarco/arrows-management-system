@@ -443,10 +443,9 @@ API_URL=https://acms.example.com/api/v1
 # Auth
 JWT_ACCESS_SECRET=<openssl rand -base64 48>   # ≥32 chars, rotate quarterly
 
-# Mail (provider SMTP, e.g. Resend/Postmark relay)
-SMTP_HOST=<relay-host>
-SMTP_PORT=587
-SMTP_FROM=Arrows CMS <no-reply@your-domain.org>
+# Transactional email (Resend)
+RESEND_API_KEY=<re_your-api-key>
+EMAIL_FROM=Arrows CMS <no-reply@your-verified-domain.org>
 
 # Media
 CLOUDINARY_CLOUD_NAME=...

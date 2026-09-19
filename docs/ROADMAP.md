@@ -556,7 +556,7 @@ Implement secure registration and session management.
 
 ### Email Verification
 
-- [x] Local Mailpit email inbox.
+- [x] Resend transactional email delivery.
 - [x] Provider-independent email-delivery interface.
 - [x] Send a 24-hour verification link after registration.
 - [x] Generic verification-email request endpoint.

@@ -103,7 +103,7 @@ describe('AttendanceReportDeliveryService', () => {
       sendPasswordResetEmail: jest.fn(),
       sendAttendanceReportEmail: jest
         .fn()
-        .mockRejectedValue(new Error('SMTP unavailable')),
+        .mockRejectedValue(new Error('Resend unavailable')),
     } satisfies EmailDelivery;
     const service = new AttendanceReportDeliveryService(repository, pdf, email);
 
@@ -112,7 +112,7 @@ describe('AttendanceReportDeliveryService', () => {
     expect(markFailed).toHaveBeenCalledWith(
       'delivery-1',
       2,
-      'SMTP unavailable',
+      'Resend unavailable',
     );
     expect(markSent).not.toHaveBeenCalled();
   });

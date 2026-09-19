@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useActionState } from "react";
 import {
   FiCheckCircle,
-  FiClock,
+  FiArrowLeftCircle,
   FiLock,
   FiMail,
+  FiClock,
   FiXCircle,
 } from "react-icons/fi";
 import { checkAccountStatus, type AccountStatusState } from "./actions";
@@ -21,16 +22,9 @@ export function StatusForm() {
   if (state.success) return <StatusResult state={state} />;
   return (
     <>
-      <span className="grid size-14 place-items-center rounded-2xl bg-purple-100 text-2xl text-[#6b21a8]">
-        <FiClock />
-      </span>
-      <h1 className="mt-5 text-3xl font-black tracking-[-0.04em]">
-        Check your progress
+      <h1 className="mt-5 text-xl font-bold tracking-[-0.04em]">
+        Check Your Approval Status
       </h1>
-      <p className="mt-2 leading-7 text-slate-500">
-        Use your registration details to see where your account is in the
-        approval journey.
-      </p>
       <form action={action} className="mt-7 grid gap-4" noValidate>
         <Field label="Email address" name="email" type="email" />
         <Field label="Password" name="password" type="password" />
@@ -50,10 +44,14 @@ export function StatusForm() {
         </button>
       </form>
       <Link
-        className="mt-6 inline-flex text-sm font-extrabold text-[#6b21a8]"
+        className="mt-6 flex gap-2 text-sm underline  text-[#6b21a8]"
         href="/login"
       >
-        ← Back to sign in
+        
+        <span>
+          <FiArrowLeftCircle size={18}/>
+        </span>{" "}
+        Back to sign in
       </Link>
     </>
   );

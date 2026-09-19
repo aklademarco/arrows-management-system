@@ -87,9 +87,7 @@ export function RegistrationForm() {
         <div className="mt-8 rounded-2xl border border-[#d8b4fe] bg-[#faf5ff] p-6 text-[#240046]">
           <p className="font-bold">What happens next?</p>
           <p className="mt-2 leading-7">
-            {state.message} During local development, open Mailpit at{" "}
-            <span className="font-semibold">localhost:8025</span> to view the
-            message.
+            {state.message} Open your email inbox to continue.
           </p>
         </div>
         <div className="mt-8 flex flex-wrap gap-3">

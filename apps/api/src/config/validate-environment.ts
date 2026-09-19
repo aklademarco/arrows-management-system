@@ -3,7 +3,8 @@ const PRODUCTION_REQUIRED = [
   'CORS_ORIGIN',
   'WEB_URL',
   'JWT_ACCESS_SECRET',
-  'SMTP_FROM',
+  'RESEND_API_KEY',
+  'EMAIL_FROM',
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET',
@@ -32,12 +33,6 @@ export function validateEnvironment(
     if (!value?.startsWith('https://')) {
       throw new Error(`${name} must use HTTPS in production.`);
     }
-  }
-
-  if (!environment.RESEND_API_KEY?.trim() && !environment.SMTP_HOST?.trim()) {
-    throw new Error(
-      'Email delivery requires RESEND_API_KEY or SMTP_HOST to be configured.',
-    );
   }
 
   if (environment.SMS_ENABLED === 'true') {

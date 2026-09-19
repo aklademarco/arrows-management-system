@@ -18,7 +18,7 @@
 - [ ] Set `NODE_ENV=production` on the API and web services.
 - [ ] Configure HTTPS `WEB_URL` and `CORS_ORIGIN`.
 - [ ] Generate a production JWT secret of at least 32 random characters.
-- [ ] Configure production SMTP and verify registration and password-reset email delivery.
+- [ ] Configure Resend, verify the sender domain, and test registration, password-reset, and attendance-report email delivery.
 - [ ] Configure matching Cloudinary cloud name, API key, and secret.
 - [ ] Provision PostgreSQL and run every migration through `0017_ministry_communications.sql`.
 - [ ] Seed the production church, roles, and first super administrator.

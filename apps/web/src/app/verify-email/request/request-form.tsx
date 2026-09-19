@@ -27,9 +27,6 @@ export function RequestVerificationForm() {
           Check your inbox
         </h1>
         <p className="mt-3 leading-7 text-slate-600">{state.message}</p>
-        <p className="mt-2 leading-7 text-slate-600">
-          During local development, open Mailpit at localhost:8025.
-        </p>
         <Link
           className="mt-8 inline-flex font-semibold text-[#6b21a8] underline-offset-4 hover:underline"
           href="/"

@@ -23,7 +23,7 @@ export class ResendEmailDelivery implements EmailDelivery {
   constructor(config: ConfigService) {
     this.apiKey = config.get<string>('RESEND_API_KEY') ?? '';
     this.from =
-      config.get<string>('SMTP_FROM') ??
+      config.get<string>('EMAIL_FROM') ??
       'Love Community Chapel Youth Ministry-Arrows <no-reply@arrows.local>';
     this.webUrl = config.get<string>('WEB_URL') ?? 'http://localhost:3000';
   }
