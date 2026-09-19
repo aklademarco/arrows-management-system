@@ -15,7 +15,13 @@ const checkInPhotos = [
   ...Array.from({ length: 51 }, (_, index) => `m${index + 110}`),
 ].map((name) => `/assets/check-in-photos/${name}.jpg`);
 
-export function CheckInHero({ children }: { children: ReactNode }) {
+export function CheckInHero({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const [photoIndex, setPhotoIndex] = useState(0);
 
   useEffect(() => {
@@ -27,7 +33,9 @@ export function CheckInHero({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <article className="relative isolate overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_rgba(76,22,119,0.3)]">
+    <article
+      className={`relative isolate overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_rgba(76,22,119,0.3)] ${className}`}
+    >
       <Image
         alt=""
         aria-hidden="true"

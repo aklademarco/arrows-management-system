@@ -877,16 +877,19 @@ Provide useful operational reporting.
 - [x] Department filtering.
 - [x] CSV export.
 - [x] Department leader report restrictions.
+- [x] Automatic post-service PDF email reports for pastors and department leaders.
+- [x] Retryable and idempotent attendance-report delivery queue.
 
 ## Deliverables
 
 - Reports API
 - CSV export
 - Report tests
+- PDF email delivery tests
 
 ## Acceptance Criteria
 
-Administrators can export accurate attendance data for a selected date range.
+Administrators can export accurate attendance data for a selected date range. Pastors and active department leaders automatically receive the correctly scoped attendance record after each finalized service.
 
 ---
 

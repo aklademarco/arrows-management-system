@@ -13,9 +13,11 @@ describe('LeadershipMessagesService', () => {
 
   it('rejects a member without a leadership role', async () => {
     const repository = {
-      activeLedDepartments: jest.fn().mockResolvedValue([
-        { id: '11111111-1111-4111-8111-111111111111', name: 'Choir' },
-      ]),
+      activeLedDepartments: jest
+        .fn()
+        .mockResolvedValue([
+          { id: '11111111-1111-4111-8111-111111111111', name: 'Choir' },
+        ]),
     };
     const service = new LeadershipMessagesService(repository as never);
 
@@ -27,9 +29,11 @@ describe('LeadershipMessagesService', () => {
 
   it('does not grant department scope to a pastor without the department leader role', async () => {
     const repository = {
-      activeLedDepartments: jest.fn().mockResolvedValue([
-        { id: '11111111-1111-4111-8111-111111111111', name: 'Choir' },
-      ]),
+      activeLedDepartments: jest
+        .fn()
+        .mockResolvedValue([
+          { id: '11111111-1111-4111-8111-111111111111', name: 'Choir' },
+        ]),
     };
     const service = new LeadershipMessagesService(repository as never);
 

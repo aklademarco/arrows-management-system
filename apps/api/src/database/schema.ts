@@ -100,6 +100,10 @@ export const smsDeliveryStatus = pgEnum('sms_delivery_status', [
   'DELIVERED',
   'FAILED',
 ]);
+export const attendanceReportDeliveryStatus = pgEnum(
+  'attendance_report_delivery_status',
+  ['QUEUED', 'SENT', 'FAILED'],
+);
 export const liturgyItemStatus = pgEnum('liturgy_item_status', [
   'PENDING',
   'ACTIVE',
@@ -374,6 +378,9 @@ export const events = pgTable(
     attendanceFinalizedBy: uuid('attendance_finalized_by').references(
       () => users.id,
     ),
+    attendanceReportsQueuedAt: timestamp('attendance_reports_queued_at', {
+      withTimezone: true,
+    }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -522,6 +529,51 @@ export const attendanceRecords = pgTable(
       table.checkedInAt,
     ),
     index('attendance_event_status_idx').on(table.eventId, table.status),
+  ],
+);
+
+export const attendanceReportDeliveries = pgTable(
+  'attendance_report_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => users.id),
+    departmentId: uuid('department_id').references(() => departments.id),
+    scopeKey: varchar('scope_key', { length: 80 }).notNull(),
+    recipientEmail: varchar('recipient_email', { length: 255 }).notNull(),
+    recipientName: varchar('recipient_name', { length: 255 }).notNull(),
+    status: attendanceReportDeliveryStatus('status')
+      .notNull()
+      .default('QUEUED'),
+    retryCount: integer('retry_count').notNull().default(0),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    failureReason: text('failure_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('attendance_report_delivery_unique').on(
+      table.eventId,
+      table.recipientUserId,
+      table.scopeKey,
+    ),
+    index('attendance_report_delivery_queue_idx').on(
+      table.status,
+      table.nextAttemptAt,
+      table.createdAt,
+    ),
   ],
 );
 

@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
+  AttendanceReportEmail,
   EmailDelivery,
   PasswordResetEmail,
   VerificationEmail,
 } from './email-delivery';
 import {
+  attendanceReportEmailBody,
   passwordResetEmailBody,
   verificationEmailBody,
 } from './email-templates';
@@ -36,9 +38,27 @@ export class ResendEmailDelivery implements EmailDelivery {
     await this.send(message.recipient, body);
   }
 
+  async sendAttendanceReportEmail(
+    message: AttendanceReportEmail,
+  ): Promise<void> {
+    const body = attendanceReportEmailBody(message);
+    await this.send(message.recipient, body, [
+      {
+        filename: message.attachment.filename,
+        content: message.attachment.content.toString('base64'),
+        content_type: 'application/pdf',
+      },
+    ]);
+  }
+
   private async send(
     recipient: string,
     body: { subject: string; text: string; html: string },
+    attachments?: Array<{
+      filename: string;
+      content: string;
+      content_type?: string;
+    }>,
   ): Promise<void> {
     if (!this.apiKey)
       throw new Error('RESEND_API_KEY is required to send email.');
@@ -55,6 +75,7 @@ export class ResendEmailDelivery implements EmailDelivery {
           subject: body.subject,
           text: body.text,
           html: body.html,
+          attachments,
         }),
         signal: AbortSignal.timeout(15_000),
       });

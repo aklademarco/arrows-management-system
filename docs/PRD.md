@@ -144,6 +144,10 @@ Responsible for attendance verification.
 - Attendance by event
 - Monthly summaries
 - CSV export
+- Automatic post-service PDF attendance reports emailed to pastors and active department leaders
+- Pastor reports cover the whole church; leader reports contain only the departments they actively lead
+- PDF reports separate present, absent, and approved-permission members and show arrival times for attendees
+- Report delivery is queued, retried, deduplicated, and audited
 
 **Ministry Collaboration and Notifications**
 

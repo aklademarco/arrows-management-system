@@ -1,4 +1,8 @@
-import type { PasswordResetEmail, VerificationEmail } from './email-delivery';
+import type {
+  AttendanceReportEmail,
+  PasswordResetEmail,
+  VerificationEmail,
+} from './email-delivery';
 
 function escapeHtml(value: string): string {
   return value.replace(
@@ -88,6 +92,42 @@ export function passwordResetEmailBody(
         </p>
         <p>This link expires in 30 minutes and can be used only once.</p>
         <p>If you did not request this, you can safely ignore this email.</p>
+      </div>
+    `,
+  };
+}
+
+export function attendanceReportEmailBody(
+  message: AttendanceReportEmail,
+): EmailBody {
+  const safeName = escapeHtml(message.recipientName);
+  const safeEvent = escapeHtml(message.eventName);
+  const safeScope = escapeHtml(message.scopeLabel);
+  return {
+    subject: `${message.eventName} attendance report — ${message.serviceDate}`,
+    text: [
+      `Hello ${message.recipientName},`,
+      '',
+      `The attendance record for ${message.eventName} (${message.serviceDate}) is attached.`,
+      `Scope: ${message.scopeLabel}`,
+      `Present: ${message.presentCount}`,
+      `Absent: ${message.absentCount}`,
+      `On permission: ${message.excusedCount}`,
+      '',
+      'Please keep this report private because it contains member information.',
+    ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1e293b">
+        <h1 style="color:#6b21a8">Attendance report</h1>
+        <p>Hello ${safeName},</p>
+        <p>The attendance record for <strong>${safeEvent}</strong> on ${escapeHtml(message.serviceDate)} is attached as a PDF.</p>
+        <p><strong>Scope:</strong> ${safeScope}</p>
+        <table style="border-collapse:collapse;margin:20px 0">
+          <tr><td style="padding:8px 16px;background:#f3e8ff"><strong>Present</strong></td><td style="padding:8px 16px">${message.presentCount}</td></tr>
+          <tr><td style="padding:8px 16px;background:#f3e8ff"><strong>Absent</strong></td><td style="padding:8px 16px">${message.absentCount}</td></tr>
+          <tr><td style="padding:8px 16px;background:#f3e8ff"><strong>On permission</strong></td><td style="padding:8px 16px">${message.excusedCount}</td></tr>
+        </table>
+        <p style="font-size:13px;color:#64748b">Please keep this report private because it contains member information.</p>
       </div>
     `,
   };

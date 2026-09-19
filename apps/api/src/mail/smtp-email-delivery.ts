@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import nodemailer, { type Transporter } from 'nodemailer';
 import type {
+  AttendanceReportEmail,
   EmailDelivery,
   PasswordResetEmail,
   VerificationEmail,
 } from './email-delivery';
 import {
+  attendanceReportEmailBody,
   passwordResetEmailBody,
   verificationEmailBody,
 } from './email-templates';
@@ -48,6 +50,26 @@ export class SmtpEmailDelivery implements EmailDelivery {
       subject: body.subject,
       text: body.text,
       html: body.html,
+    });
+  }
+
+  async sendAttendanceReportEmail(
+    message: AttendanceReportEmail,
+  ): Promise<void> {
+    const body = attendanceReportEmailBody(message);
+    await this.transporter.sendMail({
+      from: this.from,
+      to: message.recipient,
+      subject: body.subject,
+      text: body.text,
+      html: body.html,
+      attachments: [
+        {
+          filename: message.attachment.filename,
+          content: message.attachment.content,
+          contentType: 'application/pdf',
+        },
+      ],
     });
   }
 }

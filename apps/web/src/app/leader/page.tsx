@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FiArrowUpRight, FiBell, FiCalendar, FiHeart, FiSearch, FiUsers } from "react-icons/fi";
+import { CheckInHero } from "@/components/check-in-hero";
 import { getLeaderResource } from "./leader-api";
 
 type Account = {
@@ -36,13 +37,12 @@ export default async function LeaderDashboard() {
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_360px]">
         <div className="grid gap-5">
-          <section className="relative isolate min-h-64 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#5b148d] via-[#7e22ce] to-[#9d4edd] p-7 text-white sm:p-9">
-            <div className="absolute -right-20 -top-20 -z-10 size-80 rounded-full bg-white/10 blur-2xl" />
+          <CheckInHero className="min-h-64">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-200">{isPastor ? "Pastoral workspace" : "Ministry leadership"}</p>
             <h1 className="mt-8 max-w-xl text-4xl font-black tracking-[-0.05em] sm:text-5xl">Good day, {firstName}.</h1>
             <p className="mt-4 max-w-xl text-sm font-medium leading-6 text-purple-100">Care for people, guide your ministry, and stay ready for what is happening across the church.</p>
             <div className="mt-8 inline-flex rounded-full bg-white/10 px-4 py-2 text-xs font-bold text-white ring-1 ring-inset ring-white/10">{profile?.primaryDepartment?.name ?? (isPastor ? "Church-wide ministry" : "Leadership team")}</div>
-          </section>
+          </CheckInHero>
 
           <section id="care" className="grid gap-4 sm:grid-cols-3">
             <Metric icon={FiUsers} label="Ministries" value={activeDepartments.length} detail="Active church teams" />

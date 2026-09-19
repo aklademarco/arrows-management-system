@@ -493,10 +493,15 @@ The system shall provide:
 - Department comparison reports.
 - Manual attendance reports.
 - Account approval reports.
+- Automatic post-service PDF attendance reports delivered by email.
+
+After attendance finalization, the system shall queue a whole-church PDF report for every active pastor and a department-scoped PDF report for every active department leader. Reports shall list present members with arrival times, absent members, and members with an approved absence as "On permission." A pastor who also leads a department shall receive only the whole-church report for that service.
+
+Email delivery shall be asynchronous, idempotent per event, recipient, and scope, retried on failure, and recorded in the audit log. Department delivery requires both the `DEPARTMENT_LEADER` role and an active leadership assignment and membership for the service date.
 
 Cancelled events shall be excluded from normal attendance and leaderboard reports. Authorized administrative reports may include them through an explicit status filter, with preserved attendance clearly marked as non-scoring.
 
-The system shall support CSV export in the MVP. PDF and Excel export may be added later.
+The system shall support CSV export and automatic PDF email reports in the MVP. Interactive PDF and Excel exports may be added later.
 
 ### 5.15 Dashboards
 
