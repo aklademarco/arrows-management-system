@@ -32,6 +32,8 @@ export async function performCheckIn(
       details?: {
         accuracyMeters?: number;
         maximumAccuracyMeters?: number;
+        distanceMeters?: number;
+        allowedRadiusMeters?: number;
       };
       error?: { message?: string };
     };
@@ -39,6 +41,9 @@ export async function performCheckIn(
       body.details?.accuracyMeters !== undefined &&
       body.details.maximumAccuracyMeters !== undefined
         ? `Location accuracy is ${body.details.accuracyMeters.toFixed(1)} m; ${body.details.maximumAccuracyMeters} m or better is required.`
+        : body.details?.distanceMeters !== undefined &&
+            body.details.allowedRadiusMeters !== undefined
+          ? `Your phone places you ${body.details.distanceMeters.toFixed(1)} m from the saved church center. The attendance boundary is ${body.details.allowedRadiusMeters} m.`
         : body.message ?? body.error?.message ?? "Check-in could not be completed.";
     return response.ok && body.data
       ? { success: true, message: body.message ?? "Attendance recorded.", status: body.data.status, distanceMeters: body.data.distanceMeters }

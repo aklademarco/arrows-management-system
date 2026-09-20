@@ -24,15 +24,24 @@ type RecurringDefault = {
   isActive: boolean;
 };
 
+type GeofenceSettings = {
+  locationName: string;
+  latitude: number;
+  longitude: number;
+  geofenceRadiusMeters: number;
+  maximumAccuracyMeters: number;
+};
+
 export default async function EventsPage({ searchParams }: { searchParams: Promise<{ status?: string; from?: string; to?: string }> }) {
   const parameters = await searchParams;
   const query = new URLSearchParams();
   if (parameters.status) query.set("status", parameters.status);
   if (parameters.from) query.set("from", parameters.from);
   if (parameters.to) query.set("to", parameters.to);
-  const [events, recurringDefaults] = await Promise.all([
+  const [events, recurringDefaults, geofenceSettings] = await Promise.all([
     getAdminResource<Event[]>(`/events?${query.toString()}`),
     getAdminResource<RecurringDefault[]>("/events/recurring-defaults"),
+    getAdminResource<GeofenceSettings>("/events/geofence-settings"),
   ]);
   const hasFilters = query.size > 0;
 
@@ -122,7 +131,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                 Location
                 <input
                   className="h-11 rounded-lg border border-white/15 px-3 font-normal"
-                  defaultValue="Love Community Chapel compound"
+                  defaultValue={geofenceSettings.locationName}
                   name="locationName"
                 />
               </label>
@@ -179,13 +188,13 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                   required
                 />
               </label>
-              <input name="latitude" type="hidden" value="5.576584" />
-              <input name="longitude" type="hidden" value="-0.234440" />
+              <input name="latitude" type="hidden" value={geofenceSettings.latitude} />
+              <input name="longitude" type="hidden" value={geofenceSettings.longitude} />
               <label className="grid gap-1 text-sm font-bold">
                 Boundary radius (m)
                 <input
                   className="h-11 rounded-lg border border-white/15 px-3 font-normal"
-                  defaultValue="40"
+                  defaultValue={geofenceSettings.geofenceRadiusMeters}
                   min="1"
                   name="geofenceRadiusMeters"
                   type="number"
@@ -196,7 +205,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                 Maximum GPS error (m)
                 <input
                   className="h-11 rounded-lg border border-white/15 px-3 font-normal"
-                  defaultValue="50"
+                  defaultValue={geofenceSettings.maximumAccuracyMeters}
                   min="1"
                   name="maximumAccuracyMeters"
                   type="number"

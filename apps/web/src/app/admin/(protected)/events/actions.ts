@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
+
+export type EventUpdateState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
 
 export async function createEvent(formData: FormData) {
   const token = (await cookies()).get("acms_admin_session")?.value;
@@ -83,24 +88,39 @@ async function mutateEvent(
   revalidatePath("/member");
 }
 
-export async function updateEvent(formData: FormData) {
+export async function updateEvent(
+  _previousState: EventUpdateState,
+  formData: FormData,
+): Promise<EventUpdateState> {
   const eventId = String(formData.get("eventId"));
   const value = (name: string) => String(formData.get(name) ?? "").trim();
-  await mutateEvent(eventId, "PATCH", "", {
-    name: value("name"),
-    description: value("description"),
-    startsAt: new Date(value("startsAt")).toISOString(),
-    endsAt: new Date(value("endsAt")).toISOString(),
-    attendanceOpensAt: new Date(value("attendanceOpensAt")).toISOString(),
-    attendanceClosesAt: new Date(value("attendanceClosesAt")).toISOString(),
-    earlyUntil: value("earlyUntil")
-      ? new Date(value("earlyUntil")).toISOString()
-      : undefined,
-    lateAfter: new Date(value("lateAfter")).toISOString(),
-    locationName: value("locationName"),
-    geofenceRadiusMeters: Number(value("geofenceRadiusMeters")),
-    maximumAccuracyMeters: Number(value("maximumAccuracyMeters")),
-  });
+  try {
+    await mutateEvent(eventId, "PATCH", "", {
+      name: value("name"),
+      description: value("description"),
+      startsAt: new Date(value("startsAt")).toISOString(),
+      endsAt: new Date(value("endsAt")).toISOString(),
+      attendanceOpensAt: new Date(value("attendanceOpensAt")).toISOString(),
+      attendanceClosesAt: new Date(value("attendanceClosesAt")).toISOString(),
+      earlyUntil: value("earlyUntil")
+        ? new Date(value("earlyUntil")).toISOString()
+        : undefined,
+      lateAfter: new Date(value("lateAfter")).toISOString(),
+      locationName: value("locationName"),
+      geofenceRadiusMeters: Number(value("geofenceRadiusMeters")),
+      maximumAccuracyMeters: Number(value("maximumAccuracyMeters")),
+    });
+  } catch (error) {
+    unstable_rethrow(error);
+    return {
+      status: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "The event could not be updated. Try again.",
+    };
+  }
+  return { status: "success", message: "Event changes saved." };
 }
 
 export async function cancelEvent(formData: FormData) {

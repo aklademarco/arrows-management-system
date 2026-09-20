@@ -10,6 +10,7 @@ import type { UpdateEventDto } from './dto/update-event.dto';
 import { EventsRepository } from './events.repository';
 import type { ListEventsDto } from './dto/list-events.dto';
 import { sundayAttendanceWindow } from './sunday-attendance-window';
+import type { UpdateGeofenceSettingsDto } from './dto/update-geofence-settings.dto';
 
 @Injectable()
 export class EventsService {
@@ -26,6 +27,17 @@ export class EventsService {
 
   listRecurringDefaults(admin: AdminPrincipal) {
     return this.repository.listRecurringDefaults(admin.churchId);
+  }
+
+  getGeofenceSettings(admin: AdminPrincipal) {
+    return this.repository.getGeofenceSettings(admin.churchId);
+  }
+
+  updateGeofenceSettings(
+    dto: UpdateGeofenceSettingsDto,
+    admin: AdminPrincipal,
+  ) {
+    return this.repository.updateGeofenceSettings(dto, admin);
   }
 
   findById(eventId: string, admin: AdminPrincipal) {

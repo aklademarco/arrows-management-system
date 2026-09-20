@@ -5,6 +5,14 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { FiMapPin, FiZap } from "react-icons/fi";
 import type { CheckInAction, CheckInResult } from "@/lib/check-in";
 
+const MINIMUM_VERIFICATION_TIME_MS = 1500;
+
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+}
+
 export default function CheckInButton({
   eventId,
   onCheckIn,
@@ -20,6 +28,7 @@ export default function CheckInButton({
 
   const captureAndCheckIn = useCallback(
     (automatic = false) => {
+      const verificationStartedAt = Date.now();
       if (!("geolocation" in navigator)) {
         setResult({
           success: false,
@@ -33,12 +42,16 @@ export default function CheckInButton({
         ({ coords }) => {
           setLocating(false);
           startTransition(async () => {
-            const response = await onCheckIn(
-              eventId,
-              coords.latitude,
-              coords.longitude,
-              coords.accuracy,
-            );
+            const elapsed = Date.now() - verificationStartedAt;
+            const [response] = await Promise.all([
+              onCheckIn(
+                eventId,
+                coords.latitude,
+                coords.longitude,
+                coords.accuracy,
+              ),
+              wait(Math.max(0, MINIMUM_VERIFICATION_TIME_MS - elapsed)),
+            ]);
             setResult(response);
             if (response.success) router.refresh();
           });
@@ -76,7 +89,7 @@ export default function CheckInButton({
           className="mb-3 inline-flex items-center gap-2 rounded-xl bg-purple-50 px-3 py-2 text-sm font-extrabold text-[#6b21a8]"
           role="status"
         >
-          <FiZap aria-hidden="true" /> Checking you in automatically…
+          <FiZap aria-hidden="true" /> {locating ? "Getting your precise location…" : "Checking your attendance…"}
         </p>
       ) : null}
       <div>

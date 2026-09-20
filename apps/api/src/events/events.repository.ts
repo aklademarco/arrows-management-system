@@ -18,6 +18,7 @@ import {
 import type { CreateEventDto } from './dto/create-event.dto';
 import type { UpdateEventDto } from './dto/update-event.dto';
 import type { ListEventsDto } from './dto/list-events.dto';
+import type { UpdateGeofenceSettingsDto } from './dto/update-geofence-settings.dto';
 
 @Injectable()
 export class EventsRepository {
@@ -61,6 +62,103 @@ export class EventsRepository {
         ),
       )
       .orderBy(desc(recurringServiceTemplates.priority));
+  }
+
+  async getGeofenceSettings(churchId: string) {
+    const [template] = await this.database
+      .select({
+        locationName: recurringServiceTemplates.locationName,
+        latitude: recurringServiceTemplates.latitude,
+        longitude: recurringServiceTemplates.longitude,
+        geofenceRadiusMeters: recurringServiceTemplates.geofenceRadiusMeters,
+        maximumAccuracyMeters: recurringServiceTemplates.maximumAccuracyMeters,
+      })
+      .from(recurringServiceTemplates)
+      .where(
+        and(
+          eq(recurringServiceTemplates.churchId, churchId),
+          eq(recurringServiceTemplates.isActive, true),
+        ),
+      )
+      .orderBy(desc(recurringServiceTemplates.priority))
+      .limit(1);
+
+    if (
+      !template ||
+      template.latitude === null ||
+      template.longitude === null ||
+      template.geofenceRadiusMeters === null
+    ) {
+      throw new NotFoundException('Church geofence has not been configured.');
+    }
+
+    return {
+      locationName: template.locationName ?? '',
+      latitude: Number(template.latitude),
+      longitude: Number(template.longitude),
+      geofenceRadiusMeters: template.geofenceRadiusMeters,
+      maximumAccuracyMeters: template.maximumAccuracyMeters,
+    };
+  }
+
+  updateGeofenceSettings(
+    dto: UpdateGeofenceSettingsDto,
+    admin: { id: string; churchId: string },
+  ) {
+    const now = new Date();
+    const setting = {
+      locationName: dto.locationName.trim() || null,
+      latitude: String(dto.latitude),
+      longitude: String(dto.longitude),
+      geofenceRadiusMeters: dto.geofenceRadiusMeters,
+      maximumAccuracyMeters: dto.maximumAccuracyMeters,
+      updatedAt: now,
+    };
+
+    return this.database.transaction(async (transaction) => {
+      const templates = await transaction
+        .update(recurringServiceTemplates)
+        .set(setting)
+        .where(
+          and(
+            eq(recurringServiceTemplates.churchId, admin.churchId),
+            eq(recurringServiceTemplates.isActive, true),
+          ),
+        )
+        .returning({ id: recurringServiceTemplates.id });
+
+      const scheduledEvents = await transaction
+        .update(events)
+        .set(setting)
+        .where(
+          and(
+            eq(events.churchId, admin.churchId),
+            inArray(events.status, ['DRAFT', 'SCHEDULED']),
+            gte(events.attendanceClosesAt, now),
+          ),
+        )
+        .returning({ id: events.id });
+
+      await transaction.insert(auditLogs).values({
+        churchId: admin.churchId,
+        actorUserId: admin.id,
+        action: 'CHURCH_GEOFENCE_UPDATED',
+        entityType: 'CHURCH',
+        entityId: admin.churchId,
+        newData: {
+          ...dto,
+          recurringTemplatesUpdated: templates.length,
+          scheduledEventsUpdated: scheduledEvents.length,
+        },
+      });
+
+      return {
+        ...dto,
+        locationName: dto.locationName.trim(),
+        recurringTemplatesUpdated: templates.length,
+        scheduledEventsUpdated: scheduledEvents.length,
+      };
+    });
   }
 
   create(dto: CreateEventDto, admin: { id: string; churchId: string }) {

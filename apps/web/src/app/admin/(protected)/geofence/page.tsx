@@ -3,8 +3,18 @@ import { FiArrowLeft } from "react-icons/fi";
 import { getAdminResource } from "../registrations/admin-api";
 import GeofenceSetup from "./geofence-setup";
 
+export type GeofenceSettings = {
+  locationName: string;
+  latitude: number;
+  longitude: number;
+  geofenceRadiusMeters: number;
+  maximumAccuracyMeters: number;
+};
+
 export default async function GeofencePage() {
-  await getAdminResource<unknown[]>("/departments");
+  const settings = await getAdminResource<GeofenceSettings>(
+    "/events/geofence-settings",
+  );
 
   return (
     <main className="min-h-screen bg-[#090a0d] px-5 py-8 text-slate-100">
@@ -18,7 +28,7 @@ export default async function GeofencePage() {
           <h1 className="mt-2 text-3xl font-bold">Church geofence</h1>
           <p className="mt-2 max-w-2xl text-slate-400">Capture the center of the church compound and confirm that the attendance boundary covers its outer edges.</p>
         </header>
-        <GeofenceSetup />
+        <GeofenceSetup initialSettings={settings} />
       </div>
     </main>
   );

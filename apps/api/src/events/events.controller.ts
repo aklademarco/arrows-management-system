@@ -16,6 +16,7 @@ import { CancelEventDto } from './dto/cancel-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
 import { ListEventsDto } from './dto/list-events.dto';
+import { UpdateGeofenceSettingsDto } from './dto/update-geofence-settings.dto';
 
 @Controller('events')
 @UseGuards(AdminGuard)
@@ -52,6 +53,27 @@ export class EventsController {
       success: true,
       message: 'Recurring service defaults retrieved.',
       data: await this.service.listRecurringDefaults(admin),
+    };
+  }
+
+  @Get('geofence-settings')
+  async geofenceSettings(@AdminUser() admin: AdminPrincipal) {
+    return {
+      success: true,
+      message: 'Church geofence settings retrieved.',
+      data: await this.service.getGeofenceSettings(admin),
+    };
+  }
+
+  @Patch('geofence-settings')
+  async updateGeofenceSettings(
+    @Body() body: UpdateGeofenceSettingsDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Church geofence updated successfully.',
+      data: await this.service.updateGeofenceSettings(body, admin),
     };
   }
 

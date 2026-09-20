@@ -2,7 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { FiArrowLeft, FiAlertTriangle, FiClock, FiMonitor } from "react-icons/fi";
 import { getAdminResource } from "../../registrations/admin-api";
-import { cancelEvent, finalizeAttendance, updateEvent } from "../actions";
+import { cancelEvent, finalizeAttendance } from "../actions";
+import { EventEditForm } from "./event-edit-form";
 import { LiturgyGenerator } from "./liturgy-generator";
 
 type Event = {
@@ -76,10 +77,7 @@ export default async function EventDetailPage({
           {!liturgy ? <LiturgyGenerator eventId={event.id} templates={templates} /> : <div className="mt-5"><div className="flex flex-wrap items-center gap-4 rounded-xl bg-violet-500/[0.08] p-4">{liturgy.preacherImageUrl ? <Image alt={liturgy.preacherName ?? "Preacher"} className="size-20 rounded-xl object-cover" height={80} src={liturgy.preacherImageUrl} unoptimized width={80} /> : null}<div><p className="text-xs font-bold uppercase tracking-wider text-violet-400">Preacher</p><p className="mt-1 font-bold">{liturgy.preacherName ?? "To be announced"}</p>{liturgy.sermonTitle ? <p className="mt-1 text-sm text-slate-400">{liturgy.sermonTitle}</p> : null}</div></div><ol className="mt-4 divide-y divide-white/[0.07]">{liturgy.items.map((item) => <li className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-3 py-3" key={item.id}><span className="grid size-8 place-items-center rounded-lg bg-violet-500/10 text-xs font-bold text-violet-300">{item.position}</span><div><p className="text-sm font-bold">{item.title}</p><p className="mt-1 text-xs text-slate-500">{item.ownerLabel ?? "To be assigned"}{item.showOnProjection ? " · Projected" : ""}</p></div><div className="text-right"><p className="text-xs font-bold text-slate-300">{new Intl.DateTimeFormat("en-GH", { hour: "numeric", minute: "2-digit", timeZone: "Africa/Accra" }).format(new Date(item.plannedStartAt))}</p><p className="mt-1 flex items-center justify-end gap-1 text-[10px] font-bold text-slate-500"><FiClock />{item.plannedDurationMinutes}m</p></div></li>)}</ol></div>}
         </section>
         {editable ? (
-          <form
-            action={updateEvent}
-            className="mt-8 grid gap-4 border-y border-white/10 bg-[#111318] px-5 py-6 md:grid-cols-2"
-          >
+          <EventEditForm>
             <input name="eventId" type="hidden" value={event.id} />
             <label className="grid gap-1 text-sm font-bold">
               Event name
@@ -183,13 +181,7 @@ export default async function EventDetailPage({
                 name="description"
               />
             </label>
-            <button
-              className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white md:w-fit"
-              type="submit"
-            >
-              Save changes
-            </button>
-          </form>
+          </EventEditForm>
         ) : (
           <p className="mt-8 border-y border-white/10 bg-[#111318] px-5 py-6 text-slate-400">
             This event is read-only.

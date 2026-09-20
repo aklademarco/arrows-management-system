@@ -1,13 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
-import { FiCrosshair, FiRefreshCw } from "react-icons/fi";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { FiCheckCircle, FiCrosshair, FiLoader, FiRefreshCw } from "react-icons/fi";
 import {
   distanceInMeters,
   isWithinGeofence,
   type Coordinates,
 } from "../../../../lib/geofence";
+import type { GeofenceSettings } from "./page";
+import { saveGeofence, type GeofenceSaveState } from "./actions";
 
 const GeofenceMap = dynamic(() => import("./geofence-map"), {
   ssr: false,
@@ -20,10 +22,7 @@ type LocationReading = Coordinates & {
 };
 
 const MAXIMUM_ACCURACY_METERS = 50;
-const CHURCH_COMPOUND_CENTER: Coordinates = {
-  latitude: 5.576584,
-  longitude: -0.23444,
-};
+const initialSaveState: GeofenceSaveState = { status: "idle", message: "" };
 
 function locationErrorMessage(error: GeolocationPositionError) {
   if (error.code === error.PERMISSION_DENIED) return "Location permission was denied. Allow precise location and try again.";
@@ -31,12 +30,25 @@ function locationErrorMessage(error: GeolocationPositionError) {
   return "The location request timed out. Keep location enabled and try again.";
 }
 
-export default function GeofenceSetup() {
+export default function GeofenceSetup({
+  initialSettings,
+}: {
+  initialSettings: GeofenceSettings;
+}) {
+  const [saveState, saveAction, saving] = useActionState(
+    saveGeofence,
+    initialSaveState,
+  );
   const [readings, setReadings] = useState<LocationReading[]>([]);
-  const [center, setCenter] = useState<Coordinates>(CHURCH_COMPOUND_CENTER);
+  const [center, setCenter] = useState<Coordinates>({
+    latitude: initialSettings.latitude,
+    longitude: initialSettings.longitude,
+  });
   const [mapMode, setMapMode] = useState<"center" | "test">("center");
   const [testPoint, setTestPoint] = useState<Coordinates | null>(null);
-  const [radiusMeters, setRadiusMeters] = useState(50);
+  const [radiusMeters, setRadiusMeters] = useState(
+    initialSettings.geofenceRadiusMeters,
+  );
   const [isWatching, setIsWatching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -168,6 +180,15 @@ export default function GeofenceSetup() {
             {readings.length > 0 ? <FiRefreshCw aria-hidden="true" /> : <FiCrosshair aria-hidden="true" />}
             {isWatching ? "Capturing for up to 30 seconds..." : readings.length > 0 ? "Capture again" : "Start location capture"}
           </button>
+          {bestReading ? (
+            <button
+              className="mt-2 h-11 w-full rounded-lg border border-violet-400/40 font-bold text-violet-300"
+              onClick={() => setCenter({ latitude: bestReading.latitude, longitude: bestReading.longitude })}
+              type="button"
+            >
+              Use this reading as church center
+            </button>
+          ) : null}
           {isWatching ? <button className="mt-2 h-10 w-full font-bold text-slate-300" onClick={() => setIsWatching(false)} type="button">Stop capture</button> : null}
         </section>
 
@@ -197,7 +218,7 @@ export default function GeofenceSetup() {
           ) : null}
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-[#111318] p-5 shadow-sm">
+        <form action={saveAction} className="rounded-lg border border-white/10 bg-[#111318] p-5 shadow-sm">
           <div className="flex items-baseline justify-between gap-4">
             <label className="font-bold" htmlFor="radius">Compound radius</label>
             <output className="font-mono text-lg font-bold text-violet-400" htmlFor="radius">{radiusMeters} m</output>
@@ -212,19 +233,39 @@ export default function GeofenceSetup() {
             type="range"
             value={radiusMeters}
           />
+          <input name="latitude" type="hidden" value={center.latitude} />
+          <input name="longitude" type="hidden" value={center.longitude} />
+          <input name="geofenceRadiusMeters" type="hidden" value={radiusMeters} />
           <div className="mt-1 flex justify-between text-xs text-slate-400"><span>25 m</span><span>300 m</span></div>
           <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4 text-xs">
             <div><dt className="text-slate-400">Center latitude</dt><dd className="mt-1 font-mono font-bold text-slate-900">{center.latitude.toFixed(7)}</dd></div>
             <div><dt className="text-slate-400">Center longitude</dt><dd className="mt-1 font-mono font-bold text-slate-900">{center.longitude.toFixed(7)}</dd></div>
           </dl>
+          <label className="mt-4 grid gap-1 text-sm font-bold">
+            Location name
+            <input className="h-10 rounded-lg border border-white/15 bg-transparent px-3 font-normal" defaultValue={initialSettings.locationName} name="locationName" />
+          </label>
+          <label className="mt-3 grid gap-1 text-sm font-bold">
+            Maximum GPS error
+            <div className="flex items-center gap-2">
+              <input className="h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-transparent px-3 font-normal" defaultValue={initialSettings.maximumAccuracyMeters} max="1000" min="1" name="maximumAccuracyMeters" type="number" />
+              <span className="text-sm text-slate-400">metres</span>
+            </div>
+          </label>
           <button
-            className="mt-4 h-10 w-full rounded-lg border border-white/15 font-bold text-slate-300"
-            onClick={() => setCenter(CHURCH_COMPOUND_CENTER)}
-            type="button"
+            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 font-bold text-white disabled:cursor-wait disabled:opacity-70"
+            disabled={saving}
+            type="submit"
           >
-            Reset center
+            {saving ? <FiLoader className="animate-spin" aria-hidden="true" /> : <FiCheckCircle aria-hidden="true" />}
+            {saving ? "Saving church location…" : "Save church location"}
           </button>
-        </section>
+          {saveState.status !== "idle" ? (
+            <p className={`mt-3 rounded-lg p-3 text-sm font-semibold ${saveState.status === "success" ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`} role={saveState.status === "error" ? "alert" : "status"} aria-live="polite">
+              {saveState.message}
+            </p>
+          ) : null}
+        </form>
       </aside>
     </div>
   );
