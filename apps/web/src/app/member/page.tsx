@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   FiArrowRight,
   FiCalendar,
-  FiCheck,
   FiCheckCircle,
   FiMapPin,
 } from "react-icons/fi";
@@ -17,6 +16,7 @@ import type {
 } from "./member-types";
 import CheckInButton from "@/components/check-in-button";
 import { CheckInHero } from "@/components/check-in-hero";
+import { AttendanceStatusMark } from "@/components/attendance-status";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GH", {
   dateStyle: "medium",
@@ -257,9 +257,7 @@ export default async function MemberPage() {
                     className="flex items-center gap-4 py-4 first:pt-0"
                     key={attendance.id}
                   >
-                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-700">
-                      <FiCheck aria-hidden="true" />
-                    </span>
+                    <AttendanceStatusMark status={attendance.status} />
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate font-extrabold">
                         {attendance.eventName}
@@ -273,7 +271,7 @@ export default async function MemberPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-extrabold text-emerald-700">
+                      <p className={`text-xs font-extrabold ${attendance.status === "ABSENT" ? "text-red-700" : attendance.status === "EXCUSED" ? "text-amber-700" : "text-emerald-700"}`}>
                         {attendance.status.replaceAll("_", " ")}
                       </p>
                       <p className="mt-1 text-xs font-bold text-slate-400">

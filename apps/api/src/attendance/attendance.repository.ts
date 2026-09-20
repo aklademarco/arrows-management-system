@@ -269,7 +269,7 @@ export class AttendanceRepository {
           eq(events.churchId, churchId),
         ),
       )
-      .orderBy(desc(attendanceRecords.checkedInAt))
+      .orderBy(desc(events.startsAt))
       .limit(50);
 
     return rows.map((row) => ({

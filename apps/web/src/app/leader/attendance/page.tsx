@@ -4,6 +4,7 @@ import CheckInButton from "@/components/check-in-button";
 import { CheckInHero } from "@/components/check-in-hero";
 import { leaderCheckIn } from "../actions";
 import { getLeaderResource } from "../leader-api";
+import { AttendanceStatusBadge } from "@/components/attendance-status";
 
 type ActiveEvent = {
   id: string;
@@ -130,9 +131,7 @@ export default async function LeaderAttendancePage() {
                     </p>
                   </div>
                   <div className="sm:text-right">
-                    <span className="inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800">
-                      {attendance.status.replaceAll("_", " ")}
-                    </span>
+                    <AttendanceStatusBadge status={attendance.status} />
                     <p className="mt-2 text-sm font-bold text-lime-300">
                       {attendance.pointsAwarded} points
                     </p>

@@ -40,7 +40,7 @@ export class EventsRepository {
       .select()
       .from(events)
       .where(and(...filters))
-      .orderBy(desc(events.startsAt));
+      .orderBy(desc(events.createdAt));
   }
 
   listRecurringDefaults(churchId: string) {

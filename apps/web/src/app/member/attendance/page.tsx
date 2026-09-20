@@ -1,6 +1,7 @@
 import { FiCalendar, FiMapPin } from "react-icons/fi";
 import { getMemberResource } from "../member-api";
 import type { Attendance } from "../member-types";
+import { AttendanceStatusBadge } from "@/components/attendance-status";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GH", {
   dateStyle: "medium",
@@ -40,7 +41,7 @@ export default async function AttendanceHistoryPage() {
                   </p>
                 </div>
                 <div className="sm:text-right">
-                  <span className="inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800">{attendance.status.replaceAll("_", " ")}</span>
+                  <AttendanceStatusBadge status={attendance.status} />
                   <p className="mt-2 text-sm font-bold text-[#240046]">{attendance.pointsAwarded} points</p>
                 </div>
               </article>
