@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FiArrowLeft, FiCalendar, FiFilter, FiMapPin, FiX } from "react-icons/fi";
 import { getAdminResource } from "../registrations/admin-api";
-import { createEvent } from "./actions";
+import EventCreateForm from "./event-create-form";
 
 type Event = {
   id: string;
@@ -104,10 +104,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
         <section className="mt-8 border-y border-white/10 bg-[#111318] py-6">
           <div className="max-w-5xl px-5">
             <h2 className="text-xl font-bold">Schedule event</h2>
-            <form
-              action={createEvent}
-              className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-            >
+            <EventCreateForm>
               <label className="grid gap-1 text-sm font-bold">
                 Event name
                 <input
@@ -219,13 +216,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
                   name="description"
                 />
               </label>
-              <button
-                className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white md:w-fit"
-                type="submit"
-              >
-                Schedule event
-              </button>
-            </form>
+            </EventCreateForm>
           </div>
         </section>
 
