@@ -14,7 +14,8 @@ FROM base AS dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 
-RUN pnpm install --frozen-lockfile --filter api...
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile --filter api...
 
 FROM dependencies AS builder
 
@@ -27,7 +28,8 @@ FROM base AS production-dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 
-RUN pnpm install --frozen-lockfile --prod --filter api...
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile --prod --filter api...
 
 FROM node:22-slim AS runner
 

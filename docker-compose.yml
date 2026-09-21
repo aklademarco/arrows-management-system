@@ -1,34 +1,6 @@
 name: arrows-church-management-system
 
 services:
-  caddy:
-    image: caddy:2.10-alpine
-    container_name: arrows-caddy
-    restart: unless-stopped
-    profiles: ["production"]
-
-    environment:
-      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
-
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-
-    volumes:
-      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
-    depends_on:
-      api:
-        condition: service_healthy
-      web:
-        condition: service_started
-
-    networks:
-      - arrows-network
-
   web:
     build:
       context: .
@@ -73,7 +45,7 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-arrows}:${POSTGRES_PASSWORD:-arrows_local_password}@postgres:5432/${POSTGRES_DB:-arrows_cms}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-arrows}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-arrows_cms}
 
     ports:
       - "127.0.0.1:4000:4000"
@@ -106,7 +78,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-arrows_cms}
       POSTGRES_USER: ${POSTGRES_USER:-arrows}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arrows_local_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
 
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
@@ -130,10 +102,6 @@ services:
 volumes:
   postgres_data:
     name: arrows_cms_postgres_data
-  caddy_data:
-    name: arrows_caddy_data
-  caddy_config:
-    name: arrows_caddy_config
 
 networks:
   arrows-network:

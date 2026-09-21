@@ -37,6 +37,8 @@ jobs:
           tags: |
             ${{ env.API_IMAGE }}:${{ github.ref_name }}
             ${{ env.API_IMAGE }}:latest
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
       - uses: docker/build-push-action@v6
         with:
           context: .
@@ -45,6 +47,8 @@ jobs:
           tags: |
             ${{ env.WEB_IMAGE }}:${{ github.ref_name }}
             ${{ env.WEB_IMAGE }}:latest
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
 
   deploy:
     needs: publish
@@ -62,9 +66,8 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
       - name: Upload deployment configuration
         run: |
-          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p /opt/arrows/docker"
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" "mkdir -p /opt/arrows"
           scp docker-compose.yml "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/arrows/docker-compose.yml"
-          scp docker/Caddyfile "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/arrows/docker/Caddyfile"
       - name: Activate release
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \

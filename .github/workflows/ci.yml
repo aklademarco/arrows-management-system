@@ -35,9 +35,13 @@ jobs:
           file: docker/api.Dockerfile
           push: false
           tags: arrows-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
       - uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/web.Dockerfile
           push: false
           tags: arrows-web:ci
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
