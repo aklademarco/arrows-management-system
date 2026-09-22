@@ -26,7 +26,7 @@ export default function MemberLoginPage() {
                   New Here? Create member account
                 </Link>
                 <Link
-                  className="mt-4 inline-flex text-sm underline text-slate-500 hover:text-[#6b21a8]"
+                  className="mt-4 inline-flex text-sm underline text-slate-500 hover:text-[#6b21a1]"
                   href="/account-status"
                 >
                   Already registered? Check approval status...
