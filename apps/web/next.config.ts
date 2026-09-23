@@ -13,8 +13,12 @@ if (existsSync(workspaceEnv)) {
 }
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  outputFileTracingRoot: workspaceRoot,
+  ...(process.env.VERCEL
+    ? {}
+    : {
+        output: "standalone",
+        outputFileTracingRoot: workspaceRoot,
+      }),
 };
 
 export default nextConfig;
