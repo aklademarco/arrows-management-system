@@ -26,16 +26,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Get project source code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Enable Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Login GitHub Actions runner to GHCR
-      - name: Login to GHCR
+      - name: Login GitHub Actions to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -48,11 +45,9 @@ jobs:
           context: .
           file: docker/api.Dockerfile
           push: true
-
           tags: |
             ${{ env.API_IMAGE }}:${{ github.sha }}
             ${{ env.API_IMAGE }}:latest
-
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
@@ -62,11 +57,9 @@ jobs:
           context: .
           file: docker/web.Dockerfile
           push: true
-
           tags: |
             ${{ env.WEB_IMAGE }}:${{ github.sha }}
             ${{ env.WEB_IMAGE }}:latest
-
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
@@ -79,43 +72,131 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ----------------------------------------------------------
+      # SSH SETUP
+      # ----------------------------------------------------------
+
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOST }}
-
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
+          set -e
+
           install -m 700 -d ~/.ssh
 
-          printf '%s' "$SSH_KEY" > ~/.ssh/id_ed25519
+          if [ -z "$SSH_KEY" ]; then
+            echo "ERROR: VPS_SSH_KEY is empty"
+            exit 1
+          fi
+
+          if [ -z "$KNOWN_HOSTS" ]; then
+            echo "ERROR: VPS_KNOWN_HOST is empty"
+            exit 1
+          fi
+
+          if [ -z "$VPS_HOST" ]; then
+            echo "ERROR: VPS_HOST is empty"
+            exit 1
+          fi
+
+          printf '%s\n' "$SSH_KEY" \
+            | tr -d '\r' \
+            > ~/.ssh/id_ed25519
+
           chmod 600 ~/.ssh/id_ed25519
 
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
+          printf '%s\n' "$KNOWN_HOSTS" \
+            | tr -d '\r' \
+            > ~/.ssh/known_hosts
+
+          chmod 600 ~/.ssh/known_hosts
+
+          if ! ssh-keygen \
+            -F "$VPS_HOST" \
+            -f ~/.ssh/known_hosts \
+            >/dev/null; then
+
+            echo "ERROR: VPS host was not found in known_hosts"
+            exit 1
+          fi
+
+          echo "VPS known_hosts entry found."
+
+          echo "Configured VPS fingerprint:"
+          ssh-keygen -lf ~/.ssh/known_hosts
+
+      # ----------------------------------------------------------
+      # TEST SSH
+      # ----------------------------------------------------------
+
+      - name: Test VPS SSH connection
+        run: |
+          ssh \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            -o ConnectTimeout=10 \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "echo 'SSH connection successful'"
+
+      # ----------------------------------------------------------
+      # UPLOAD COMPOSE FILE
+      # ----------------------------------------------------------
 
       - name: Upload deployment configuration
         run: |
-          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+          ssh \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             "mkdir -p /opt/arrows"
 
-          scp docker-compose.yml \
+          scp \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            docker-compose.yml \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/arrows/docker-compose.yml"
+
+      # ----------------------------------------------------------
+      # VPS -> GHCR LOGIN
+      # ----------------------------------------------------------
 
       - name: Login VPS to GHCR
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-
         run: |
+          if [ -z "$GHCR_TOKEN" ]; then
+            echo "ERROR: GHCR_TOKEN is empty"
+            exit 1
+          fi
+
+          if [ -z "$GHCR_USERNAME" ]; then
+            echo "ERROR: GHCR_USERNAME is empty"
+            exit 1
+          fi
+
           printf '%s' "$GHCR_TOKEN" | \
-            ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "docker login ghcr.io \
-              -u '$GHCR_USERNAME' \
-              --password-stdin"
+            ssh \
+              -o StrictHostKeyChecking=yes \
+              -o IdentitiesOnly=yes \
+              "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+              "docker login ghcr.io \
+                -u '$GHCR_USERNAME' \
+                --password-stdin"
+
+      # ----------------------------------------------------------
+      # DEPLOY
+      # ----------------------------------------------------------
 
       - name: Activate release
         run: |
-          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+          ssh \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             "cd /opt/arrows && \
             IMAGE_TAG='${{ github.sha }}' \
             docker compose \
@@ -128,14 +209,26 @@ jobs:
               --profile production \
               up -d --remove-orphans"
 
+      # ----------------------------------------------------------
+      # SHOW CONTAINER STATUS
+      # ----------------------------------------------------------
+
       - name: Show deployment status
         run: |
-          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+          ssh \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             "cd /opt/arrows && \
+            IMAGE_TAG='${{ github.sha }}' \
             docker compose \
               --env-file .env \
               --profile production \
               ps"
+
+      # ----------------------------------------------------------
+      # HEALTH CHECK
+      # ----------------------------------------------------------
 
       - name: Verify production health
         run: |
@@ -158,4 +251,13 @@ jobs:
           done
 
           echo "Production health check failed."
+
+          echo "Showing API logs..."
+
+          ssh \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "docker logs arrows-api --tail 100 || true"
+
           exit 1
