@@ -287,7 +287,7 @@ export default async function MemberProfilePage({
                   defaultValue={member.phone ?? ""}
                   id="phone"
                   name="phone"
-                  placeholder="+233240000000"
+                  placeholder="024 123 4567"
                   type="tel"
                 />
               </div>

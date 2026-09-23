@@ -13,7 +13,7 @@ export default async function AttendanceHistoryPage() {
   const attendanceHistory = await getMemberResource<Attendance[]>("/attendance/me");
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
+    <main className="attendance-history min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
       <div className="mx-auto max-w-5xl">
         <header>
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">Your records</p>
@@ -30,7 +30,7 @@ export default async function AttendanceHistoryPage() {
             </div>
           </section>
         ) : (
-          <div className="mt-8 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="attendance-list mt-8 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             {attendanceHistory.map((attendance) => (
               <article className="grid gap-4 px-5 py-5 sm:grid-cols-[1fr_auto]" key={attendance.id}>
                 <div>
@@ -42,7 +42,7 @@ export default async function AttendanceHistoryPage() {
                 </div>
                 <div className="sm:text-right">
                   <AttendanceStatusBadge status={attendance.status} />
-                  <p className="mt-2 text-sm font-bold text-[#240046]">{attendance.pointsAwarded} points</p>
+                  <p className="attendance-points mt-2 text-sm font-bold text-[#240046]">{attendance.pointsAwarded} points</p>
                 </div>
               </article>
             ))}

@@ -113,6 +113,34 @@ html[data-theme="dark"] :is(.member-shell, .leader-shell) textarea {
   color: #f8fafc;
 }
 
+html[data-theme="dark"] :is(.member-shell, .leader-shell) .church-logo-tile {
+  background-color: #ffffff;
+}
+
+html[data-theme="dark"] .member-shell .church-brand-name {
+  color: #d8b4fe;
+}
+
+html[data-theme="dark"] .attendance-history {
+  background-color: #0d0d0d;
+}
+
+html[data-theme="dark"] .attendance-history .attendance-list {
+  background-color: #191620;
+  border-color: #3b3247;
+}
+
+html[data-theme="dark"]
+  .attendance-history
+  .divide-slate-200
+  > :not(:last-child) {
+  border-color: #3b3247;
+}
+
+html[data-theme="dark"] .attendance-history .attendance-points {
+  color: #d8b4fe;
+}
+
 .leader-shell .bg-\[\#24202e\],
 .leader-shell .bg-\[\#1d1926\],
 .leader-shell .bg-\[\#17131f\] {

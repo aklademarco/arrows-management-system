@@ -10,14 +10,7 @@ const profileSchema = z.object({
   firstName: z.string().trim().min(1).max(100),
   lastName: z.string().trim().min(1).max(100),
   otherNames: z.string().trim().max(150).nullable(),
-  phone: z
-    .string()
-    .trim()
-    .regex(
-      /^\+[1-9]\d{7,14}$/,
-      "Use international format, for example +233240000000.",
-    )
-    .nullable(),
+  phone: z.string().trim().max(30, "Enter a shorter phone number.").nullable(),
   directoryBio: z.string().trim().max(300).nullable(),
   directoryVisible: z.boolean(),
   directoryPhoneVisible: z.boolean(),

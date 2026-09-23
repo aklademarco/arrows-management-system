@@ -27,17 +27,17 @@ export default async function MemberLayout({
       <header className="sticky top-0 z-20 border-b border-purple-100/80 bg-[#f8f7fb]/90 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-5 py-3">
           <Link className="flex items-center gap-2" href="/member">
-            <span className="relative block size-10 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-purple-100">
+            <span className="church-logo-tile relative block size-10 shrink-0 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-purple-100">
               <Image
                 alt="The Arrows church logo"
-                className="object-contain scale-[1.45"
+                className="scale-[1.45] object-contain"
                 fill
                 sizes="40px"
                 src="/assets/arrows.PNG"
               />
             </span>
             <span>
-              <span className="block text-sm font-black leading-none text-[#240046]">
+              <span className="church-brand-name block text-sm font-black leading-none text-[#240046]">
                 ARROWS
               </span>
               <span className="mt-1 block max-w-44 text-[10px] font-semibold leading-tight text-slate-400">
@@ -57,7 +57,7 @@ export default async function MemberLayout({
       <div className="mx-auto flex max-w-375">
         <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-purple-100 bg-white px-5 py-6 lg:flex">
           <Link className="flex items-center gap-3 px-2" href="/member">
-            <span className="relative block size-12 shrink-0 overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(107,33,168,0.14)] ring-1 ring-purple-100">
+            <span className="church-logo-tile relative block size-12 shrink-0 overflow-hidden rounded-2xl bg-white shadow-[0_8px_24px_rgba(107,33,168,0.14)] ring-1 ring-purple-100">
               <Image
                 alt="The Arrows church logo"
                 className="object-contain scale-[1.45]"
@@ -67,7 +67,7 @@ export default async function MemberLayout({
               />
             </span>
             <span>
-              <span className="block font-black tracking-tight text-[#240046]">
+              <span className="church-brand-name block font-black tracking-tight text-[#240046]">
                 ARROWS
               </span>
               <span className="mt-0.5 block max-w-40 text-[10px] font-semibold leading-tight text-slate-400">

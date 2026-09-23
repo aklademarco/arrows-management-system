@@ -8,6 +8,10 @@ import {
   MinLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import {
+  GHANA_E164_PHONE_PATTERN,
+  normalizeGhanaPhoneNumber,
+} from '../../common/phone-number';
 
 const normalizeText = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
@@ -38,10 +42,12 @@ export class RegisterDto {
   @MaxLength(255)
   email!: string;
 
-  @Transform(normalizeText)
+  @Transform(({ value }: { value: unknown }) =>
+    normalizeGhanaPhoneNumber(value),
+  )
   @IsOptional()
-  @Matches(/^\+[1-9]\d{7,14}$/, {
-    message: 'phone must use international format, for example +233240000000',
+  @Matches(GHANA_E164_PHONE_PATTERN, {
+    message: 'Enter a valid Ghana phone number, such as 024 000 0000.',
   })
   phone?: string;
 

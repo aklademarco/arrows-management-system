@@ -14,6 +14,7 @@ function Field({
   autoComplete,
   required,
   error,
+  placeholder,
 }: {
   id: string;
   label: string;
@@ -21,6 +22,7 @@ function Field({
   autoComplete?: string;
   required?: boolean;
   error?: string[];
+  placeholder?: string;
 }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === "password";
@@ -40,6 +42,7 @@ function Field({
           type={isPassword && passwordVisible ? "text" : type}
           autoComplete={autoComplete}
           required={required}
+          placeholder={placeholder}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
         />
@@ -152,6 +155,7 @@ export function RegistrationForm() {
           label="Phone number (optional)"
           type="tel"
           autoComplete="tel"
+          placeholder="024 123 4567"
           error={state.errors?.phone}
         />
         <Field

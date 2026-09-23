@@ -17,7 +17,7 @@ const registrationSchema = z
     phone: z
       .string()
       .trim()
-      .regex(/^\+[1-9]\d{7,14}$/, "Use international format, such as +233240000000.")
+      .max(30, "Enter a shorter phone number.")
       .optional()
       .or(z.literal("")),
     password: z
