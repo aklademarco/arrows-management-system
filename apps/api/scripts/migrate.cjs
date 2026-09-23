@@ -12,9 +12,11 @@ async function getDatabaseUrl() {
       resolve(__dirname, '..', '..', '..', '.env'),
       'utf8',
     );
+
     const databaseUrlLine = environmentFile
       .split(/\r?\n/)
       .find((line) => line.startsWith('DATABASE_URL='));
+
     return databaseUrlLine?.slice('DATABASE_URL='.length).trim();
   } catch (error) {
     if (
@@ -25,23 +27,39 @@ async function getDatabaseUrl() {
     ) {
       return undefined;
     }
+
     throw error;
   }
 }
 
 async function migrate() {
   const connectionString = await getDatabaseUrl();
+
   if (!connectionString) {
     throw new Error('DATABASE_URL is required');
   }
 
+  // Enable SSL only when explicitly configured.
+  // For the local PostgreSQL Docker container, DB_SSL should be false.
+  const sslEnabled = process.env.DB_SSL === 'true';
+
   const migrationsDirectory = resolve(__dirname, '..', 'drizzle');
+
   const migrationFiles = (await readdir(migrationsDirectory))
     .filter((file) => file.endsWith('.sql'))
     .sort();
-  const client = new Client({ connectionString });
+
+  const client = new Client({
+    connectionString,
+    ssl: sslEnabled
+      ? {
+          rejectUnauthorized: true,
+        }
+      : undefined,
+  });
 
   await client.connect();
+
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -49,6 +67,7 @@ async function migrate() {
         applied_at timestamptz NOT NULL DEFAULT now()
       )
     `);
+
     await client.query('SELECT pg_advisory_lock($1)', [73920418]);
 
     for (const migrationFile of migrationFiles) {
@@ -56,8 +75,10 @@ async function migrate() {
         'SELECT 1 FROM schema_migrations WHERE name = $1',
         [migrationFile],
       );
+
       if (existing.rowCount > 0) {
         process.stdout.write(`Already applied: ${migrationFile}\n`);
+
         continue;
       }
 
@@ -65,13 +86,18 @@ async function migrate() {
         resolve(migrationsDirectory, migrationFile),
         'utf8',
       );
+
       await client.query('BEGIN');
+
       try {
         await client.query(sql);
+
         await client.query('INSERT INTO schema_migrations (name) VALUES ($1)', [
           migrationFile,
         ]);
+
         await client.query('COMMIT');
+
         process.stdout.write(`Applied: ${migrationFile}\n`);
       } catch (error) {
         await client.query('ROLLBACK');
@@ -80,6 +106,7 @@ async function migrate() {
     }
   } finally {
     await client.query('SELECT pg_advisory_unlock($1)', [73920418]);
+
     await client.end();
   }
 }
@@ -90,5 +117,6 @@ migrate().catch((error) => {
       error instanceof Error ? error.message : String(error)
     }\n`,
   );
+
   process.exitCode = 1;
 });
