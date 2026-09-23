@@ -2,7 +2,8 @@ name: Deploy production
 
 on:
   push:
-    tags: ["v*"]
+    branches:
+      - main
 
   workflow_dispatch:
 
@@ -21,63 +22,77 @@ env:
 
 jobs:
   publish:
+    name: Build and publish images
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # Get project source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v3
+      # Enable Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       # Login GitHub Actions runner to GHCR
-      - uses: docker/login-action@v3
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push API image
-      - uses: docker/build-push-action@v6
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/api.Dockerfile
           push: true
+
           tags: |
-            ${{ env.API_IMAGE }}:${{ github.ref_name }}
+            ${{ env.API_IMAGE }}:${{ github.sha }}
             ${{ env.API_IMAGE }}:latest
+
           cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
-      # Build and push Web image
-      - uses: docker/build-push-action@v6
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/web.Dockerfile
           push: true
+
           tags: |
-            ${{ env.WEB_IMAGE }}:${{ github.ref_name }}
+            ${{ env.WEB_IMAGE }}:${{ github.sha }}
             ${{ env.WEB_IMAGE }}:latest
+
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
   deploy:
+    name: Deploy to VPS
     needs: publish
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Configure SSH access to VPS
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+
         run: |
           install -m 700 -d ~/.ssh
+
           printf '%s' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
 
-      # Upload Docker Compose configuration
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
       - name: Upload deployment configuration
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
@@ -86,11 +101,11 @@ jobs:
           scp docker-compose.yml \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/arrows/docker-compose.yml"
 
-      # Login VPS Docker to GHCR
       - name: Login VPS to GHCR
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+
         run: |
           printf '%s' "$GHCR_TOKEN" | \
             ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
@@ -98,29 +113,49 @@ jobs:
               -u '$GHCR_USERNAME' \
               --password-stdin"
 
-      # Pull new images and restart application
       - name: Activate release
         run: |
           ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
             "cd /opt/arrows && \
-            IMAGE_TAG='${{ github.ref_name }}' \
-            docker compose --env-file .env --profile production pull && \
-            IMAGE_TAG='${{ github.ref_name }}' \
-            docker compose --env-file .env --profile production up -d --remove-orphans"
+            IMAGE_TAG='${{ github.sha }}' \
+            docker compose \
+              --env-file .env \
+              --profile production \
+              pull && \
+            IMAGE_TAG='${{ github.sha }}' \
+            docker compose \
+              --env-file .env \
+              --profile production \
+              up -d --remove-orphans"
 
-      # Verify backend is responding
+      - name: Show deployment status
+        run: |
+          ssh "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "cd /opt/arrows && \
+            docker compose \
+              --env-file .env \
+              --profile production \
+              ps"
+
       - name: Verify production health
         run: |
           for attempt in $(seq 1 30); do
-            if curl --fail --silent --show-error \
+
+            echo "Health check attempt $attempt/30"
+
+            if curl \
+              --fail \
+              --silent \
+              --show-error \
               "${{ secrets.APP_URL }}/api/v1/health"; then
-              echo "Production is healthy"
+
+              echo ""
+              echo "Production deployment is healthy."
               exit 0
             fi
 
-            echo "Waiting for application..."
             sleep 5
           done
 
-          echo "Production health check failed"
+          echo "Production health check failed."
           exit 1
