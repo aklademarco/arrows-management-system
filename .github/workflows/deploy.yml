@@ -82,7 +82,7 @@ jobs:
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOST }}
 
         run: |
           install -m 700 -d ~/.ssh
