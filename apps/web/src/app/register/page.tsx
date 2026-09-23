@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eadcff,transparent_36%),linear-gradient(135deg,#f8fafc,#f7f2ff)] px-5 py-10 sm:py-16">
+    <main className="auth-shell min-h-screen bg-[radial-gradient(circle_at_top_left,#eadcff,transparent_36%),linear-gradient(135deg,#f8fafc,#f7f2ff)] px-5 py-10 sm:py-16">
       <div className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-white/70 bg-white shadow-2xl shadow-[#240046]/10 lg:grid-cols-[0.85fr_1.15fr]">
         <section className="bg-[#240046] p-8 text-white sm:p-12">
           <Link className="inline-flex items-center gap-3 font-bold" href="/">

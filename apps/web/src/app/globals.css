@@ -82,7 +82,9 @@ html[data-theme="dark"] :is(.member-shell, .leader-shell) .bg-white\/90 {
 }
 
 html[data-theme="dark"] :is(.member-shell, .leader-shell) .text-slate-950,
-html[data-theme="dark"] :is(.member-shell, .leader-shell) .text-slate-900 {
+html[data-theme="dark"] :is(.member-shell, .leader-shell) .text-slate-900,
+html[data-theme="dark"] :is(.member-shell, .leader-shell) .text-slate-800,
+html[data-theme="dark"] :is(.member-shell, .leader-shell) .text-slate-700 {
   color: #f8fafc;
 }
 
@@ -94,6 +96,8 @@ html[data-theme="dark"] :is(.member-shell, .leader-shell) .text-slate-400 {
 
 html[data-theme="dark"] :is(.member-shell, .leader-shell) .border-purple-50,
 html[data-theme="dark"] :is(.member-shell, .leader-shell) .border-purple-100,
+html[data-theme="dark"] :is(.member-shell, .leader-shell) .border-purple-200,
+html[data-theme="dark"] :is(.member-shell, .leader-shell) .border-purple-300,
 html[data-theme="dark"]
   :is(.member-shell, .leader-shell)
   .border-purple-100\/80,
@@ -188,6 +192,33 @@ html[data-theme="dark"] body > main :is(input, select, textarea) {
   background-color: #211c29;
   border-color: #453850;
   color: #f8fafc;
+}
+
+/* Authentication pages sit outside the member and leader shells. Keep their
+   inherited text and fixed light gradients readable when dark mode is active. */
+html[data-theme="dark"] .auth-shell {
+  background: #0e1621;
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .auth-shell :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700) {
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .auth-shell :is(.text-slate-600, .text-slate-500, .text-slate-400) {
+  color: #c4bdcc;
+}
+
+html[data-theme="dark"] .auth-shell :is(.text-\[\#6b21a8\], .text-\[\#6b21a1\], .text-\[\#240046\]) {
+  color: #d8b4fe;
+}
+
+html[data-theme="dark"] .auth-shell :is(.border-slate-100, .border-slate-200, .border-slate-300, .border-purple-100, .border-\[\#240046\]) {
+  border-color: #51445f;
+}
+
+html[data-theme="dark"] .auth-shell :is(input, select, textarea)::placeholder {
+  color: #8f8799;
 }
 
 .admin-shell
