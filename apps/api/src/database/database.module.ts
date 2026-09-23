@@ -13,18 +13,22 @@ export type Database = NodePgDatabase<typeof schema>;
       provide: DATABASE,
       useFactory: (): Database => {
         const connectionString = process.env.DATABASE_URL;
+
         if (!connectionString) {
           throw new Error('DATABASE_URL is required');
         }
+
+        const sslEnabled = process.env.DB_SSL === 'true';
 
         return drizzle(
           new Pool({
             connectionString,
             max: 10,
-            ssl:
-              process.env.NODE_ENV === 'production'
-                ? { rejectUnauthorized: true }
-                : undefined,
+            ssl: sslEnabled
+              ? {
+                  rejectUnauthorized: true,
+                }
+              : undefined,
           }),
           { schema },
         );

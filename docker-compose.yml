@@ -45,7 +45,7 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-arrows}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-arrows_cms}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
 
     ports:
       - "127.0.0.1:4000:4000"
