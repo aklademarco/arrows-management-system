@@ -79,7 +79,7 @@ jobs:
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOST }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNWON_HOST }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           set -e
