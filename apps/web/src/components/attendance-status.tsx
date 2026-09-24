@@ -1,33 +1,26 @@
-import { FiCheck, FiMinus, FiX } from "react-icons/fi";
+import { FiCheck, FiClock, FiMinus, FiX } from "react-icons/fi";
 
 function statusPresentation(status: string) {
   if (status === "ABSENT") {
-    return {
-      Icon: FiX,
-      badge: "bg-red-100 text-red-700",
-      mark: "bg-red-100 text-red-700",
-    };
+    return { Icon: FiX, tone: "absent" };
   }
   if (status === "EXCUSED") {
-    return {
-      Icon: FiMinus,
-      badge: "bg-amber-100 text-amber-800",
-      mark: "bg-amber-100 text-amber-700",
-    };
+    return { Icon: FiMinus, tone: "excused" };
   }
-  return {
-    Icon: FiCheck,
-    badge: "bg-emerald-100 text-emerald-800",
-    mark: "bg-emerald-100 text-emerald-700",
-  };
+  if (status === "LATE") {
+    return { Icon: FiClock, tone: "late" };
+  }
+  return { Icon: FiCheck, tone: "present" };
+}
+
+export function attendanceStatusTone(status: string) {
+  return statusPresentation(status).tone;
 }
 
 export function AttendanceStatusBadge({ status }: { status: string }) {
-  const { Icon, badge } = statusPresentation(status);
+  const { Icon, tone } = statusPresentation(status);
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${badge}`}
-    >
+    <span className={"attendance-status-badge attendance-status-" + tone}>
       <Icon aria-hidden="true" />
       {status.replaceAll("_", " ")}
     </span>
@@ -35,10 +28,10 @@ export function AttendanceStatusBadge({ status }: { status: string }) {
 }
 
 export function AttendanceStatusMark({ status }: { status: string }) {
-  const { Icon, mark } = statusPresentation(status);
+  const { Icon, tone } = statusPresentation(status);
   return (
     <span
-      className={`grid size-11 shrink-0 place-items-center rounded-2xl ${mark}`}
+      className={"attendance-status-mark attendance-status-" + tone}
       aria-label={status.replaceAll("_", " ")}
     >
       <Icon aria-hidden="true" />

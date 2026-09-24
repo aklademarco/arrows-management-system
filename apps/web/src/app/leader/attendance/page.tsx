@@ -4,7 +4,10 @@ import CheckInButton from "@/components/check-in-button";
 import { CheckInHero } from "@/components/check-in-hero";
 import { leaderCheckIn } from "../actions";
 import { getLeaderResource } from "../leader-api";
-import { AttendanceStatusBadge } from "@/components/attendance-status";
+import {
+  AttendanceStatusBadge,
+  attendanceStatusTone,
+} from "@/components/attendance-status";
 
 type ActiveEvent = {
   id: string;
@@ -46,7 +49,9 @@ export default async function LeaderAttendancePage() {
           >
             <FiArrowLeft aria-hidden="true" /> Leadership workspace
           </Link>
-          <h1 className="mt-3 text-3xl font-black tracking-tight">My attendance</h1>
+          <h1 className="mt-3 text-3xl font-black tracking-tight">
+            My attendance
+          </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             You lead on Sunday and you also show up as a member. Check in to the
             open service window and review your recorded history.
@@ -96,7 +101,10 @@ export default async function LeaderAttendancePage() {
                           {existing.status.replaceAll("_", " ")}
                         </p>
                       ) : (
-                        <CheckInButton eventId={event.id} onCheckIn={leaderCheckIn} />
+                        <CheckInButton
+                          eventId={event.id}
+                          onCheckIn={leaderCheckIn}
+                        />
                       )}
                     </div>
                   );
@@ -114,14 +122,22 @@ export default async function LeaderAttendancePage() {
             <div className="mt-4 divide-y divide-white/[0.07] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#24202e] shadow-sm">
               {attendanceHistory.slice(0, 10).map((attendance) => (
                 <article
-                  className="grid gap-4 px-5 py-5 sm:grid-cols-[1fr_auto]"
+                  className={
+                    "attendance-row attendance-row-" +
+                    attendanceStatusTone(attendance.status) +
+                    " grid gap-4 px-5 py-5 sm:grid-cols-[1fr_auto]"
+                  }
                   key={attendance.id}
                 >
                   <div>
-                    <h3 className="font-bold text-white">{attendance.eventName}</h3>
+                    <h3 className="font-bold text-white">
+                      {attendance.eventName}
+                    </h3>
                     <p className="mt-1 text-sm text-slate-400">
                       {dateFormatter.format(
-                        new Date(attendance.checkedInAt ?? attendance.eventStartsAt),
+                        new Date(
+                          attendance.checkedInAt ?? attendance.eventStartsAt,
+                        ),
                       )}
                     </p>
                     <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-500">
@@ -132,7 +148,14 @@ export default async function LeaderAttendancePage() {
                   </div>
                   <div className="sm:text-right">
                     <AttendanceStatusBadge status={attendance.status} />
-                    <p className="mt-2 text-sm font-bold text-lime-300">
+                    <p
+                      className={
+                        "attendance-points mt-2 text-sm font-bold" +
+                        (attendance.pointsAwarded === 0
+                          ? " attendance-points-zero"
+                          : "")
+                      }
+                    >
                       {attendance.pointsAwarded} points
                     </p>
                   </div>

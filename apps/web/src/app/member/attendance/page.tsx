@@ -1,7 +1,10 @@
 import { FiCalendar, FiMapPin } from "react-icons/fi";
 import { getMemberResource } from "../member-api";
 import type { Attendance } from "../member-types";
-import { AttendanceStatusBadge } from "@/components/attendance-status";
+import {
+  AttendanceStatusBadge,
+  attendanceStatusTone,
+} from "@/components/attendance-status";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GH", {
   dateStyle: "medium",
@@ -10,39 +13,78 @@ const dateFormatter = new Intl.DateTimeFormat("en-GH", {
 });
 
 export default async function AttendanceHistoryPage() {
-  const attendanceHistory = await getMemberResource<Attendance[]>("/attendance/me");
+  const attendanceHistory =
+    await getMemberResource<Attendance[]>("/attendance/me");
 
   return (
     <main className="attendance-history min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
       <div className="mx-auto max-w-5xl">
         <header>
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">Your records</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Attendance history</h1>
-          <p className="mt-2 max-w-2xl text-slate-600">Review your recorded attendance, check-in method, and points for recent church events.</p>
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#6b21a8]">
+            Your records
+          </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+            Attendance history
+          </h1>
+          <p className="mt-2 max-w-2xl text-slate-600">
+            Review your recorded attendance, check-in method, and points for
+            recent church events.
+          </p>
         </header>
 
         {attendanceHistory.length === 0 ? (
           <section className="mt-8 grid min-h-64 place-items-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
             <div>
-              <FiCalendar aria-hidden="true" className="mx-auto text-4xl text-[#6b21a8]" />
-              <h2 className="mt-4 text-xl font-bold">No attendance recorded yet</h2>
-              <p className="mt-2 text-sm text-slate-600">Your check-ins will appear here after you attend an event.</p>
+              <FiCalendar
+                aria-hidden="true"
+                className="mx-auto text-4xl text-[#6b21a8]"
+              />
+              <h2 className="mt-4 text-xl font-bold">
+                No attendance recorded yet
+              </h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Your check-ins will appear here after you attend an event.
+              </p>
             </div>
           </section>
         ) : (
           <div className="attendance-list mt-8 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             {attendanceHistory.map((attendance) => (
-              <article className="grid gap-4 px-5 py-5 sm:grid-cols-[1fr_auto]" key={attendance.id}>
+              <article
+                className={
+                  "attendance-row attendance-row-" +
+                  attendanceStatusTone(attendance.status) +
+                  " grid gap-4 px-5 py-5 sm:grid-cols-[1fr_auto]"
+                }
+                key={attendance.id}
+              >
                 <div>
                   <h2 className="font-bold">{attendance.eventName}</h2>
-                  <p className="mt-1 text-sm text-slate-600">{dateFormatter.format(new Date(attendance.checkedInAt ?? attendance.eventStartsAt))}</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {dateFormatter.format(
+                      new Date(
+                        attendance.checkedInAt ?? attendance.eventStartsAt,
+                      ),
+                    )}
+                  </p>
                   <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-500">
-                    <FiMapPin aria-hidden="true" /> {attendance.locationName ?? "Church compound"} · {attendance.method.toLowerCase()}
+                    <FiMapPin aria-hidden="true" />{" "}
+                    {attendance.locationName ?? "Church compound"} ·{" "}
+                    {attendance.method.toLowerCase()}
                   </p>
                 </div>
                 <div className="sm:text-right">
                   <AttendanceStatusBadge status={attendance.status} />
-                  <p className="attendance-points mt-2 text-sm font-bold text-[#240046]">{attendance.pointsAwarded} points</p>
+                  <p
+                    className={
+                      "attendance-points mt-2 text-sm font-bold" +
+                      (attendance.pointsAwarded === 0
+                        ? " attendance-points-zero"
+                        : "")
+                    }
+                  >
+                    {attendance.pointsAwarded} points
+                  </p>
                 </div>
               </article>
             ))}

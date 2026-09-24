@@ -94,6 +94,119 @@ html[data-theme="dark"] :is(.member-shell, .leader-shell) .text-slate-400 {
   color: #a8a1b3;
 }
 
+/* Keep every light surface in the member and leadership portals on the same
+   dark palette. */
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.bg-\[\#f8f7fb\]\/90, .bg-\[\#fbf9fd\]\/95, .bg-\[\#fbfafc\]) {
+  background-color: rgb(13 13 13 / 0.95);
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.bg-white\/70, .bg-white\/80) {
+  background-color: rgb(25 22 32 / 0.88);
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.bg-slate-50, .bg-slate-100, .bg-slate-200, .bg-slate-300) {
+  background-color: #27222f;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(
+    .bg-purple-50,
+    .bg-purple-50\/50,
+    .bg-purple-50\/70,
+    .bg-purple-100,
+    .bg-purple-200
+  ) {
+  background-color: #2c1d38;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(
+    .text-\[\#240046\],
+    .text-\[\#5b148d\],
+    .text-\[\#6b21a8\],
+    .text-purple-600,
+    .text-purple-800
+  ) {
+  color: #d8b4fe;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.border-slate-100, .border-slate-300) {
+  border-color: #3b3247;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.divide-purple-50, .divide-slate-200)
+  > :not(:last-child) {
+  border-color: #3b3247;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.bg-amber-50, .bg-amber-100) {
+  background-color: #392b17;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.text-amber-700, .text-amber-800) {
+  color: #fcd34d;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.bg-emerald-100, .bg-emerald-500\/10) {
+  background-color: #15362e;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.text-emerald-600, .text-emerald-700, .text-emerald-800) {
+  color: #6ee7b7;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.bg-rose-100, .bg-red-400\/10) {
+  background-color: #3d2028;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.text-red-600, .text-red-700, .text-rose-600, .text-rose-800) {
+  color: #fda4af;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(.bg-lime-100, .bg-\[\#efffce\]) {
+  background-color: #25321a;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  :is(
+    .text-lime-800,
+    .text-\[\#263d09\],
+    .text-\[\#497016\],
+    .text-\[\#527022\],
+    .text-\[\#5b8c1b\],
+    .text-\[\#627b35\],
+    .text-\[\#779548\]
+  ) {
+  color: #bef264;
+}
+
 html[data-theme="dark"] :is(.member-shell, .leader-shell) .border-purple-50,
 html[data-theme="dark"] :is(.member-shell, .leader-shell) .border-purple-100,
 html[data-theme="dark"] :is(.member-shell, .leader-shell) .border-purple-200,
@@ -121,6 +234,131 @@ html[data-theme="dark"] .member-shell .church-brand-name {
   color: #d8b4fe;
 }
 
+.attendance-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 800;
+}
+
+.attendance-status-mark {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  font-size: 1.125rem;
+}
+
+.attendance-status-present {
+  border-color: #a7f3d0;
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.attendance-status-late {
+  border-color: #fde68a;
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.attendance-status-excused {
+  border-color: #fed7aa;
+  background-color: #ffedd5;
+  color: #c2410c;
+}
+
+.attendance-status-absent {
+  border-color: #fecaca;
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.attendance-row {
+  transition: background-color 160ms ease;
+}
+
+.attendance-row-absent {
+  background-color: #fff7f7;
+  box-shadow: inset 4px 0 0 #dc2626;
+}
+
+.attendance-row-excused {
+  background-color: #fffaf2;
+  box-shadow: inset 4px 0 0 #f97316;
+}
+
+.attendance-points {
+  color: #6b21a8;
+}
+
+.attendance-points-zero {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  .attendance-status-present {
+  border-color: rgb(52 211 153 / 0.35);
+  background-color: rgb(16 185 129 / 0.14);
+  color: #6ee7b7;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  .attendance-status-late {
+  border-color: rgb(251 191 36 / 0.35);
+  background-color: rgb(245 158 11 / 0.14);
+  color: #fcd34d;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  .attendance-status-excused {
+  border-color: rgb(251 146 60 / 0.4);
+  background-color: rgb(249 115 22 / 0.14);
+  color: #fdba74;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  .attendance-status-absent {
+  border-color: rgb(248 113 113 / 0.42);
+  background-color: rgb(239 68 68 / 0.16);
+  color: #fca5a5;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  .attendance-row-absent {
+  background-color: #24161b;
+  box-shadow: inset 4px 0 0 #ef4444;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  .attendance-row-excused {
+  background-color: #251d16;
+  box-shadow: inset 4px 0 0 #f97316;
+}
+
+html[data-theme="dark"] :is(.member-shell, .leader-shell) .attendance-points {
+  color: #d8b4fe;
+}
+
+html[data-theme="dark"]
+  :is(.member-shell, .leader-shell)
+  .attendance-points-zero {
+  color: #777080;
+}
+
 html[data-theme="dark"] .attendance-history {
   background-color: #0d0d0d;
 }
@@ -135,10 +373,6 @@ html[data-theme="dark"]
   .divide-slate-200
   > :not(:last-child) {
   border-color: #3b3247;
-}
-
-html[data-theme="dark"] .attendance-history .attendance-points {
-  color: #d8b4fe;
 }
 
 .leader-shell .bg-\[\#24202e\],
@@ -229,19 +463,33 @@ html[data-theme="dark"] .auth-shell {
   color: #f8fafc;
 }
 
-html[data-theme="dark"] .auth-shell :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700) {
+html[data-theme="dark"]
+  .auth-shell
+  :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700) {
   color: #f8fafc;
 }
 
-html[data-theme="dark"] .auth-shell :is(.text-slate-600, .text-slate-500, .text-slate-400) {
+html[data-theme="dark"]
+  .auth-shell
+  :is(.text-slate-600, .text-slate-500, .text-slate-400) {
   color: #c4bdcc;
 }
 
-html[data-theme="dark"] .auth-shell :is(.text-\[\#6b21a8\], .text-\[\#6b21a1\], .text-\[\#240046\]) {
+html[data-theme="dark"]
+  .auth-shell
+  :is(.text-\[\#6b21a8\], .text-\[\#6b21a1\], .text-\[\#240046\]) {
   color: #d8b4fe;
 }
 
-html[data-theme="dark"] .auth-shell :is(.border-slate-100, .border-slate-200, .border-slate-300, .border-purple-100, .border-\[\#240046\]) {
+html[data-theme="dark"]
+  .auth-shell
+  :is(
+    .border-slate-100,
+    .border-slate-200,
+    .border-slate-300,
+    .border-purple-100,
+    .border-\[\#240046\]
+  ) {
   border-color: #51445f;
 }
 
