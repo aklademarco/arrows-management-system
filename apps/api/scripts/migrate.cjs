@@ -39,8 +39,6 @@ async function migrate() {
     throw new Error('DATABASE_URL is required');
   }
 
-  // Enable SSL only when explicitly configured.
-  // For the local PostgreSQL Docker container, DB_SSL should be false.
   const sslEnabled = process.env.DB_SSL === 'true';
 
   const migrationsDirectory = resolve(__dirname, '..', 'drizzle');

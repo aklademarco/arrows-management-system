@@ -34,7 +34,7 @@ export function CheckInHero({
 
   return (
     <article
-      className={`relative isolate overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_rgba(76,22,119,0.3)] ${className}`}
+      className={`check-in-hero relative isolate overflow-hidden rounded-[2rem] text-white shadow-[0_24px_60px_rgba(76,22,119,0.3)] ${className}`}
     >
       <Image
         alt=""

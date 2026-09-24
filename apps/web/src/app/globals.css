@@ -381,6 +381,81 @@ html[data-theme="dark"]
   background-color: #ffffff;
 }
 
+.leader-dashboard-card {
+  box-shadow:
+    0 8px 22px rgb(36 0 70 / 0.07),
+    0 2px 6px rgb(36 0 70 / 0.04);
+}
+
+.leader-mobile-nav {
+  background: linear-gradient(110deg, #6b21a8 0%, #8527d5 52%, #52127d 100%);
+  color: #ffffff;
+  box-shadow:
+    0 14px 42px rgb(36 0 70 / 0.42),
+    0 2px 10px rgb(36 0 70 / 0.2);
+}
+
+.leader-mobile-nav a,
+.leader-mobile-nav svg {
+  color: #ffffff;
+}
+
+/* The leader workspace uses light cards by default. These utilities came from
+   its original dark-card treatment and need stronger colors on white surfaces. */
+html:not([data-theme="dark"])
+  .leader-shell
+  :is(.text-purple-200, .text-purple-300, .text-purple-400) {
+  color: #6b21a8;
+}
+
+html:not([data-theme="dark"]) .leader-shell .text-lime-300 {
+  color: #4d7c0f;
+}
+
+html:not([data-theme="dark"])
+  .leader-shell
+  :is(.text-emerald-200, .text-emerald-300) {
+  color: #047857;
+}
+
+html:not([data-theme="dark"])
+  .leader-shell
+  :is(.text-amber-200, .text-amber-300) {
+  color: #92400e;
+}
+
+html:not([data-theme="dark"]) .leader-shell .text-blue-200 {
+  color: #1d4ed8;
+}
+
+html:not([data-theme="dark"]) .leader-shell :is(.text-red-200, .text-red-300) {
+  color: #b91c1c;
+}
+
+html:not([data-theme="dark"]) .leader-shell .hover\:text-purple-200:hover {
+  color: #581c87;
+}
+
+html:not([data-theme="dark"]) .leader-shell .hover\:text-lime-300:hover {
+  color: #3f6212;
+}
+
+/* Preserve pale text where it intentionally sits over purple imagery and navigation. */
+html:not([data-theme="dark"]) .leader-shell .check-in-hero .text-purple-100 {
+  color: #f3e8ff;
+}
+
+html:not([data-theme="dark"]) .leader-shell .check-in-hero .text-purple-200 {
+  color: #e9d5ff;
+}
+
+html:not([data-theme="dark"])
+  .leader-shell
+  .leader-mobile-nav
+  .text-purple-100 {
+  color: #f3e8ff;
+}
+
 .leader-shell .border-white\/10,
 .leader-shell .border-white\/15,
 .leader-shell .divide-white\/\[0\.07\] > :not(:last-child) {
@@ -411,6 +486,12 @@ html[data-theme="dark"] .leader-shell .bg-\[\#24202e\],
 html[data-theme="dark"] .leader-shell .bg-\[\#1d1926\],
 html[data-theme="dark"] .leader-shell .bg-\[\#17131f\] {
   background-color: #191620;
+}
+
+html[data-theme="dark"] .leader-dashboard-card {
+  box-shadow:
+    0 10px 26px rgb(0 0 0 / 0.28),
+    0 2px 8px rgb(0 0 0 / 0.18);
 }
 
 html[data-theme="dark"] .leader-shell .border-white\/10,

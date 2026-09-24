@@ -40,7 +40,7 @@ export default async function LeaderAttendancePage() {
   ]);
 
   return (
-    <main className="min-h-screen px-5 py-8 text-slate-100">
+    <main className="min-h-screen px-5 py-8 text-slate-950">
       <div className="mx-auto max-w-5xl">
         <header>
           <Link
@@ -130,9 +130,7 @@ export default async function LeaderAttendancePage() {
                   key={attendance.id}
                 >
                   <div>
-                    <h3 className="font-bold text-white">
-                      {attendance.eventName}
-                    </h3>
+                    <h3 className="font-bold">{attendance.eventName}</h3>
                     <p className="mt-1 text-sm text-slate-400">
                       {dateFormatter.format(
                         new Date(
