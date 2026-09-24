@@ -32,12 +32,12 @@ export function ThemeSetting() {
   }
 
   return (
-    <section className="mx-4     px-2 py-2  sm:mx-6">
+    <section className="mx-4 px-2 py-2 sm:mx-6">
       <div className="flex items-center gap-4">
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold">Dark mode</h2>
           <p className="mt-0.5 text-xs text-slate-500">
-            Use dark theme
+            Turn on dark mode for this browser.
           </p>
         </div>
         <button

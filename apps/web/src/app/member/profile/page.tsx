@@ -13,7 +13,7 @@ import { getMemberProfile } from "../member-api";
 import type { MemberProfile } from "../member-types";
 import { updateOwnProfile } from "../profile-actions";
 import { ProfilePhotoPicker } from "./profile-photo-picker";
-import { ThemeSetting } from "./theme-setting";
+import { ThemeSetting } from "@/components/theme-setting";
 
 const fieldClass =
   "min-h-14 w-full border-0  bg-transparent px-0 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400";
