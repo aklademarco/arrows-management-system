@@ -45,10 +45,7 @@ export class RegistrationRepository {
       .select({ id: departments.id, name: departments.name })
       .from(departments)
       .where(
-        and(
-          eq(departments.churchId, churchId),
-          eq(departments.isActive, true),
-        ),
+        and(eq(departments.churchId, churchId), eq(departments.isActive, true)),
       )
       .orderBy(asc(departments.name));
   }

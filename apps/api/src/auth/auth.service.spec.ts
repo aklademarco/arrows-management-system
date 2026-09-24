@@ -10,9 +10,11 @@ import {
 
 describe('AuthService', () => {
   it('lists active registration departments for the configured church', async () => {
-    const listDepartmentOptions = jest.fn().mockResolvedValue([
-      { id: 'c87f9051-bff8-40a8-a773-dc3ab40fb279', name: 'Media' },
-    ]);
+    const listDepartmentOptions = jest
+      .fn()
+      .mockResolvedValue([
+        { id: 'c87f9051-bff8-40a8-a773-dc3ab40fb279', name: 'Media' },
+      ]);
     const service = new AuthService(
       { listDepartmentOptions } as unknown as RegistrationRepository,
       {} as EmailVerificationRepository,
