@@ -1,12 +1,40 @@
 import Link from "next/link";
-import { RegistrationForm } from "./registration-form";
+import {
+  RegistrationForm,
+  type RegistrationDepartment,
+} from "./registration-form";
 
 export const metadata = {
   title: "Register | Arrows Church",
   description: "Create an Arrows Church member account.",
 };
 
-export default function RegisterPage() {
+async function getRegistrationDepartments(): Promise<{
+  departments: RegistrationDepartment[];
+  unavailable: boolean;
+}> {
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+
+  try {
+    const response = await fetch(apiUrl + "/auth/registration-departments", {
+      cache: "no-store",
+    });
+    if (!response.ok) return { departments: [], unavailable: true };
+
+    const body = (await response.json()) as {
+      data?: RegistrationDepartment[];
+    };
+    return {
+      departments: Array.isArray(body.data) ? body.data : [],
+      unavailable: !Array.isArray(body.data),
+    };
+  } catch {
+    return { departments: [], unavailable: true };
+  }
+}
+
+export default async function RegisterPage() {
+  const { departments, unavailable } = await getRegistrationDepartments();
   return (
     <main className="auth-shell min-h-screen bg-[radial-gradient(circle_at_top_left,#eadcff,transparent_36%),linear-gradient(135deg,#f8fafc,#f7f2ff)] px-5 py-10 sm:py-16">
       <div className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-white/70 bg-white shadow-2xl shadow-[#240046]/10 lg:grid-cols-[0.85fr_1.15fr]">
@@ -28,7 +56,10 @@ export default function RegisterPage() {
           </div>
         </section>
         <section className="p-7 sm:p-12">
-          <RegistrationForm />
+          <RegistrationForm
+            departments={departments}
+            departmentsUnavailable={unavailable}
+          />
         </section>
       </div>
     </main>

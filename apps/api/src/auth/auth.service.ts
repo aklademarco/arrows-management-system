@@ -9,7 +9,10 @@ import { hash } from 'argon2';
 import { EMAIL_DELIVERY, type EmailDelivery } from '../mail/email-delivery';
 import { RegisterDto } from './dto/register.dto';
 import { EmailVerificationRepository } from './email-verification.repository';
-import { RegistrationRepository } from './registration.repository';
+import {
+  RegistrationRepository,
+  type RegistrationDepartmentOption,
+} from './registration.repository';
 
 export type RegistrationResult = {
   userId: string;
@@ -26,6 +29,17 @@ export class AuthService {
     private readonly config: ConfigService,
     @Inject(EMAIL_DELIVERY) private readonly emailDelivery: EmailDelivery,
   ) {}
+
+  async listRegistrationDepartments(): Promise<RegistrationDepartmentOption[]> {
+    const churchId = this.config.get<string>('DEFAULT_CHURCH_ID');
+    if (!churchId) {
+      throw new InternalServerErrorException(
+        'Registration is not configured for a church.',
+      );
+    }
+
+    return this.repository.listDepartmentOptions(churchId);
+  }
 
   async register(
     dto: RegisterDto,

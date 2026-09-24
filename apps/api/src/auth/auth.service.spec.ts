@@ -9,6 +9,31 @@ import {
 } from './registration.repository';
 
 describe('AuthService', () => {
+  it('lists active registration departments for the configured church', async () => {
+    const listDepartmentOptions = jest.fn().mockResolvedValue([
+      { id: 'c87f9051-bff8-40a8-a773-dc3ab40fb279', name: 'Media' },
+    ]);
+    const service = new AuthService(
+      { listDepartmentOptions } as unknown as RegistrationRepository,
+      {} as EmailVerificationRepository,
+      {
+        get: jest.fn(() => '00000000-0000-4000-8000-000000000001'),
+      } as unknown as ConfigService,
+      {
+        sendVerificationEmail: jest.fn(),
+        sendPasswordResetEmail: jest.fn(),
+        sendAttendanceReportEmail: jest.fn(),
+      },
+    );
+
+    await expect(service.listRegistrationDepartments()).resolves.toEqual([
+      { id: 'c87f9051-bff8-40a8-a773-dc3ab40fb279', name: 'Media' },
+    ]);
+    expect(listDepartmentOptions).toHaveBeenCalledWith(
+      '00000000-0000-4000-8000-000000000001',
+    );
+  });
+
   it('creates a pending registration with hashed secrets', async () => {
     let saved: NewRegistration | undefined;
     const repository = {

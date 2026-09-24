@@ -5,7 +5,7 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
-import { and, eq, or } from 'drizzle-orm';
+import { and, asc, eq, or } from 'drizzle-orm';
 import { DATABASE } from '../database/database.module';
 import type { Database } from '../database/database.module';
 import {
@@ -29,9 +29,29 @@ export type NewRegistration = {
   requestedIp?: string;
 };
 
+export type RegistrationDepartmentOption = {
+  id: string;
+  name: string;
+};
+
 @Injectable()
 export class RegistrationRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
+
+  async listDepartmentOptions(
+    churchId: string,
+  ): Promise<RegistrationDepartmentOption[]> {
+    return this.database
+      .select({ id: departments.id, name: departments.name })
+      .from(departments)
+      .where(
+        and(
+          eq(departments.churchId, churchId),
+          eq(departments.isActive, true),
+        ),
+      )
+      .orderBy(asc(departments.name));
+  }
 
   async create(input: NewRegistration): Promise<string> {
     try {

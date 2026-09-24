@@ -179,6 +179,16 @@ All primary identifiers shall use UUIDs.
 
 # 5. Authentication API
 
+## Registration Department Options
+
+```http
+GET /auth/registration-departments
+```
+
+**Access:** Public
+
+Returns the active departments for the configured church as `id` and `name` values. The registration form uses the selected ID as a preference; an administrator confirms or changes the department during approval.
+
 ## 5.1 Register Account
 
 ```http

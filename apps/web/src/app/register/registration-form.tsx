@@ -71,7 +71,18 @@ function Field({
   );
 }
 
-export function RegistrationForm() {
+export type RegistrationDepartment = {
+  id: string;
+  name: string;
+};
+
+export function RegistrationForm({
+  departments,
+  departmentsUnavailable = false,
+}: {
+  departments: RegistrationDepartment[];
+  departmentsUnavailable?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(register, initialState);
 
   if (state.success) {
@@ -158,6 +169,43 @@ export function RegistrationForm() {
           placeholder="024 123 4567"
           error={state.errors?.phone}
         />
+        <div className="grid gap-2">
+          <label
+            className="text-sm font-semibold text-slate-800"
+            htmlFor="requestedDepartmentId"
+          >
+            Department (optional)
+          </label>
+          <select
+            aria-describedby="requestedDepartmentId-help"
+            aria-invalid={Boolean(state.errors?.requestedDepartmentId)}
+            className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base text-slate-950 outline-none transition focus:border-[#240046] focus:ring-4 focus:ring-[#eadcff] disabled:cursor-not-allowed disabled:opacity-60"
+            defaultValue=""
+            disabled={departmentsUnavailable}
+            id="requestedDepartmentId"
+            name="requestedDepartmentId"
+          >
+            <option value="">
+              {departmentsUnavailable
+                ? "Departments are temporarily unavailable"
+                : "Select your department"}
+            </option>
+            {departments.map((department) => (
+              <option key={department.id} value={department.id}>
+                {department.name}
+              </option>
+            ))}
+          </select>
+          <p id="requestedDepartmentId-help" className="text-sm text-slate-500">
+            An administrator will confirm your department when approving your
+            account.
+          </p>
+          {state.errors?.requestedDepartmentId ? (
+            <p className="text-sm text-red-700" role="alert">
+              {state.errors.requestedDepartmentId[0]}
+            </p>
+          ) : null}
+        </div>
         <Field
           id="password"
           label="Password"

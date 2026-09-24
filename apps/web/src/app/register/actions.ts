@@ -20,6 +20,10 @@ const registrationSchema = z
       .max(30, "Enter a shorter phone number.")
       .optional()
       .or(z.literal("")),
+    requestedDepartmentId: z
+      .uuid("Choose a valid department.")
+      .optional()
+      .or(z.literal("")),
     password: z
       .string()
       .min(12, "Use at least 12 characters.")
@@ -55,6 +59,7 @@ export async function register(
     otherNames: result.data.otherNames,
     email: result.data.email,
     phone: result.data.phone,
+    requestedDepartmentId: result.data.requestedDepartmentId,
     password: result.data.password,
   };
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
@@ -67,6 +72,7 @@ export async function register(
         ...payload,
         phone: payload.phone || undefined,
         otherNames: payload.otherNames || undefined,
+        requestedDepartmentId: payload.requestedDepartmentId || undefined,
       }),
       cache: "no-store",
     });

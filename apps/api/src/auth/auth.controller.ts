@@ -130,6 +130,15 @@ export class AuthController {
     };
   }
 
+  @Get('registration-departments')
+  async registrationDepartments() {
+    return {
+      success: true,
+      message: 'Registration departments retrieved.',
+      data: await this.authService.listRegistrationDepartments(),
+    };
+  }
+
   @Post('email-verification/request')
   @HttpCode(HttpStatus.OK)
   async requestEmailVerification(
