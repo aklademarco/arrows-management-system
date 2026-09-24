@@ -26,6 +26,15 @@ describe('validateEnvironment', () => {
     );
   });
 
+  it('rejects a local Resend sender domain', () => {
+    expect(() =>
+      validateEnvironment({
+        ...validProductionEnvironment,
+        EMAIL_FROM: 'Arrows <no-reply@arrows.local>',
+      }),
+    ).toThrow('verified Resend sending domain');
+  });
+
   it('rejects a short JWT secret', () => {
     expect(() =>
       validateEnvironment({

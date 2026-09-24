@@ -51,34 +51,52 @@ export class EmailVerificationRepository {
     return Number(result.value) < 3;
   }
 
-  async replaceToken(input: {
+  async createToken(input: {
     userId: string;
     tokenHash: string;
     expiresAt: Date;
     requestedIp?: string;
-    now: Date;
   }): Promise<void> {
-    await this.database.transaction(async (transaction) => {
-      await transaction
-        .update(accountActionTokens)
-        .set({ revokedAt: input.now })
-        .where(
-          and(
-            eq(accountActionTokens.userId, input.userId),
-            eq(accountActionTokens.type, 'EMAIL_VERIFICATION'),
-            isNull(accountActionTokens.usedAt),
-            isNull(accountActionTokens.revokedAt),
-          ),
-        );
-
-      await transaction.insert(accountActionTokens).values({
-        userId: input.userId,
-        type: 'EMAIL_VERIFICATION',
-        tokenHash: input.tokenHash,
-        expiresAt: input.expiresAt,
-        requestedIp: input.requestedIp,
-      });
+    await this.database.insert(accountActionTokens).values({
+      userId: input.userId,
+      type: 'EMAIL_VERIFICATION',
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+      requestedIp: input.requestedIp,
     });
+  }
+
+  async revokeOtherTokens(
+    userId: string,
+    tokenHash: string,
+    now: Date,
+  ): Promise<void> {
+    await this.database
+      .update(accountActionTokens)
+      .set({ revokedAt: now })
+      .where(
+        and(
+          eq(accountActionTokens.userId, userId),
+          eq(accountActionTokens.type, 'EMAIL_VERIFICATION'),
+          ne(accountActionTokens.tokenHash, tokenHash),
+          isNull(accountActionTokens.usedAt),
+          isNull(accountActionTokens.revokedAt),
+        ),
+      );
+  }
+
+  async revokeToken(tokenHash: string, now: Date): Promise<void> {
+    await this.database
+      .update(accountActionTokens)
+      .set({ revokedAt: now })
+      .where(
+        and(
+          eq(accountActionTokens.tokenHash, tokenHash),
+          eq(accountActionTokens.type, 'EMAIL_VERIFICATION'),
+          isNull(accountActionTokens.usedAt),
+          isNull(accountActionTokens.revokedAt),
+        ),
+      );
   }
 
   async consumeToken(tokenHash: string, now: Date): Promise<void> {

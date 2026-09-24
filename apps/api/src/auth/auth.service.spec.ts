@@ -95,8 +95,10 @@ describe('AuthService', () => {
     );
   });
 
-  it('replaces and sends an email-verification token', async () => {
-    const replaceToken = jest.fn().mockResolvedValue(undefined);
+  it('creates and sends an email-verification token', async () => {
+    const createToken = jest.fn().mockResolvedValue(undefined);
+    const revokeToken = jest.fn().mockResolvedValue(undefined);
+    const revokeOtherTokens = jest.fn().mockResolvedValue(undefined);
     const emailVerificationRepository = {
       findCandidate: jest.fn().mockResolvedValue({
         id: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
@@ -105,7 +107,9 @@ describe('AuthService', () => {
         emailVerifiedAt: null,
       }),
       mayIssueToken: jest.fn().mockResolvedValue(true),
-      replaceToken,
+      createToken,
+      revokeToken,
+      revokeOtherTokens,
     } as unknown as EmailVerificationRepository;
     const emailDelivery = {
       sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
@@ -121,7 +125,7 @@ describe('AuthService', () => {
 
     await service.requestEmailVerification('bismark@example.com', '127.0.0.1');
 
-    expect(replaceToken).toHaveBeenCalledWith(
+    expect(createToken).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
         tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/) as string,
@@ -134,6 +138,55 @@ describe('AuthService', () => {
         token: expect.any(String) as string,
       }),
     );
+    expect(revokeOtherTokens).toHaveBeenCalledWith(
+      'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+      expect.any(Date),
+    );
+    expect(revokeToken).not.toHaveBeenCalled();
+  });
+
+  it('revokes only the new token when Resend delivery fails', async () => {
+    const createToken = jest
+      .fn<Promise<void>, [{ tokenHash: string }]>()
+      .mockResolvedValue(undefined);
+    const revokeToken = jest.fn().mockResolvedValue(undefined);
+    const revokeOtherTokens = jest.fn().mockResolvedValue(undefined);
+    const emailVerificationRepository = {
+      findCandidate: jest.fn().mockResolvedValue({
+        id: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+        email: 'bismark@example.com',
+        firstName: 'Bismark',
+        emailVerifiedAt: null,
+      }),
+      mayIssueToken: jest.fn().mockResolvedValue(true),
+      createToken,
+      revokeToken,
+      revokeOtherTokens,
+    } as unknown as EmailVerificationRepository;
+    const service = new AuthService(
+      {} as RegistrationRepository,
+      emailVerificationRepository,
+      {} as ConfigService,
+      {
+        sendVerificationEmail: jest
+          .fn()
+          .mockRejectedValue(new Error('Resend rejected the sender')),
+        sendPasswordResetEmail: jest.fn(),
+        sendAttendanceReportEmail: jest.fn(),
+      },
+    );
+
+    await expect(
+      service.requestEmailVerification('bismark@example.com'),
+    ).resolves.toBeUndefined();
+    const createdTokenHash = createToken.mock.calls[0]?.[0].tokenHash;
+    expect(createdTokenHash).toBeDefined();
+    expect(revokeToken).toHaveBeenCalledWith(
+      createdTokenHash,
+      expect.any(Date),
+    );
+    expect(revokeOtherTokens).not.toHaveBeenCalled();
   });
 
   it('hashes and consumes a submitted verification token', async () => {

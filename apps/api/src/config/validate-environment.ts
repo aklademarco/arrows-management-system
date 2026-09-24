@@ -24,6 +24,17 @@ export function validateEnvironment(
     );
   }
 
+  const emailFrom = environment.EMAIL_FROM ?? '';
+  const senderAddress = emailFrom.match(/<([^>]+)>/i)?.[1] ?? emailFrom;
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(senderAddress) ||
+    senderAddress.toLowerCase().endsWith('.local')
+  ) {
+    throw new Error(
+      'EMAIL_FROM must contain an address on a verified Resend sending domain.',
+    );
+  }
+
   if ((environment.JWT_ACCESS_SECRET?.length ?? 0) < 32) {
     throw new Error('JWT_ACCESS_SECRET must contain at least 32 characters.');
   }

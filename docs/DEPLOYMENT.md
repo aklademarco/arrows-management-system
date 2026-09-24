@@ -76,6 +76,8 @@ openssl rand -base64 48  # JWT_ACCESS_SECRET
 Important values:
 
 ```dotenv
+# EMAIL_FROM must use a domain shown as verified in the Resend dashboard.
+EMAIL_FROM=Arrows Church <no-reply@your-verified-domain.com>
 APP_DOMAIN=church.example.com
 WEB_URL=https://church.example.com
 CORS_ORIGIN=https://church.example.com

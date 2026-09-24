@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'node:crypto';
@@ -23,6 +24,8 @@ export type RegistrationResult = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly repository: RegistrationRepository,
     private readonly emailVerificationRepository: EmailVerificationRepository,
@@ -86,7 +89,10 @@ export class AuthService {
         token: rawVerificationToken,
       });
       verificationEmailSent = true;
-    } catch {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown email delivery error';
+      this.logger.error('Registration email delivery failed: ' + message);
       // Registration remains valid. The generic resend endpoint can issue a
       // replacement token after transient delivery failures.
     } finally {
@@ -122,22 +128,62 @@ export class AuthService {
     const rawToken = tokenBytes.toString('base64url');
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');
 
+    await this.emailVerificationRepository.createToken({
+      userId: candidate.id,
+      tokenHash,
+      expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      requestedIp,
+    });
+
     try {
-      await this.emailVerificationRepository.replaceToken({
-        userId: candidate.id,
-        tokenHash,
-        expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-        requestedIp,
-        now,
-      });
-      await this.emailDelivery.sendVerificationEmail({
-        recipient: candidate.email,
-        firstName: candidate.firstName,
-        token: rawToken,
-      });
-    } catch {
-      // A generic response prevents account enumeration and hides provider
-      // availability. Operational logging will be added in Backend Core.
+      try {
+        await this.emailDelivery.sendVerificationEmail({
+          recipient: candidate.email,
+          firstName: candidate.firstName,
+          token: rawToken,
+        });
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Unknown email delivery error';
+        this.logger.error('Verification email delivery failed: ' + message);
+        try {
+          await this.emailVerificationRepository.revokeToken(
+            tokenHash,
+            new Date(),
+          );
+        } catch (revokeError: unknown) {
+          const revokeMessage =
+            revokeError instanceof Error
+              ? revokeError.message
+              : 'Unknown token revocation error';
+          this.logger.error(
+            'Failed to revoke an undelivered verification token: ' +
+              revokeMessage,
+          );
+        }
+        // The controller intentionally returns a generic response to prevent
+        // account enumeration. The provider error remains visible in API logs.
+        return;
+      }
+
+      try {
+        await this.emailVerificationRepository.revokeOtherTokens(
+          candidate.id,
+          tokenHash,
+          new Date(),
+        );
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Unknown token cleanup error';
+        this.logger.error(
+          'Verification email sent, but older tokens were not revoked: ' +
+            message,
+        );
+      }
     } finally {
       tokenBytes.fill(0);
     }
