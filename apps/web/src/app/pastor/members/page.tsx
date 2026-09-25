@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FiSearch, FiUsers } from "react-icons/fi";
+import { FiChevronRight, FiSearch, FiUsers } from "react-icons/fi";
 import { getPastorResource } from "../pastor-api";
 
 type Member = {
@@ -33,8 +33,14 @@ export default async function PastorMembersPage({
   const parameters = await searchParams;
 
   const query = new URLSearchParams();
-  if (parameters.search) query.set("search", parameters.search);
-  if (parameters.page) query.set("page", parameters.page);
+
+  if (parameters.search) {
+    query.set("search", parameters.search);
+  }
+
+  if (parameters.page) {
+    query.set("page", parameters.page);
+  }
 
   const members = await getPastorResource<MemberPage>(
     `/members?${query.toString()}`,
@@ -42,9 +48,10 @@ export default async function PastorMembersPage({
 
   const pageHref = (page: number) => {
     const nextQuery = new URLSearchParams(query);
+
     nextQuery.set("page", String(page));
 
-    return `/pastor/members?${nextQuery}`;
+    return `/pastor/members?${nextQuery.toString()}`;
   };
 
   return (
@@ -70,6 +77,7 @@ export default async function PastorMembersPage({
             defaultValue={parameters.search}
             name="search"
             placeholder="Search name, email or phone"
+            type="search"
           />
         </form>
 
@@ -77,24 +85,26 @@ export default async function PastorMembersPage({
           <div className="mt-6 grid min-h-64 place-items-center rounded-2xl border border-dashed border-purple-200 bg-white text-center">
             <div>
               <FiUsers className="mx-auto text-4xl text-purple-300" />
+
               <p className="mt-3 font-bold">No members found</p>
             </div>
           </div>
         ) : (
           <div className="mt-6 overflow-hidden rounded-2xl border border-purple-100 bg-white">
             {members.items.map((member) => (
-              <div
-                className="border-b border-purple-50 p-4 last:border-0 sm:flex sm:items-center sm:justify-between"
+              <Link
+                className="flex items-center gap-4 border-b border-purple-50 p-4 transition last:border-0 hover:bg-purple-50"
+                href={`/pastor/members/${member.id}`}
                 key={member.id}
               >
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="font-bold">
                     {[member.firstName, member.otherNames, member.lastName]
                       .filter(Boolean)
                       .join(" ")}
                   </p>
 
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 truncate text-sm text-slate-500">
                     {member.email}
                     {member.phone ? ` · ${member.phone}` : ""}
                   </p>
@@ -102,19 +112,31 @@ export default async function PastorMembersPage({
                   <div className="mt-2 flex flex-wrap gap-2">
                     {member.departments.map((department) => (
                       <span
-                        className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700"
+                        className={
+                          department.isPrimary
+                            ? "rounded-full bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-800"
+                            : "rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700"
+                        }
                         key={department.id}
                       >
                         {department.name}
+                        {department.isPrimary ? " · Primary" : ""}
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <span className="mt-3 inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 sm:mt-0">
-                  {member.membershipStatus}
-                </span>
-              </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                    {member.membershipStatus}
+                  </span>
+
+                  <FiChevronRight
+                    aria-hidden="true"
+                    className="text-slate-300"
+                  />
+                </div>
+              </Link>
             ))}
           </div>
         )}
@@ -123,7 +145,7 @@ export default async function PastorMembersPage({
           <nav className="mt-6 flex items-center justify-between">
             {members.page > 1 ? (
               <Link
-                className="rounded-xl border border-purple-100 bg-white px-4 py-2 text-sm font-bold"
+                className="rounded-xl border border-purple-100 bg-white px-4 py-2 text-sm font-bold transition hover:bg-purple-50"
                 href={pageHref(members.page - 1)}
               >
                 Previous
@@ -138,7 +160,7 @@ export default async function PastorMembersPage({
 
             {members.page < members.totalPages ? (
               <Link
-                className="rounded-xl border border-purple-100 bg-white px-4 py-2 text-sm font-bold"
+                className="rounded-xl border border-purple-100 bg-white px-4 py-2 text-sm font-bold transition hover:bg-purple-50"
                 href={pageHref(members.page + 1)}
               >
                 Next
