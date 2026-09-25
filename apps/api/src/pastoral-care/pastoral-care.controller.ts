@@ -7,18 +7,21 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AdminUser } from '../auth/admin-user.decorator';
-import { AdminGuard, type AdminPrincipal } from '../auth/admin.guard';
+import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
+import {
+  AuthenticatedGuard,
+  type AuthenticatedPrincipal,
+} from '../auth/authenticated.guard';
 import { CreateFollowUpDto } from './dto/create-follow-up.dto';
 import { PastoralCareService } from './pastoral-care.service';
 
 @Controller('pastoral-care')
-@UseGuards(AdminGuard)
+@UseGuards(AuthenticatedGuard)
 export class PastoralCareController {
   constructor(private readonly service: PastoralCareService) {}
 
   @Get('queue')
-  async queue(@AdminUser() user: AdminPrincipal) {
+  async queue(@AuthenticatedUser() user: AuthenticatedPrincipal) {
     return {
       success: true,
       message: 'Pastoral care queue retrieved.',
@@ -30,7 +33,7 @@ export class PastoralCareController {
   async record(
     @Param('memberId', ParseUUIDPipe) memberId: string,
     @Body() input: CreateFollowUpDto,
-    @AdminUser() user: AdminPrincipal,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
   ) {
     return {
       success: true,
