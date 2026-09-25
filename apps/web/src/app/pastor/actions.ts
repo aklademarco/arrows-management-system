@@ -9,5 +9,5 @@ export async function pastorLogout() {
   store.delete("acms_pastor_session");
   store.delete("acms_member_session");
 
-  redirect("/login")
+  redirect("/login");
 }
