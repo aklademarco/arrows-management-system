@@ -8,23 +8,42 @@ import type { AttendanceReportQueryDto } from './dto/attendance-report-query.dto
 import { ReportsRepository } from './reports.repository';
 
 const attendedStatuses = new Set(['EARLY', 'ON_TIME', 'LATE']);
+
 const round = (value: number) => Math.round(value * 100) / 100;
 
 function reportRange(query: AttendanceReportQueryDto) {
   const now = new Date();
-  const defaultFrom = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+  const defaultFrom =
+    `${now.getUTCFullYear()}-` +
+    `${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
   const defaultTo = now.toISOString().slice(0, 10);
+
   const from = query.from ?? defaultFrom;
   const to = query.to ?? defaultTo;
+
   const start = new Date(`${from}T00:00:00Z`);
   const end = new Date(`${to}T00:00:00Z`);
+
   end.setUTCDate(end.getUTCDate() + 1);
-  if (start >= end)
+
+  if (start >= end) {
     throw new BadRequestException('From date must be on or before to date.');
+  }
+
   const days = (end.getTime() - start.getTime()) / 86400000;
-  if (days > 366)
+
+  if (days > 366) {
     throw new BadRequestException('Report range cannot exceed 366 days.');
-  return { from, to, start, end };
+  }
+
+  return {
+    from,
+    to,
+    start,
+    end,
+  };
 }
 
 @Injectable()
@@ -38,40 +57,58 @@ export class ReportsService {
     const isAdministrator = user.roles.some(
       (role) => role === 'ADMIN' || role === 'SUPER_ADMIN',
     );
-    if (!isAdministrator) {
-      if (!user.roles.includes('DEPARTMENT_LEADER') || !query.departmentId)
+
+    const hasChurchWideReportAccess =
+      isAdministrator || user.roles.includes('PASTOR');
+
+    if (!hasChurchWideReportAccess) {
+      if (!user.roles.includes('DEPARTMENT_LEADER') || !query.departmentId) {
         throw new ForbiddenException(
           'Department leaders must select a department they actively lead.',
         );
+      }
+
       const ledDepartmentIds = await this.repository.activelyLedDepartmentIds(
         user.id,
         user.churchId,
       );
-      if (!ledDepartmentIds.includes(query.departmentId))
+
+      if (!ledDepartmentIds.includes(query.departmentId)) {
         throw new ForbiddenException(
           'You may only view reports for a department you actively lead.',
         );
+      }
     }
+
     const range = reportRange(query);
+
     const input = {
       churchId: user.churchId,
       startsAt: range.start,
       endsAt: range.end,
       departmentId: query.departmentId,
     };
+
     const [rows, departmentRows, pendingRegistrations] = await Promise.all([
       this.repository.attendance(input),
+
       this.repository.departmentAttendance(input),
+
       isAdministrator
         ? this.repository.pendingRegistrations(user.churchId)
         : Promise.resolve([]),
     ]);
+
     const scored = rows.filter((row) => row.status !== 'EXCUSED');
+
     const attended = scored.filter((row) => attendedStatuses.has(row.status));
+
     const punctual = attended.filter(
       (row) => (row.punctualityStatus ?? row.status) !== 'LATE',
     );
+
     const manual = rows.filter((row) => row.method === 'MANUAL');
+
     const events = new Map<
       string,
       {
@@ -84,6 +121,7 @@ export class ReportsService {
         excused: number;
       }
     >();
+
     const members = new Map<
       string,
       {
@@ -97,6 +135,7 @@ export class ReportsService {
         punctual: number;
       }
     >();
+
     for (const row of rows) {
       const item = events.get(row.eventId) ?? {
         eventId: row.eventId,
@@ -107,10 +146,17 @@ export class ReportsService {
         absent: 0,
         excused: 0,
       };
+
       item.total += 1;
-      if (attendedStatuses.has(row.status)) item.attended += 1;
-      else if (row.status === 'ABSENT') item.absent += 1;
-      else if (row.status === 'EXCUSED') item.excused += 1;
+
+      if (attendedStatuses.has(row.status)) {
+        item.attended += 1;
+      } else if (row.status === 'ABSENT') {
+        item.absent += 1;
+      } else if (row.status === 'EXCUSED') {
+        item.excused += 1;
+      }
+
       events.set(row.eventId, item);
 
       const member = members.get(row.memberId) ?? {
@@ -123,16 +169,28 @@ export class ReportsService {
         manual: 0,
         punctual: 0,
       };
+
       member.records += 1;
+
       if (attendedStatuses.has(row.status)) {
         member.attended += 1;
-        if ((row.punctualityStatus ?? row.status) !== 'LATE')
+
+        if ((row.punctualityStatus ?? row.status) !== 'LATE') {
           member.punctual += 1;
-      } else if (row.status === 'ABSENT') member.absent += 1;
-      else if (row.status === 'EXCUSED') member.excused += 1;
-      if (row.method === 'MANUAL') member.manual += 1;
+        }
+      } else if (row.status === 'ABSENT') {
+        member.absent += 1;
+      } else if (row.status === 'EXCUSED') {
+        member.excused += 1;
+      }
+
+      if (row.method === 'MANUAL') {
+        member.manual += 1;
+      }
+
       members.set(row.memberId, member);
     }
+
     const departments = new Map<
       string,
       {
@@ -146,6 +204,7 @@ export class ReportsService {
         events: Set<string>;
       }
     >();
+
     for (const row of departmentRows) {
       const department = departments.get(row.departmentId) ?? {
         departmentId: row.departmentId,
@@ -157,20 +216,30 @@ export class ReportsService {
         punctual: 0,
         events: new Set<string>(),
       };
+
       department.records += 1;
       department.events.add(row.eventId);
+
       if (attendedStatuses.has(row.status)) {
         department.attended += 1;
-        if ((row.punctualityStatus ?? row.status) !== 'LATE')
+
+        if ((row.punctualityStatus ?? row.status) !== 'LATE') {
           department.punctual += 1;
-      } else if (row.status === 'ABSENT') department.absent += 1;
-      else if (row.status === 'EXCUSED') department.excused += 1;
+        }
+      } else if (row.status === 'ABSENT') {
+        department.absent += 1;
+      } else if (row.status === 'EXCUSED') {
+        department.excused += 1;
+      }
+
       departments.set(row.departmentId, department);
     }
+
     return {
       from: range.from,
       to: range.to,
       departmentId: query.departmentId ?? null,
+
       totals: {
         events: events.size,
         records: rows.length,
@@ -178,22 +247,29 @@ export class ReportsService {
         absent: scored.length - attended.length,
         excused: rows.length - scored.length,
         manual: manual.length,
+
         attendanceRate: scored.length
           ? round((attended.length / scored.length) * 100)
           : 0,
+
         punctualityRate: attended.length
           ? round((punctual.length / attended.length) * 100)
           : 0,
       },
+
       events: [...events.values()].reverse(),
+
       members: [...members.values()]
         .map((member) => {
           const expected = member.records - member.excused;
+
           return {
             ...member,
+
             attendanceRate: expected
               ? round((member.attended / expected) * 100)
               : 0,
+
             punctualityRate: member.attended
               ? round((member.punctual / member.attended) * 100)
               : 0,
@@ -205,9 +281,11 @@ export class ReportsService {
             b.absent - a.absent ||
             a.displayName.localeCompare(b.displayName),
         ),
+
       departments: [...departments.values()]
         .map((department) => {
           const expected = department.records - department.excused;
+
           return {
             departmentId: department.departmentId,
             departmentName: department.departmentName,
@@ -216,9 +294,11 @@ export class ReportsService {
             attended: department.attended,
             absent: department.absent,
             excused: department.excused,
+
             attendanceRate: expected
               ? round((department.attended / expected) * 100)
               : 0,
+
             punctualityRate: department.attended
               ? round((department.punctual / department.attended) * 100)
               : 0,
@@ -230,6 +310,7 @@ export class ReportsService {
             b.punctualityRate - a.punctualityRate ||
             a.departmentName.localeCompare(b.departmentName),
         ),
+
       repeatedAbsences: [...members.values()]
         .filter((member) => member.absent >= 2)
         .sort(
@@ -243,6 +324,7 @@ export class ReportsService {
           attended: member.attended,
           excused: member.excused,
         })),
+
       manualAttendance: rows
         .filter((row) => row.method === 'MANUAL')
         .map((row) => ({
@@ -255,10 +337,14 @@ export class ReportsService {
           checkedInAt: row.checkedInAt?.toISOString() ?? null,
           reason: row.manualReason,
         })),
+
       pendingRegistrations: pendingRegistrations.map((registration) => ({
         ...registration,
+
         emailVerified: registration.emailVerifiedAt !== null,
+
         emailVerifiedAt: registration.emailVerifiedAt?.toISOString() ?? null,
+
         registeredAt: registration.registeredAt.toISOString(),
       })),
     };
@@ -269,10 +355,13 @@ export class ReportsService {
     user: AuthenticatedPrincipal,
   ) {
     const report = await this.attendanceSummary(query, user);
+
     const escape = (value: string | number | null) => {
       const text = String(value ?? '');
+
       return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
     };
+
     const lines = [
       [
         'Member',
@@ -284,6 +373,7 @@ export class ReportsService {
         'Punctuality rate',
         'Manual',
       ],
+
       ...report.members.map((member) => [
         member.displayName,
         member.records,
@@ -295,8 +385,10 @@ export class ReportsService {
         member.manual,
       ]),
     ];
+
     return {
       filename: `attendance-${report.from}-to-${report.to}.csv`,
+
       content: lines.map((line) => line.map(escape).join(',')).join('\n'),
     };
   }
