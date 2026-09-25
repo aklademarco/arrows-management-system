@@ -52,25 +52,22 @@ export async function memberLogin(
     if (!profileResponse.ok) {
       return { message: "This account does not have an active member profile." };
     }
-    (await cookies()).set("acms_member_session", body.data.accessToken, {
+    const store = await cookies();
+    const sessionOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "lax" as const,
       maxAge: 15 * 60,
       path: "/",
-    });
-    if (
-      body.data.user.roles.includes("PASTOR") ||
-      body.data.user.roles.includes("DEPARTMENT_LEADER")
-    ) {
-      (await cookies()).set("acms_leader_session", body.data.accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 15 * 60,
-        path: "/",
-      });
-      destination = "/leader";
+    };
+
+    store.set("acms_member_session", body.data.accessToken, sessionOptions);
+
+    if (body.data.user.roles.includes("PASTOR")) {
+      store.set("acms_pastor_session", body.data.accessToken, sessionOptions)
+    } else if (body.data.user.roles.includes("DEPARTMENT_LEADER")){
+      store.set ("acms_leader_session", body.data.accessToken, sessionOptions)
+      destination = "/leader"
     }
   } catch {
     return { message: "The login service is unavailable. Try again shortly." };
@@ -79,7 +76,10 @@ export async function memberLogin(
 }
 
 export async function memberLogout() {
-  (await cookies()).delete("acms_member_session");
-  (await cookies()).delete("acms_leader_session");
-  redirect("/login");
+  const store = await cookies();
+  store.delete("acms_member_session")
+  store.delete("acms_leader_session");
+  store.delete("acms_pastor_session");
+
+  redirect("/login")
 }
