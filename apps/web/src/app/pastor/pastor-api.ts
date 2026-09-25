@@ -6,7 +6,7 @@ export async function getPastorResource<T>(path: string): Promise<T> {
 
   if (!token) redirect("/login");
 
-  const apiUrl = process.env.API_URL ?? "http://localhost:400/api/v1";
+  const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
 
   const response = await fetch(`${apiUrl}${path}`, {
     headers: {Authorization: `Bearer ${token}`},
