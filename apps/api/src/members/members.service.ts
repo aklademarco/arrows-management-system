@@ -10,7 +10,7 @@ import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersRepository } from './members.repository';
 
-const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
+const CHURCH_WIDE_READ_ROLES = ['SUPER_ADMIN', 'ADMIN', 'PASTOR'];
 
 @Injectable()
 export class MembersService {
@@ -42,15 +42,10 @@ export class MembersService {
     );
   }
 
-  /**
-   * Resolves the department directory a viewer may read. Administrators see the
-   * whole church (undefined); a department leader is limited to the departments
-   * they currently lead. Anyone else is denied.
-   */
   private async resolveReadScope(
     viewer: AuthenticatedPrincipal,
   ): Promise<string[] | undefined> {
-    if (viewer.roles.some((role) => ADMIN_ROLES.includes(role))) {
+    if (viewer.roles.some((role) => CHURCH_WIDE_READ_ROLES.includes(role))) {
       return undefined;
     }
     const ledDepartmentIds = await this.repository.findLedDepartmentIds(
