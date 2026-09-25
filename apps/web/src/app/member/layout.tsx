@@ -11,11 +11,8 @@ import { redirect } from "next/navigation";
 export default async function MemberLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [member, unread, account] = await Promise.all([
-    getMemberProfile<MemberProfile>(),
-    getMemberResource<{ count: number }>("/notifications/unread-count"),
-    getMemberResource<{ roles: string[] }>("/auth/me"),
-  ]);
+  const account = await getMemberResource<{ roles: string[] }>("/auth/me");
+
   if (account.roles.includes("PASTOR")) {
     redirect("/pastor");
   }
@@ -23,6 +20,11 @@ export default async function MemberLayout({
   if (account.roles.includes("DEPARTMENT_LEADER")) {
     redirect("/leader");
   }
+
+  const [member, unread] = await Promise.all([
+    getMemberProfile<MemberProfile>(),
+    getMemberResource<{ count: number }>("/notifications/unread-count"),
+  ]);
 
   const memberName = `${member.firstName} ${member.lastName}`;
   return (
