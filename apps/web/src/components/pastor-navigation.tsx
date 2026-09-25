@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiGrid, FiHeart, FiUsers } from "react-icons/fi";
+import { FiCalendar, FiGrid, FiHeart, FiUsers } from "react-icons/fi";
 
 const items = [
   {
@@ -20,6 +20,11 @@ const items = [
     label: "Pastoral Care",
     icon: FiHeart,
   },
+  {
+    href: "/pastor/attendance",
+    label: "Attendance",
+    icon: FiCalendar,
+  },
 ];
 
 export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
@@ -28,7 +33,7 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
   return (
     <nav
       aria-label="Pastoral workspace"
-      className={mobile ? "grid grid-cols-3 gap-1" : "grid gap-2"}
+      className={mobile ? "grid grid-cols-4 gap-1" : "grid gap-2"}
     >
       {items.map(({ href, label, icon: Icon }) => {
         const active =
