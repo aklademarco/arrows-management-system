@@ -7,6 +7,7 @@ import {
   FiCalendar,
   FiGrid,
   FiHeart,
+  FiLayers,
   FiUsers,
 } from "react-icons/fi";
 
@@ -36,6 +37,11 @@ const items = [
     label: "Reports",
     icon: FiBarChart2,
   },
+  {
+    href: "/pastor/departments",
+    label: "Departments",
+    icon: FiLayers,
+  },
 ];
 
 export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
@@ -44,7 +50,7 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
   return (
     <nav
       aria-label="Pastoral workspace"
-      className={mobile ? "grid grid-cols-5 gap-1" : "grid gap-2"}
+      className={mobile ? "flex gap-1 overflow-x-auto" : "grid gap-2"}
     >
       {items.map(({ href, label, icon: Icon }) => {
         const active =
@@ -55,7 +61,7 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
             aria-current={active ? "page" : undefined}
             className={
               mobile
-                ? `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold ${
+                ? `flex min-h-14 min-w-[72px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold ${
                     active ? "bg-purple-100 text-purple-700" : "text-slate-500"
                   }`
                 : `group relative grid size-12 place-items-center rounded-2xl text-xl text-white transition hover:bg-white/15 ${
