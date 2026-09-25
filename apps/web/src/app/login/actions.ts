@@ -50,7 +50,9 @@ export async function memberLogin(
       cache: "no-store",
     });
     if (!profileResponse.ok) {
-      return { message: "This account does not have an active member profile." };
+      return {
+        message: "This account does not have an active member profile.",
+      };
     }
     const store = await cookies();
     const sessionOptions = {
@@ -62,12 +64,16 @@ export async function memberLogin(
     };
 
     store.set("acms_member_session", body.data.accessToken, sessionOptions);
+    store.delete("acms_pastor_session");
+    store.delete("acms_leader_session");
+
 
     if (body.data.user.roles.includes("PASTOR")) {
-      store.set("acms_pastor_session", body.data.accessToken, sessionOptions)
-    } else if (body.data.user.roles.includes("DEPARTMENT_LEADER")){
-      store.set ("acms_leader_session", body.data.accessToken, sessionOptions)
-      destination = "/leader"
+      store.set("acms_pastor_session", body.data.accessToken, sessionOptions);
+      destination = "/pastor";
+    } else if (body.data.user.roles.includes("DEPARTMENT_LEADER")) {
+      store.set("acms_leader_session", body.data.accessToken, sessionOptions);
+      destination = "/leader";
     }
   } catch {
     return { message: "The login service is unavailable. Try again shortly." };
@@ -77,9 +83,9 @@ export async function memberLogin(
 
 export async function memberLogout() {
   const store = await cookies();
-  store.delete("acms_member_session")
+  store.delete("acms_member_session");
   store.delete("acms_leader_session");
   store.delete("acms_pastor_session");
 
-  redirect("/login")
+  redirect("/login");
 }
