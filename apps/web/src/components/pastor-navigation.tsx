@@ -71,24 +71,24 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
 
   if (!mobile) {
     return (
-      <nav aria-label="Pastoral workspace" className="grid gap-2">
+      <nav aria-label="Pastoral workspace" className="grid w-full gap-1">
         {allItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
 
           return (
             <Link
               aria-current={active ? "page" : undefined}
-              className={`group relative grid size-12 place-items-center rounded-2xl text-xl text-white transition ${
-                active ? "bg-white/20" : "hover:bg-white/15"
+              className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${
+                active
+                  ? "bg-purple-100 text-purple-700"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
               }`}
               href={href}
               key={href}
             >
-              <Icon aria-hidden="true" />
+              <Icon aria-hidden="true" className="shrink-0 text-lg" />
 
-              <span className="pointer-events-none absolute left-16 z-50 whitespace-nowrap rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold text-white opacity-0 shadow-lg transition group-hover:opacity-100">
-                {label}
-              </span>
+              <span>{label}</span>
             </Link>
           );
         })}
