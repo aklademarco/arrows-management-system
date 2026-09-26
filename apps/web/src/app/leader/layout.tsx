@@ -6,6 +6,7 @@ import { ProfileAvatar } from "@/components/profile-avatar";
 import { LeaderNavigation } from "@/components/leader-navigation";
 import { leaderLogout } from "./actions";
 import { getLeaderResource } from "./leader-api";
+import { cookies } from "next/headers";
 
 type Account = {
   roles: string[];
@@ -21,13 +22,16 @@ export default async function LeaderLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const hasPastorSession = (await cookies()).has("acms_pastor_session");
+
+  if (hasPastorSession) {
+    redirect("/pastor");
+  }
+
   const account = await getLeaderResource<Account>("/auth/me");
-  if (
-    !account.roles.some(
-      (role) => role === "PASTOR" || role === "DEPARTMENT_LEADER",
-    )
-  )
+  if (!account.roles.includes("DEPARTMENT_LEADER")) {
     redirect("/member");
+  }
   const name = account.memberProfile
     ? `${account.memberProfile.firstName} ${account.memberProfile.lastName}`
     : "Church leader";
