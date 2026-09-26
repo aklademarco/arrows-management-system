@@ -89,10 +89,18 @@ export class EventsRepository {
       template.longitude === null ||
       template.geofenceRadiusMeters === null
     ) {
-      throw new NotFoundException('Church geofence has not been configured.');
+      return {
+        configured: false,
+        locationName: '',
+        latitude: null,
+        longitude: null,
+        geofenceRadiusMeters: 100,
+        maximumAccuracyMeters: template?.maximumAccuracyMeters ?? 50,
+      };
     }
 
     return {
+      configured: true,
       locationName: template.locationName ?? '',
       latitude: Number(template.latitude),
       longitude: Number(template.longitude),
