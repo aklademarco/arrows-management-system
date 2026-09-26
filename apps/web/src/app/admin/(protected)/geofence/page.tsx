@@ -4,9 +4,10 @@ import { getAdminResource } from "../registrations/admin-api";
 import GeofenceSetup from "./geofence-setup";
 
 export type GeofenceSettings = {
+  configured: boolean;
   locationName: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   geofenceRadiusMeters: number;
   maximumAccuracyMeters: number;
 };
