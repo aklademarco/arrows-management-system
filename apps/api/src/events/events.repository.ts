@@ -135,6 +135,12 @@ export class EventsRepository {
         )
         .returning({ id: recurringServiceTemplates.id });
 
+      if (templates.length === 0) {
+        throw new NotFoundException(
+          'No active recurring service template was found for this church.',
+        );
+      }
+
       const scheduledEvents = await transaction
         .update(events)
         .set(setting)
