@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { FiChevronRight, FiSearch, FiUsers } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiSearch } from "react-icons/fi";
+
+import { MemberDirectoryGrid } from "@/components/members/member-directory-grid";
+import type { DirectoryMember } from "@/components/members/member-directory-card";
+
 import { getPastorResource } from "../pastor-api";
 
 type Member = {
@@ -7,6 +11,7 @@ type Member = {
   firstName: string;
   lastName: string;
   otherNames: string | null;
+  profilePhotoUrl?: string | null;
   email: string;
   phone: string | null;
   accountStatus: string;
@@ -28,7 +33,10 @@ type MemberPage = {
 export default async function PastorMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; page?: string }>;
+  searchParams: Promise<{
+    search?: string;
+    page?: string;
+  }>;
 }) {
   const parameters = await searchParams;
 
@@ -46,6 +54,26 @@ export default async function PastorMembersPage({
     `/members?${query.toString()}`,
   );
 
+  const directoryMembers: DirectoryMember[] = members.items.map((member) => {
+    const displayName = [member.firstName, member.otherNames, member.lastName]
+      .filter(Boolean)
+      .join(" ");
+
+    const primaryDepartment = member.departments.find(
+      (department) => department.isPrimary,
+    );
+
+    const firstDepartment = primaryDepartment ?? member.departments[0];
+
+    return {
+      id: member.id,
+      displayName,
+      profilePhotoUrl: member.profilePhotoUrl,
+      subtitle: firstDepartment?.name ?? member.membershipStatus,
+      href: `/pastor/members/${member.id}`,
+    };
+  });
+
   const pageHref = (page: number) => {
     const nextQuery = new URLSearchParams(query);
 
@@ -55,115 +83,69 @@ export default async function PastorMembersPage({
   };
 
   return (
-    <main className="min-h-screen p-5 sm:p-8">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
+      <div className="mx-auto max-w-[1400px]">
         <header>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-600">
-            Church family
-          </p>
+          <p className="text-sm font-bold text-purple-600">Church family</p>
 
-          <h1 className="mt-2 text-3xl font-black">Members</h1>
+          <div className="mt-1 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-black tracking-[-0.04em] sm:text-4xl">
+                Members
+              </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
-            {members.total} member{members.total === 1 ? "" : "s"}
-          </p>
+              <p className="mt-2 text-sm font-medium text-slate-500">
+                {members.total} member
+                {members.total === 1 ? "" : "s"}
+              </p>
+            </div>
+          </div>
         </header>
 
-        <form className="relative mt-6" role="search">
+        <form className="relative mt-6 max-w-xl" role="search">
           <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
 
           <input
-            className="h-12 w-full rounded-xl border border-purple-100 bg-white pl-11 pr-4 outline-none focus:border-purple-300"
+            className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
             defaultValue={parameters.search}
             name="search"
-            placeholder="Search name, email or phone"
+            placeholder="Search members"
             type="search"
           />
         </form>
 
-        {members.items.length === 0 ? (
-          <div className="mt-6 grid min-h-64 place-items-center rounded-2xl border border-dashed border-purple-200 bg-white text-center">
-            <div>
-              <FiUsers className="mx-auto text-4xl text-purple-300" />
-
-              <p className="mt-3 font-bold">No members found</p>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-6 overflow-hidden rounded-2xl border border-purple-100 bg-white">
-            {members.items.map((member) => (
-              <Link
-                className="flex items-center gap-4 border-b border-purple-50 p-4 transition last:border-0 hover:bg-purple-50"
-                href={`/pastor/members/${member.id}`}
-                key={member.id}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold">
-                    {[member.firstName, member.otherNames, member.lastName]
-                      .filter(Boolean)
-                      .join(" ")}
-                  </p>
-
-                  <p className="mt-1 truncate text-sm text-slate-500">
-                    {member.email}
-                    {member.phone ? ` · ${member.phone}` : ""}
-                  </p>
-
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {member.departments.map((department) => (
-                      <span
-                        className={
-                          department.isPrimary
-                            ? "rounded-full bg-purple-100 px-2.5 py-1 text-xs font-bold text-purple-800"
-                            : "rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-700"
-                        }
-                        key={department.id}
-                      >
-                        {department.name}
-                        {department.isPrimary ? " · Primary" : ""}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-3">
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                    {member.membershipStatus}
-                  </span>
-
-                  <FiChevronRight
-                    aria-hidden="true"
-                    className="text-slate-300"
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        <section className="mt-8">
+          <MemberDirectoryGrid members={directoryMembers} />
+        </section>
 
         {members.totalPages > 1 && (
-          <nav className="mt-6 flex items-center justify-between">
+          <nav
+            aria-label="Member pages"
+            className="mt-10 flex items-center justify-between border-t border-slate-200 pt-5"
+          >
             {members.page > 1 ? (
               <Link
-                className="rounded-xl border border-purple-100 bg-white px-4 py-2 text-sm font-bold transition hover:bg-purple-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
                 href={pageHref(members.page - 1)}
               >
+                <FiChevronLeft />
                 Previous
               </Link>
             ) : (
               <span />
             )}
 
-            <span className="text-sm text-slate-500">
-              Page {members.page} of {members.totalPages}
+            <span className="text-xs font-bold text-slate-400">
+              {members.page} / {members.totalPages}
             </span>
 
             {members.page < members.totalPages ? (
               <Link
-                className="rounded-xl border border-purple-100 bg-white px-4 py-2 text-sm font-bold transition hover:bg-purple-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
                 href={pageHref(members.page + 1)}
               >
                 Next
+                <FiChevronRight />
               </Link>
             ) : (
               <span />
