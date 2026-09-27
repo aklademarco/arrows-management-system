@@ -53,7 +53,7 @@ export function ProfilePhotoPicker({
         setPreview(url);
         setMessage("Profile photo saved.");
         router.refresh();
-      } catch (error) {
+      } catch  {
         setMessage(
           "We couldn't update your profile photo. Please try again."
         );
