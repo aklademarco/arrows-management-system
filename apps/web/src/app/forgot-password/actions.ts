@@ -7,7 +7,7 @@ export type PasswordResetState = { success: boolean; message: string };
 const emailSchema = z.email("Enter a valid email address.").max(255);
 const passwordSchema = z
   .string()
-  .min(12, "Use at least 12 characters.")
+  .min(6, "Use at least 6 characters.")
   .max(128)
   .regex(/[a-z]/, "Include a lowercase letter.")
   .regex(/[A-Z]/, "Include an uppercase letter.")

@@ -42,7 +42,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         Choose a new password
       </h1>
       <p className="mt-2 text-sm leading-6 text-slate-500">
-        Use 12 or more characters with uppercase, lowercase, number, and special
+        Use at least 6  characters with uppercase, lowercase, number, and special
         characters.
       </p>
       <form action={action} className="mt-7 grid gap-4" noValidate>
@@ -75,7 +75,7 @@ function PasswordField({ label, name }: { label: string; name: string }) {
       <input
         autoComplete="new-password"
         className="h-12 rounded-2xl border border-purple-100 bg-[#fbfafc] px-4 outline-none focus:border-[#6b21a8] focus:ring-4 focus:ring-purple-100"
-        minLength={12}
+        minLength={6}
         name={name}
         required
         type="password"

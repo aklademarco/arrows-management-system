@@ -8,30 +8,74 @@ export type RegistrationState = {
   errors?: Record<string, string[]>;
 };
 
+
+const commonEmailTypos: Record<string, string> = {
+  "gmal.com": "gmail.com",
+  "gmial.com": "gmail.com",
+  "gmai.com": "gmail.com",
+  "gmail.con": "gmail.com",
+  "gmail.co": "gmail.com",
+
+  "yaho.com": "yahoo.com",
+  "yhoo.com": "yahoo.com",
+  "yahoo.con": "yahoo.com",
+
+  "hotmal.com": "hotmail.com",
+  "hotmai.com": "hotmail.com",
+  "hotmail.con": "hotmail.com",
+
+  "outlok.com": "outlook.com",
+  "outloo.com": "outlook.com",
+  "outlook.con": "outlook.com",
+};
+
+const emailSchema = z
+  .email("Enter a valid email address.")
+  .max(255, "Email address is too long.")
+  .toLowerCase()
+  .superRefine((email, ctx) => {
+    const [username, domain] = email.split("@");
+    const correctedDomain = commonEmailTypos[domain];
+
+    if (correctedDomain) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Did you mean ${username}@${correctedDomain}?`,
+      });
+    }
+  });
+
 const registrationSchema = z
   .object({
     firstName: z.string().trim().min(1, "Enter your first name.").max(100),
+
     lastName: z.string().trim().min(1, "Enter your last name.").max(100),
+
     otherNames: z.string().trim().max(150).optional(),
-    email: z.email("Enter a valid email address.").toLowerCase(),
+
+    email: emailSchema,
+
     phone: z
       .string()
       .trim()
       .max(30, "Enter a shorter phone number.")
       .optional()
       .or(z.literal("")),
+
     requestedDepartmentId: z
       .uuid("Choose a valid department.")
       .optional()
       .or(z.literal("")),
+
     password: z
       .string()
-      .min(12, "Use at least 12 characters.")
+      .min(6, "Use at least 6 characters.")
       .max(128)
       .regex(/[a-z]/, "Add a lowercase letter.")
       .regex(/[A-Z]/, "Add an uppercase letter.")
       .regex(/\d/, "Add a number.")
       .regex(/[^A-Za-z0-9]/, "Add a special character."),
+
     confirmPassword: z.string(),
   })
   .refine((value) => value.password === value.confirmPassword, {
@@ -62,12 +106,15 @@ export async function register(
     requestedDepartmentId: result.data.requestedDepartmentId,
     password: result.data.password,
   };
+
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
 
   try {
     const response = await fetch(`${apiUrl}/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         ...payload,
         phone: payload.phone || undefined,
@@ -76,6 +123,7 @@ export async function register(
       }),
       cache: "no-store",
     });
+
     const body = (await response.json()) as { message?: string };
 
     return response.ok
@@ -90,7 +138,8 @@ export async function register(
   } catch {
     return {
       success: false,
-      message: "The registration service is unavailable. Please try again shortly.",
+      message:
+        "The registration service is unavailable. Please try again shortly.",
     };
   }
 }

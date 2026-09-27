@@ -56,6 +56,16 @@ COPY --from=builder --chown=nextjs:nodejs \
 COPY --from=builder --chown=nextjs:nodejs \
     /app/apps/web/public ./apps/web/public
 
+
+# Work around Next standalone/pnpm SWC helper tracing issue.
+# Next expects @swc/helpers beside its own pnpm package at runtime.
+RUN set -eux; \
+    for swc_dir in /app/node_modules/.pnpm/next@*/node_modules/@swc; do \
+        test -d "$swc_dir"; \
+        rm -rf "$swc_dir/helpers"; \
+        cp -R /app/apps/web/node_modules/@swc/helpers "$swc_dir/helpers"; \
+    done    
+
 USER nextjs
 
 WORKDIR /app/apps/web

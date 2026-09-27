@@ -16,6 +16,9 @@ import {
 const normalizeText = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
+const VALID_EMAIL_DOMAIN =
+  /@(?!gmal\.com$|gmial\.com$|gmai\.com$|gmail\.con$|gmail\.co$|yaho\.com$|yhoo\.com$|yahoo\.con$|hotmal\.com$|hotmai\.com$|hotmail\.con$|outlok\.com$|outloo\.com$|outlook\.con$)[^@]+$/i;
+
 export class RegisterDto {
   @Transform(normalizeText)
   @IsString()
@@ -38,7 +41,10 @@ export class RegisterDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
-  @IsEmail()
+  @IsEmail({}, { message: 'Enter a valid email address.' })
+  @Matches(VALID_EMAIL_DOMAIN, {
+    message: 'Check your email address. The email domain may be misspelled.',
+  })
   @MaxLength(255)
   email!: string;
 
@@ -52,7 +58,7 @@ export class RegisterDto {
   phone?: string;
 
   @IsString()
-  @MinLength(12)
+  @MinLength(6)
   @MaxLength(128)
   @Matches(/[a-z]/, { message: 'password must contain a lowercase letter' })
   @Matches(/[A-Z]/, { message: 'password must contain an uppercase letter' })

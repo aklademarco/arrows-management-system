@@ -23,7 +23,7 @@ export class ConfirmPasswordResetDto {
   token!: string;
 
   @IsString()
-  @MinLength(12)
+  @MinLength(6)
   @MaxLength(128)
   @Matches(/[a-z]/, { message: 'newPassword must contain a lowercase letter' })
   @Matches(/[A-Z]/, { message: 'newPassword must contain an uppercase letter' })
