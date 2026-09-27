@@ -27,6 +27,13 @@ export function VerificationForm({ token }: { token?: string }) {
         <p className="mt-2 leading-7 text-slate-600">
           Your registration can now be reviewed by an administrator.
         </p>
+
+        <Link
+          className="inline-flex h-12 items-center justify-center rounded-xl bg-[#240046] px-6 font-bold text-white transition hover:bg-[#17002e]"
+          href="/login"
+        >
+          Sign in
+        </Link>
         <Link
           className="mt-8 inline-flex h-12 items-center justify-center rounded-xl bg-[#240046] px-6 font-bold text-white transition hover:bg-[#17002e]"
           href="/account-status"
