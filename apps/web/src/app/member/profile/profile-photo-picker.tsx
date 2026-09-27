@@ -55,9 +55,7 @@ export function ProfilePhotoPicker({
         router.refresh();
       } catch (error) {
         setMessage(
-          error instanceof Error
-            ? error.message
-            : "Profile photo could not be saved.",
+          "We couldn't update your profile photo. Please try again."
         );
       }
     });
@@ -78,8 +76,12 @@ export function ProfilePhotoPicker({
     try {
       setMessage("Preparing photo…");
       upload(await optimizeProfile(file));
-    } catch {
-      setMessage("We couldn't update your profile photo. Please try again.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error 
+        ? error.message
+        : "Photo could not be processed"
+      );
     }
   };
   return (
