@@ -53,11 +53,9 @@ export function ProfilePhotoPicker({
         setPreview(url);
         setMessage("Profile photo saved.");
         router.refresh();
-      } catch (error) {
+      } catch  {
         setMessage(
-          error instanceof Error
-            ? error.message
-            : "Profile photo could not be saved.",
+          "We couldn't update your profile photo. Please try again."
         );
       }
     });
@@ -69,12 +67,8 @@ export function ProfilePhotoPicker({
         setPreview(null);
         setMessage("Profile photo removed.");
         router.refresh();
-      } catch (error) {
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Profile photo could not be removed.",
-        );
+      } catch {
+        setMessage("We couldn't remove your profile photo. Please try again.");
       }
     });
   const choosePhoto = async (file?: File) => {
@@ -84,19 +78,33 @@ export function ProfilePhotoPicker({
       upload(await optimizeProfile(file));
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Photo could not be processed.",
+        error instanceof Error 
+        ? error.message
+        : "Photo could not be processed"
       );
     }
   };
   return (
-    <div className={compact ? "relative flex flex-col items-center" : "flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left"}>
-      <div className={compact ? "relative w-fit rounded-full bg-white p-1.5" : "relative"}>
+    <div
+      className={
+        compact
+          ? "relative flex flex-col items-center"
+          : "flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left"
+      }
+    >
+      <div
+        className={
+          compact ? "relative w-fit rounded-full bg-white p-1.5" : "relative"
+        }
+      >
         {preview ? (
           <Image
             alt={`${name} profile photo`}
-            className={compact ? "size-28 rounded-full object-cover ring-4 ring-white sm:size-32" : "size-24 rounded-full object-cover ring-4 ring-purple-100"}
+            className={
+              compact
+                ? "size-28 rounded-full object-cover ring-4 ring-white sm:size-32"
+                : "size-24 rounded-full object-cover ring-4 ring-purple-100"
+            }
             height={128}
             src={preview}
             unoptimized
@@ -127,11 +135,17 @@ export function ProfilePhotoPicker({
         <div className={compact ? "hidden" : ""}>
           <p className="font-extrabold">Profile photo</p>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-          Choose a clear square photo. It is cropped automatically and stored
-          securely in Cloudinary.
+            Choose a clear square photo. It is cropped automatically and stored
+            securely in Cloudinary.
           </p>
         </div>
-        <div className={compact ? "flex flex-wrap justify-center gap-2" : "mt-3 flex flex-wrap gap-2"}>
+        <div
+          className={
+            compact
+              ? "flex flex-wrap justify-center gap-2"
+              : "mt-3 flex flex-wrap gap-2"
+          }
+        >
           {preview ? (
             <button
               className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-red-600"
