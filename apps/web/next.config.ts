@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
     : {
         output: "standalone",
         outputFileTracingRoot: workspaceRoot,
+        outputFileTracingIncludes: {
+          "/*": ["./node_modules/@swc/helpers/esm/**/*"],
+        },
       }),
 };
 
