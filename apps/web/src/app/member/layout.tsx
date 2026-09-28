@@ -46,7 +46,7 @@ export default async function MemberLayout({
                 ARROWS
               </span>
               <span className="mt-1 block max-w-44 text-[10px] font-semibold leading-tight text-slate-400">
-                In the hands of the mighty one
+                In the Hands of a Mighty Man
               </span>
             </span>
           </Link>
