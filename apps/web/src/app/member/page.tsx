@@ -148,7 +148,7 @@ export default async function MemberPage() {
             )}
           </CheckInHero>
 
-          <article className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)] sm:p-8">
+          <article className="rounded-4xl border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(70,40,100,0.07)] sm:p-8">
             <div className="flex items-center justify-between">
               <div>
                 <p className="flex items-center gap-2 text-sm font-extrabold text-[#ff5a1f]">
@@ -192,7 +192,7 @@ export default async function MemberPage() {
           <Link className="text-sm font-extrabold text-[#6b21a8]" href="/member/attendance">Show all activity</Link>
         </div>
         <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          <article className="rounded-[2rem] border border-purple-100 bg-[#efffce] p-6 sm:p-7">
+          <article className="rounded-4xl border border-purple-100 bg-[#efffce] p-6 sm:p-7">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-extrabold text-[#497016]">
