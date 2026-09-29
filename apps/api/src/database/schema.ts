@@ -308,7 +308,7 @@ export const memberProfiles = pgTable('member_profiles', {
   otherNames: varchar('other_names', { length: 150 }),
   dateOfBirth: date('date_of_birth'),
   homeAddress: varchar('home_address', { length: 300 }),
-  clossestLandmark: varchar('closest_landmark', { length: 200 }),
+  closestLandmark: varchar('closest_landmark', { length: 200 }),
   profilePhotoUrl: text('profile_photo_url'),
   directoryBio: varchar('directory_bio', { length: 300 }),
   directoryVisible: boolean('directory_visible').notNull().default(true),
