@@ -40,10 +40,6 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 export class MembersRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  /**
-   * Department IDs the given user currently leads within their church. A term
-   * counts when it is not revoked and today falls inside its half-open range.
-   */
   async findLedDepartmentIds(
     userId: string,
     churchId: string,
@@ -82,6 +78,9 @@ export class MembersRepository {
         firstName: memberProfiles.firstName,
         lastName: memberProfiles.lastName,
         otherNames: memberProfiles.otherNames,
+        dateOfBirth: memberProfiles.dateOfBirth,
+        homeAddress: memberProfiles.homeAddress,
+        closestLandmark: memberProfiles.closestLandmark,
         profilePhotoUrl: memberProfiles.profilePhotoUrl,
         directoryBio: memberProfiles.directoryBio,
         directoryVisible: memberProfiles.directoryVisible,
