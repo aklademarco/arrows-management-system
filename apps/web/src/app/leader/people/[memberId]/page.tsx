@@ -1,5 +1,13 @@
 import Link from "next/link";
-import { FiArrowLeft, FiMessageCircle, FiPhone, FiUsers } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiCalendar,
+  FiHome,
+  FiMapPin,
+  FiMessageCircle,
+  FiPhone,
+  FiUsers,
+} from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getLeaderResource } from "../../leader-api";
 
@@ -84,6 +92,48 @@ export default async function LeaderPersonPage({
               {person.directoryBio}
             </p>
           ) : null}
+        </section>
+
+        <section className="mt-4 rounded-[1.75rem] border border-purple-100 bg-white p-5">
+          <h2 className="font-black text-[#6b21a8]">Follow-up information</h2>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl bg-purple-50 p-4">
+              <FiCalendar className="text-xl text-[#6b21a8]" />
+
+              <p className="mt-2 text-xs font-bold uppercase text-slate-400">
+                Date of birth
+              </p>
+
+              <p className="mt-1 text-sm font-semibold">
+                {person.dateOfBirth ?? "Not provided"}
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-purple-50 p-4">
+              <FiHome className="text-xl text-[#6b21a8]" />
+
+              <p className="mt-2 text-xs font-bold uppercase text-slate-400">
+                Home address
+              </p>
+
+              <p className="mt-1 text-sm font-semibold">
+                {person.homeAddress ?? "Not provided"}
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-purple-50 p-4">
+              <FiMapPin className="text-xl text-[#6b21a8]" />
+
+              <p className="mt-2 text-xs font-bold uppercase text-slate-400">
+                Closest landmark
+              </p>
+
+              <p className="mt-1 text-sm font-semibold">
+                {person.closestLandmark ?? "Not provided"}
+              </p>
+            </div>
+          </div>
         </section>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <section className="rounded-[1.75rem] border border-purple-100 bg-white p-5">
