@@ -23,6 +23,9 @@ export type NewRegistration = {
   firstName: string;
   lastName: string;
   otherNames?: string;
+  dateOfBirth: string;
+  homeAddress?: string;
+  closestLandmark?: string;
   requestedDepartmentId?: string;
   tokenHash: string;
   tokenExpiresAt: Date;
@@ -106,6 +109,9 @@ export class RegistrationRepository {
           firstName: input.firstName,
           lastName: input.lastName,
           otherNames: input.otherNames,
+          dateOfBirth: input.dateOfBirth,
+          homeAddress: input.homeAddress,
+          closestLandmark: input.closestLandmark,
           requestedDepartmentId: input.requestedDepartmentId,
         });
 
