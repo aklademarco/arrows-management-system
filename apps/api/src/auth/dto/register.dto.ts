@@ -40,7 +40,7 @@ export class RegisterDto {
   otherNames?: string;
 
   @IsDateString({}, { message: 'Enter a valid date of birth.' })
-  dateOfBirth?: string;
+  dateOfBirth!: string;
 
   @Transform(normalizeText)
   @IsOptional()
