@@ -237,7 +237,7 @@ export default async function MemberProfilePage({
               />
             </nav>
           </div>
-          {/* PROFILE FORM */}
+
           <form action={updateOwnProfile}>
             <ProfileField label="First name">
               <input
@@ -266,6 +266,39 @@ export default async function MemberProfilePage({
                 id="otherNames"
                 name="otherNames"
                 placeholder="Add other names"
+              />
+            </ProfileField>
+
+            <ProfileField label="Date of birth">
+              <input
+                className={fieldClass}
+                defaultValue={member.dateOfBirth ?? ""}
+                id="dateOfBirth"
+                name="dateOfBirth"
+                type="date"
+                required
+              />
+            </ProfileField>
+
+            <ProfileField label="Home address">
+              <input
+                className={fieldClass}
+                defaultValue={member.homeAddress ?? ""}
+                id="homeAddress"
+                name="homeAddress"
+                placeholder="e.g. Adenta, Accra"
+                maxLength={300}
+              />
+            </ProfileField>
+
+            <ProfileField label="Closest landmark">
+              <input
+                className={fieldClass}
+                defaultValue={member.closestLandmark ?? ""}
+                id="closestLandmark"
+                name="closestLandmark"
+                placeholder="e.g. Near Adenta Market"
+                maxLength={200}
               />
             </ProfileField>
 
