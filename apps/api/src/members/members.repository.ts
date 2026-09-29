@@ -40,10 +40,6 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 export class MembersRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  /**
-   * Department IDs the given user currently leads within their church. A term
-   * counts when it is not revoked and today falls inside its half-open range.
-   */
   async findLedDepartmentIds(
     userId: string,
     churchId: string,
@@ -82,6 +78,9 @@ export class MembersRepository {
         firstName: memberProfiles.firstName,
         lastName: memberProfiles.lastName,
         otherNames: memberProfiles.otherNames,
+        dateOfBirth: memberProfiles.dateOfBirth,
+        homeAddress: memberProfiles.homeAddress,
+        closestLandmark: memberProfiles.closestLandmark,
         profilePhotoUrl: memberProfiles.profilePhotoUrl,
         directoryBio: memberProfiles.directoryBio,
         directoryVisible: memberProfiles.directoryVisible,
@@ -591,6 +590,9 @@ export class MembersRepository {
             firstName: memberProfiles.firstName,
             lastName: memberProfiles.lastName,
             otherNames: memberProfiles.otherNames,
+            dateOfBirth: memberProfiles.dateOfBirth,
+            homeAddress: memberProfiles.homeAddress,
+            closestLandmark: memberProfiles.closestLandmark,
             directoryBio: memberProfiles.directoryBio,
             directoryVisible: memberProfiles.directoryVisible,
             directoryPhoneVisible: memberProfiles.directoryPhoneVisible,
@@ -618,6 +620,17 @@ export class MembersRepository {
             : {}),
           ...(input.updates.otherNames !== undefined
             ? { otherNames: input.updates.otherNames }
+            : {}),
+          ...(input.updates.dateOfBirth !== undefined
+            ? { dateOfBirth: input.updates.dateOfBirth }
+            : {}),
+
+          ...(input.updates.homeAddress !== undefined
+            ? { homeAddress: input.updates.homeAddress }
+            : {}),
+
+          ...(input.updates.closestLandmark !== undefined
+            ? { closestLandmark: input.updates.closestLandmark }
             : {}),
           ...(input.updates.directoryBio !== undefined
             ? { directoryBio: input.updates.directoryBio }
@@ -653,6 +666,9 @@ export class MembersRepository {
             firstName: member.firstName,
             lastName: member.lastName,
             otherNames: member.otherNames,
+            dateOfBirth: member.dateOfBirth,
+            homeAddress: member.homeAddress,
+            closestLandmark: member.closestLandmark,
             directoryBio: member.directoryBio,
             directoryVisible: member.directoryVisible,
             directoryPhoneVisible: member.directoryPhoneVisible,
@@ -667,6 +683,9 @@ export class MembersRepository {
             firstName: memberProfiles.firstName,
             lastName: memberProfiles.lastName,
             otherNames: memberProfiles.otherNames,
+            dateOfBirth: memberProfiles.dateOfBirth,
+            homeAddress: memberProfiles.homeAddress,
+            closestLandmark: memberProfiles.closestLandmark,
             directoryBio: memberProfiles.directoryBio,
             directoryVisible: memberProfiles.directoryVisible,
             directoryPhoneVisible: memberProfiles.directoryPhoneVisible,

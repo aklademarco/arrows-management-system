@@ -10,6 +10,9 @@ const profileSchema = z.object({
   firstName: z.string().trim().min(1).max(100),
   lastName: z.string().trim().min(1).max(100),
   otherNames: z.string().trim().max(150).nullable(),
+  dateOfBirth: z.string().min(1, "Enter your date of birth."),
+  homeAddress: z.string().trim().max(300).nullable(),
+  closestLandmark: z.string().trim().max(200).nullable(),
   phone: z.string().trim().max(30, "Enter a shorter phone number.").nullable(),
   directoryBio: z.string().trim().max(300).nullable(),
   directoryVisible: z.boolean(),
@@ -26,11 +29,13 @@ export async function updateOwnProfile(formData: FormData) {
     firstName: String(formData.get("firstName") ?? ""),
     lastName: String(formData.get("lastName") ?? ""),
     otherNames: parseOptional("otherNames"),
+    dateOfBirth: String(formData.get("dateOfBirth") ?? ""),
+    homeAddress: parseOptional("homeAddress"),
+    closestLandmark: parseOptional("closestLandmark"),
     phone: parseOptional("phone"),
     directoryBio: parseOptional("directoryBio"),
     directoryVisible: formData.get("directoryVisible") === "on",
-    directoryPhoneVisible:
-      formData.get("directoryPhoneVisible") === "on",
+    directoryPhoneVisible: formData.get("directoryPhoneVisible") === "on",
     skills: String(formData.get("skills") ?? "")
       .split(",")
       .map((skill) => skill.trim())

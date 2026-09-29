@@ -153,6 +153,31 @@ export function RegistrationForm({
           autoComplete="additional-name"
           error={state.errors?.otherNames}
         />
+
+        <Field
+          id="dateOfBirth"
+          label="Date of birth"
+          type="date"
+          autoComplete="bday"
+          required
+          error={state.errors?.dateOfBirth}
+        />
+
+        <Field
+          id="homeAddress"
+          label="Home address (optional)"
+          autoComplete="street-address"
+          placeholder="e.g. Adenta, Accra"
+          error={state.errors?.homeAddress}
+        />
+
+        <Field
+          id="closestLandmark"
+          label="Closest landmark (optional)"
+          placeholder="e.g. Near Adenta Market"
+          error={state.errors?.closestLandmark}
+        />
+
         <Field
           id="email"
           label="Email address"

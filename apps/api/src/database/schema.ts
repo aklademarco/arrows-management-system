@@ -161,11 +161,6 @@ export const churches = pgTable('churches', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 150 }).notNull(),
   slug: varchar('slug', { length: 100 }).notNull().unique(),
-  // NEW: IANA timezone identifier (e.g. "Africa/Accra"). Every local-time
-  // calculation for recurring events must resolve through this instead of
-  // assuming UTC == local time. Ghana is UTC+0 today, so this defaults
-  // safely, but multi-branch support (PRD future feature) will break
-  // silently without this column existing now.
   timezone: varchar('timezone', { length: 60 })
     .notNull()
     .default('Africa/Accra'),
@@ -311,6 +306,9 @@ export const memberProfiles = pgTable('member_profiles', {
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
   otherNames: varchar('other_names', { length: 150 }),
+  dateOfBirth: date('date_of_birth'),
+  homeAddress: varchar('home_address', { length: 300 }),
+  closestLandmark: varchar('closest_landmark', { length: 200 }),
   profilePhotoUrl: text('profile_photo_url'),
   directoryBio: varchar('directory_bio', { length: 300 }),
   directoryVisible: boolean('directory_visible').notNull().default(true),
@@ -439,11 +437,6 @@ export const recurringServiceTemplates = pgTable(
     durationMinutes: integer('duration_minutes').notNull(),
     priority: integer('priority').notNull().default(0),
     isActive: boolean('is_active').notNull().default(true),
-    // NEW: these five columns used to be inferred at generation time by
-    // querying "whatever event has the latest startsAt" — fragile, and
-    // wrong the moment a one-off event with a later date exists. The
-    // template is now the single source of truth for where/how a
-    // recurring service's geofence is configured.
     locationName: varchar('location_name', { length: 180 }),
     latitude: numeric('latitude', { precision: 9, scale: 6 }),
     longitude: numeric('longitude', { precision: 9, scale: 6 }),

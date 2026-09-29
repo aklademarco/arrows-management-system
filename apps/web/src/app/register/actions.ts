@@ -8,7 +8,6 @@ export type RegistrationState = {
   errors?: Record<string, string[]>;
 };
 
-
 const commonEmailTypos: Record<string, string> = {
   "gmal.com": "gmail.com",
   "gmial.com": "gmail.com",
@@ -52,6 +51,22 @@ const registrationSchema = z
     lastName: z.string().trim().min(1, "Enter your last name.").max(100),
 
     otherNames: z.string().trim().max(150).optional(),
+
+    dateOfBirth: z.string().min(1, "Enter your date of birth."),
+
+    homeAddress: z
+      .string()
+      .trim()
+      .max(300, "Home address is too long.")
+      .optional()
+      .or(z.literal("")),
+
+    closestLandmark: z
+      .string()
+      .trim()
+      .max(200, "Closest landmark is too long.")
+      .optional()
+      .or(z.literal("")),
 
     email: emailSchema,
 
@@ -101,6 +116,9 @@ export async function register(
     firstName: result.data.firstName,
     lastName: result.data.lastName,
     otherNames: result.data.otherNames,
+    dateOfBirth: result.data.dateOfBirth,
+    homeAddress: result.data.homeAddress,
+    closestLandmark: result.data.closestLandmark,
     email: result.data.email,
     phone: result.data.phone,
     requestedDepartmentId: result.data.requestedDepartmentId,
@@ -119,6 +137,8 @@ export async function register(
         ...payload,
         phone: payload.phone || undefined,
         otherNames: payload.otherNames || undefined,
+        homeAddress: payload.homeAddress || undefined,
+        closestLandmark: payload.closestLandmark || undefined,
         requestedDepartmentId: payload.requestedDepartmentId || undefined,
       }),
       cache: "no-store",

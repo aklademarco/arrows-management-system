@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsOptional,
   IsString,
   Matches,
@@ -37,6 +38,22 @@ export class UpdateOwnProfileDto {
   @IsString()
   @MaxLength(150)
   otherNames?: string | null;
+
+  @IsOptional()
+  @IsDateString({}, { message: 'Enter a valid date of birth.' })
+  dateOfBirth?: string;
+
+  @Transform(trim)
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  homeAddress?: string | null;
+
+  @Transform(trim)
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  closestLandmark?: string | null;
 
   @Transform(({ value }: { value: unknown }) =>
     normalizeGhanaPhoneNumber(value),

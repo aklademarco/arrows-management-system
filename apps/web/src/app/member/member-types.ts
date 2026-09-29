@@ -2,6 +2,9 @@ export type MemberProfile = {
   firstName: string;
   lastName: string;
   otherNames?: string | null;
+  dateOfBirth?: string | null;
+  homeAddress?: string | null;
+  closestLandmark?: string | null;
   email: string;
   phone?: string | null;
   membershipStatus: string;
