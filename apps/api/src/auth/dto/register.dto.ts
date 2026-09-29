@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsEmail,
   IsOptional,
   IsString,
@@ -37,6 +38,21 @@ export class RegisterDto {
   @IsString()
   @MaxLength(150)
   otherNames?: string;
+
+  @IsDateString({}, { message: 'Enter a valid date of birth.' })
+  dateOfBirth?: string;
+
+  @Transform(normalizeText)
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  homeAddress?: string;
+
+  @Transform(normalizeText)
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  closestLandmark?: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
