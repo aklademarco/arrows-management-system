@@ -1,7 +1,10 @@
 import Link from "next/link";
 import {
   FiArrowLeft,
+  FiCalendar,
+  FiHome,
   FiMail,
+  FiMapPin,
   FiPhone,
   FiShield,
   FiUsers,
@@ -12,6 +15,9 @@ type Member = {
   firstName: string;
   lastName: string;
   otherNames: string | null;
+  dateOfBirth: string | null;
+  homeAddress: string | null;
+  closestLandmark: string | null;
   email: string;
   phone: string | null;
   accountStatus: string;
@@ -68,6 +74,52 @@ export default async function PastorMemberPage({
               <FiShield />
               {member.membershipStatus}
             </p>
+          </div>
+        </section>
+
+        <section className="mt-5 rounded-2xl border border-purple-100 bg-white p-6">
+          <h2 className="font-black">Follow-up information</h2>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Contact and location details provided by the member.
+          </p>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl bg-purple-50 p-4">
+              <FiCalendar className="text-xl text-purple-700" />
+
+              <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Date of birth
+              </p>
+
+              <p className="mt-1 font-semibold text-slate-800">
+                {member.dateOfBirth ?? "Not provided"}
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-purple-50 p-4">
+              <FiHome className="text-xl text-purple-700" />
+
+              <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Home address
+              </p>
+
+              <p className="mt-1 font-semibold text-slate-800">
+                {member.homeAddress ?? "Not provided"}
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-purple-50 p-4">
+              <FiMapPin className="text-xl text-purple-700" />
+
+              <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Closest landmark
+              </p>
+
+              <p className="mt-1 font-semibold text-slate-800">
+                {member.closestLandmark ?? "Not provided"}
+              </p>
+            </div>
           </div>
         </section>
 
