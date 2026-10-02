@@ -7,9 +7,9 @@ import { useFormDraft } from "@/hooks/use-form-draft";
 
 const initialState: EventUpdateState = { status: "idle", message: "" };
 
-export function EventEditForm({ children }: { children: ReactNode }) {
+export function EventEditForm({ children, eventId }: { children: ReactNode; eventId: string; }) {
   const [state, action, pending] = useActionState(updateEvent, initialState);
-  const { formRef } = useFormDraft("admin:edit-event", {
+  const { formRef } = useFormDraft(`admin:edit-event: ${eventId}`, {
     clear: state.status === "success",
   });
 
