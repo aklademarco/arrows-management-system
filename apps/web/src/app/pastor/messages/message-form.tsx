@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect } from "react";
 import {
   FiAlertCircle,
   FiCheckCircle,
@@ -24,13 +24,15 @@ export function PastorMessageForm({ smsAvailable }: { smsAvailable: boolean }) {
     initialState,
   );
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const { formRef } = useFormDraft("pastor:message", {
+    clear: state.status === "success",
+  });
 
   useEffect(() => {
     if (state.status === "success") {
       formRef.current?.reset();
     }
-  }, [state.status]);
+  }, [state.status, formRef]);
 
   return (
     <form
