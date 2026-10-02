@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useFormDraft } from "@/hooks/use-form-draft";
+import { useActionState, useEffect, useState } from "react";
 import { FiAlertCircle, FiCheckCircle, FiSend, FiUsers } from "react-icons/fi";
 import { sendLeadershipMessage, type MessageState } from "./actions";
 
@@ -23,10 +24,12 @@ export function MessageForm({
     sendLeadershipMessage,
     initialState,
   );
-  const formRef = useRef<HTMLFormElement>(null);
+  const { formRef } = useFormDraft("leader:message", {
+    clear: state.status === "success",
+  });
   useEffect(() => {
     if (state.status === "success") formRef.current?.reset();
-  }, [state.status]);
+  }, [state.status, formRef]);
   if (!canMessageChurch && departments.length === 0) {
     return (
       <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 text-slate-900 sm:p-6">
