@@ -9,7 +9,7 @@ const initialState: EventUpdateState = { status: "idle", message: "" };
 
 export function EventEditForm({ children }: { children: ReactNode }) {
   const [state, action, pending] = useActionState(updateEvent, initialState);
-  const { formRef } = useFormDraft("admin:create-event", {
+  const { formRef } = useFormDraft("admin:edit-event", {
     clear: state.status === "success",
   });
 
