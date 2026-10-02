@@ -2,18 +2,20 @@
 
 import { useActionState, type ReactNode } from "react";
 import { FiAlertCircle, FiCheckCircle, FiLoader } from "react-icons/fi";
-import {
-  updateEvent,
-  type EventUpdateState,
-} from "../actions";
+import { updateEvent, type EventUpdateState } from "../actions";
+import { useFormDraft } from "@/hooks/use-form-draft";
 
 const initialState: EventUpdateState = { status: "idle", message: "" };
 
-export function EventEditForm({ children }: { children: ReactNode }) {
+export function EventEditForm({ children, eventId }: { children: ReactNode; eventId: string; }) {
   const [state, action, pending] = useActionState(updateEvent, initialState);
+  const { formRef } = useFormDraft(`admin:edit-event:${eventId}`, {
+    clear: state.status === "success",
+  });
 
   return (
     <form
+      ref={formRef}
       action={action}
       className="mt-8 grid gap-4 border-y border-white/10 bg-[#111318] px-5 py-6 md:grid-cols-2"
     >
@@ -24,7 +26,9 @@ export function EventEditForm({ children }: { children: ReactNode }) {
           disabled={pending}
           type="submit"
         >
-          {pending ? <FiLoader aria-hidden="true" className="animate-spin" /> : null}
+          {pending ? (
+            <FiLoader aria-hidden="true" className="animate-spin" />
+          ) : null}
           {pending ? "Saving…" : "Save changes"}
         </button>
         {state.message ? (

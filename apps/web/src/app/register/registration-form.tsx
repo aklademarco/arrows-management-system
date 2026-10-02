@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { register, type RegistrationState } from "./actions";
-
+import { useFormDraft } from "@/hooks/use-form-draft";
 const initialState: RegistrationState = { success: false, message: "" };
+
+
 
 function Field({
   id,
@@ -48,7 +50,7 @@ function Field({
         />
         {isPassword && (
           <button
-            className="absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-xl text-xl text-slate-500 transition hover:text-[#240046] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#240046]"
+            className="absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-xl text-xl text-slate-500 transition hover:text-[#240046] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#240046]"
             type="button"
             aria-label={passwordVisible ? "Hide password" : "Show password"}
             aria-pressed={passwordVisible}
@@ -84,6 +86,7 @@ export function RegistrationForm({
   departmentsUnavailable?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(register, initialState);
+  const { formRef } = useFormDraft("registration", { clear: state.success });
 
   if (state.success) {
     return (
@@ -121,7 +124,7 @@ export function RegistrationForm({
       </div>
     );
   }
-
+  
   return (
     <>
       <h2 className="text-3xl font-bold tracking-tight text-slate-950">
@@ -130,7 +133,7 @@ export function RegistrationForm({
       <p className="mt-2 mb-8 text-slate-600">
         Enter your details exactly as you use them at church.
       </p>
-      <form action={formAction} className="grid gap-5" noValidate>
+      <form ref={formRef} action={formAction} className="grid gap-5" noValidate>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
             id="firstName"

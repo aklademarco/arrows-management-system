@@ -4,6 +4,7 @@ import { useActionState, type ReactNode } from "react";
 import { FiAlertCircle, FiCheckCircle, FiLoader } from "react-icons/fi";
 import Link from "next/link";
 import { createEvent, type EventCreateState } from "./actions";
+import { useFormDraft } from "@/hooks/use-form-draft";
 
 const initialState: EventCreateState = {
   status: "idle",
@@ -13,9 +14,12 @@ const initialState: EventCreateState = {
 
 export default function EventCreateForm({ children }: { children: ReactNode }) {
   const [state, action, pending] = useActionState(createEvent, initialState);
+  const { formRef } = useFormDraft("admin:create-event", {
+    clear: state.status === "success",
+  });
 
   return (
-    <form action={action} className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <form ref={formRef}  action={action} className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {children}
       <div className="flex flex-col gap-3 md:col-span-2 lg:col-span-3 lg:flex-row lg:items-center">
         <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect } from "react";
 import {
   FiAlertCircle,
   FiCheckCircle,
@@ -11,6 +11,7 @@ import {
 } from "react-icons/fi";
 
 import { sendPastorMessage, type MessageState } from "./actions";
+import { useFormDraft } from "@/hooks/use-form-draft";
 
 const initialState: MessageState = {
   status: "idle",
@@ -23,13 +24,15 @@ export function PastorMessageForm({ smsAvailable }: { smsAvailable: boolean }) {
     initialState,
   );
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const { formRef } = useFormDraft("pastor:message", {
+    clear: state.status === "success",
+  });
 
   useEffect(() => {
     if (state.status === "success") {
       formRef.current?.reset();
     }
-  }, [state.status]);
+  }, [state.status, formRef]);
 
   return (
     <form
