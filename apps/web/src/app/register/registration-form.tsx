@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { register, type RegistrationState } from "./actions";
-
 const initialState: RegistrationState = { success: false, message: "" };
+
 
 function Field({
   id,
