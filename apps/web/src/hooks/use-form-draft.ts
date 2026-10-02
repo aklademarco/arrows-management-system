@@ -1,173 +1,98 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useMemo} from "react";
+import { useEffect, useRef } from "react";
 
-type DraftValue = string | string[] | boolean;
-type FormDraft = Record<string, DraftValue>;
+type Field = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+type Draft = Record<string, string[]>;
 
-type UseFormDraftOptions = {
-  exclude?: string[];
-};
+const SENSITIVE = ["password", "token", "secret"];
+const SKIP_TYPES = ["password", "file", "hidden", "submit", "button"];
+const isCheckable = (el: Field): el is HTMLInputElement =>
+  el instanceof HTMLInputElement &&
+  (el.type === "checkbox" || el.type === "radio");
 
-const SENSITIVE_FIELDS = [
-  "password",
-  "confirmPassword",
-  "currentPassword",
-  "newPassword",
-  "token",
-  "secret",
-];
+const read = (el: Field): string[] =>
+  el instanceof HTMLSelectElement
+    ? Array.from(el.selectedOptions, (o) => o.value)
+    : isCheckable(el)
+      ? el.checked
+        ? [el.value]
+        : []
+      : [el.value];
+
+function write(el: Field, vals: string[]) {
+  if (el instanceof HTMLSelectElement && el.multiple)
+    for (const o of Array.from(el.options)) o.selected = vals.includes(o.value);
+  else if (isCheckable(el)) el.checked = vals.includes(el.value);
+  else el.value = vals[0] ?? "";
+}
 
 export function useFormDraft(
   draftKey: string,
-  options: UseFormDraftOptions = {},
+  { exclude = [], clear = false }: { exclude?: string[]; clear?: boolean } = {},
 ) {
   const formRef = useRef<HTMLFormElement>(null);
-  
-
-  const storageKey = `acms:form-draft:${draftKey}`;
-
-  const excludedFields = useMemo(
-    () => new Set([...SENSITIVE_FIELDS, ...(options.exclude ?? [])]),
-    [options.exclude],
-  );
-
-  const shouldExclude = useCallback(
-    (name: string) => {
-      const normalizedName = name.toLowerCase();
-
-      return [...excludedFields].some((field) =>
-        normalizedName.includes(field.toLowerCase()),
-      );
-    },
-    [excludedFields],
-  );
-
-  const saveDraft = useCallback(() => {
-    const form = formRef.current;
-
-    if (!form) return;
-
-    const draft: FormDraft = {};
-
-    for (const element of Array.from(form.elements)) {
-      if (
-        !(
-          element instanceof HTMLInputElement ||
-          element instanceof HTMLTextAreaElement ||
-          element instanceof HTMLSelectElement
-        )
-      ) {
-        continue;
-      }
-
-      if (!element.name || shouldExclude(element.name)) {
-        continue;
-      }
-
-      if (
-        element instanceof HTMLInputElement &&
-        ["password", "file", "hidden", "submit", "button"].includes(
-          element.type,
-        )
-      ) {
-        continue;
-      }
-
-      if (element instanceof HTMLInputElement && element.type === "checkbox") {
-        draft[element.name] = element.checked;
-        continue;
-      }
-
-      if (element instanceof HTMLInputElement && element.type === "radio") {
-        if (element.checked) {
-          draft[element.name] = element.value;
-        }
-
-        continue;
-      }
-
-      if (element instanceof HTMLSelectElement && element.multiple) {
-        draft[element.name] = Array.from(element.selectedOptions).map(
-          (option) => option.value,
-        );
-
-        continue;
-      }
-
-      draft[element.name] = element.value;
-    }
-
-    sessionStorage.setItem(storageKey, JSON.stringify(draft));
-  }, [shouldExclude, storageKey]);
-
-  const clearDraft = useCallback(() => {
-    sessionStorage.removeItem(storageKey);
-  }, [storageKey]);
+  const key = `acms:form-draft:${draftKey}`;
+  const skip = exclude.join(","); // string dep, so inline arrays stay stable
 
   useEffect(() => {
     const form = formRef.current;
-    const savedDraft = sessionStorage.getItem(storageKey);
+    if (!form) return;
+    const blocked = [...SENSITIVE, ...skip.split(",")]
+      .filter(Boolean)
+      .map((s) => s.toLowerCase());
 
-    if (!form || !savedDraft) return;
+    const fields = () =>
+      Array.from(form.elements).filter(
+        (el): el is Field =>
+          (el instanceof HTMLInputElement ||
+            el instanceof HTMLTextAreaElement ||
+            el instanceof HTMLSelectElement) &&
+          !!el.name &&
+          !el.disabled &&
+          !SKIP_TYPES.includes(el.type) &&
+          !blocked.some((b) => el.name.toLowerCase().includes(b)),
+      );
 
     try {
-      const draft = JSON.parse(savedDraft) as FormDraft;
-
-      for (const element of Array.from(form.elements)) {
-        if (
-          !(
-            element instanceof HTMLInputElement ||
-            element instanceof HTMLTextAreaElement ||
-            element instanceof HTMLSelectElement
-          )
-        ) {
-          continue;
-        }
-
-        if (!element.name || !(element.name in draft)) {
-          continue;
-        }
-
-        const value = draft[element.name];
-
-        if (
-          element instanceof HTMLInputElement &&
-          element.type === "checkbox"
-        ) {
-          element.checked = value === true;
-          continue;
-        }
-
-        if (element instanceof HTMLInputElement && element.type === "radio") {
-          element.checked = element.value === value;
-          continue;
-        }
-
-        if (
-          element instanceof HTMLSelectElement &&
-          element.multiple &&
-          Array.isArray(value)
-        ) {
-          for (const option of Array.from(element.options)) {
-            option.selected = value.includes(option.value);
-          }
-
-          continue;
-        }
-
-        if (typeof value === "string") {
-          element.value = value;
-        }
+      const saved = sessionStorage.getItem(key);
+      if (saved) {
+        const draft: Draft = JSON.parse(saved);
+        for (const el of fields()) write(el, draft[el.name] ?? []);
       }
     } catch {
-      sessionStorage.removeItem(storageKey);
+        try {
+          sessionStorage.removeItem(key);
+        } catch {}
     }
-  }, [storageKey]);
 
-  return {
-    formRef,
-    saveDraft,
-    clearDraft,
-  };
+    let timer: number;
+    const save = () => {
+      const draft: Draft = {};
+      for (const el of fields())
+        draft[el.name] = [...(draft[el.name] ?? []), ...read(el)];
+      try {
+        sessionStorage.setItem(key, JSON.stringify(draft));
+      } catch {}
+    };
+    const onInput = () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(save, 300);
+    };
+
+    form.addEventListener("input", onInput);
+    return () => {
+      clearTimeout(timer);
+      form.removeEventListener("input", onInput);
+    };
+  }, [key, skip]);
+
+  useEffect(() => {
+    if (clear)
+      try {
+        sessionStorage.removeItem(key);
+      } catch {}
+  }, [clear, key]);
+
+  return { formRef };
 }
