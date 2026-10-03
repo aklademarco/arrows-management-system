@@ -33,6 +33,63 @@ export class MembersService {
     return this.repository.directoryProfile(memberId, viewer.churchId);
   }
 
+  async leaderView(memberId: string, viewer: AuthenticatedPrincipal) {
+    const hasChurchWideAccess = viewer.roles.some((role) =>
+      CHURCH_WIDE_READ_ROLES.includes(role),
+    );
+
+    const isDepartmentLeader = viewer.roles.includes('DEPARTMENT_LEADER');
+
+    if (!hasChurchWideAccess && !isDepartmentLeader) {
+      throw new ForbiddenException('Leadership access is required.');
+    }
+
+    // Pastors/admins can see the full profile across the church.
+    if (hasChurchWideAccess) {
+      return {
+        accessLevel: 'FULL' as const,
+        member: await this.repository.findById(memberId, viewer.churchId),
+      };
+    }
+
+    const ledDepartmentIds = await this.repository.findLedDepartmentIds(
+      viewer.id,
+      viewer.churchId,
+    );
+
+    if (ledDepartmentIds.length === 0) {
+      return {
+        accessLevel: 'DIRECTORY' as const,
+        member: await this.repository.directoryProfile(
+          memberId,
+          viewer.churchId,
+        ),
+      };
+    }
+
+    const belongsToLedDepartment = await this.repository.isMemberInDepartments(
+      memberId,
+      viewer.churchId,
+      ledDepartmentIds,
+    );
+
+    if (belongsToLedDepartment) {
+      return {
+        accessLevel: 'FULL' as const,
+        member: await this.repository.findById(
+          memberId,
+          viewer.churchId,
+          ledDepartmentIds,
+        ),
+      };
+    }
+
+    return {
+      accessLevel: 'DIRECTORY' as const,
+      member: await this.repository.directoryProfile(memberId, viewer.churchId),
+    };
+  }
+
   async findById(memberId: string, viewer: AuthenticatedPrincipal) {
     const restrictToDepartmentIds = await this.resolveReadScope(viewer);
     return this.repository.findById(

@@ -3,32 +3,62 @@ import {
   FiArrowLeft,
   FiCalendar,
   FiHome,
+  FiMail,
   FiMapPin,
   FiMessageCircle,
   FiPhone,
   FiUsers,
 } from "react-icons/fi";
+
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getLeaderResource } from "../../leader-api";
 
-type Person = {
+type FullPerson = {
+  id: string;
   firstName: string;
   lastName: string;
   otherNames: string | null;
   dateOfBirth: string | null;
   homeAddress: string | null;
   closestLandmark: string | null;
+  email: string;
+  phone: string | null;
   profilePhotoUrl: string | null;
   directoryBio: string | null;
-  phone: string | null;
   skills: string[];
   departmentMemberships: {
     id: string;
+    departmentId: string;
     departmentName: string;
     isActive: boolean;
     isPrimary: boolean;
   }[];
 };
+
+type DirectoryPerson = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  otherNames: string | null;
+  profilePhotoUrl: string | null;
+  directoryBio: string | null;
+  phone: string | null;
+  skills: string[];
+  departments: {
+    id: string;
+    name: string;
+  }[];
+};
+
+type LeaderMemberView =
+  | {
+      accessLevel: "FULL";
+      member: FullPerson;
+    }
+  | {
+      accessLevel: "DIRECTORY";
+      member: DirectoryPerson;
+    };
 
 export default async function LeaderPersonPage({
   params,
@@ -36,23 +66,55 @@ export default async function LeaderPersonPage({
   params: Promise<{ memberId: string }>;
 }) {
   const { memberId } = await params;
-  const person = await getLeaderResource<Person>(
-    `/members/${memberId}`,
+
+  const view = await getLeaderResource<LeaderMemberView>(
+    `/members/leader-view/${memberId}`,
   );
+
+  const person = view.member;
+
   const name = `${person.firstName} ${person.lastName}`;
-  const departments = person.departmentMemberships.filter(
-    (department) => department.isActive,
-  );
+
+  const departments =
+    view.accessLevel === "FULL"
+      ? view.member.departmentMemberships
+          .filter((department) => department.isActive)
+          .map((department) => ({
+            id: department.departmentId,
+            name: department.departmentName,
+            isPrimary: department.isPrimary,
+          }))
+      : view.member.departments.map((department) => ({
+          id: department.id,
+          name: department.name,
+          isPrimary: false,
+        }));
+
   return (
     <main className="min-h-screen p-4 sm:p-6 xl:p-8">
       <div className="mx-auto max-w-3xl">
-        <Link
-          aria-label="Back to people"
-          className="inline-flex size-11 items-center justify-center rounded-full border border-purple-100 bg-white text-[#6b21a8] shadow-sm"
-          href="/leader/people"
-        >
-          <FiArrowLeft />
-        </Link>
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            aria-label="Back to people"
+            className="inline-flex size-11 items-center justify-center rounded-full border border-purple-100 bg-white text-[#6b21a8] shadow-sm"
+            href="/leader/people"
+          >
+            <FiArrowLeft />
+          </Link>
+
+          <span
+            className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+              view.accessLevel === "FULL"
+                ? "bg-lime-100 text-lime-800"
+                : "bg-purple-100 text-[#6b21a8]"
+            }`}
+          >
+            {view.accessLevel === "FULL"
+              ? "Team member · Full details"
+              : "Church directory"}
+          </span>
+        </div>
+
         <section className="mt-5 rounded-4xl border border-purple-100 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-wrap items-center gap-5">
             <ProfileAvatar
@@ -60,14 +122,17 @@ export default async function LeaderPersonPage({
               name={name}
               size="xl"
             />
+
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl font-medium capitalize">{name}</h1>
+
               {person.otherNames ? (
                 <p className="mt-1 capitalize text-sm text-slate-400">
                   {person.otherNames}
                 </p>
               ) : null}
             </div>
+
             {person.phone ? (
               <div className="flex gap-2">
                 <a
@@ -77,6 +142,7 @@ export default async function LeaderPersonPage({
                 >
                   <FiPhone />
                 </a>
+
                 <a
                   aria-label={`Message ${name}`}
                   className="grid size-11 place-items-center rounded-full bg-purple-100 text-[#6b21a8]"
@@ -87,6 +153,7 @@ export default async function LeaderPersonPage({
               </div>
             ) : null}
           </div>
+
           {person.directoryBio ? (
             <p className="mt-6 whitespace-pre-line text-sm leading-7 text-slate-600">
               {person.directoryBio}
@@ -94,51 +161,82 @@ export default async function LeaderPersonPage({
           ) : null}
         </section>
 
-        <section className="mt-4 rounded-[1.75rem] border border-purple-100 bg-white p-5">
-          <h2 className="font-black text-[#6b21a8]">Follow-up information</h2>
+        {view.accessLevel === "FULL" ? (
+          <section className="mt-4 rounded-[1.75rem] border border-purple-100 bg-white p-5">
+            <div>
+              <h2 className="font-black text-[#6b21a8]">
+                Follow-up information
+              </h2>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl bg-purple-50 p-4">
-              <FiCalendar className="text-xl text-[#6b21a8]" />
-
-              <p className="mt-2 text-xs font-bold uppercase text-slate-400">
-                Date of birth
-              </p>
-
-              <p className="mt-1 text-sm font-semibold">
-                {person.dateOfBirth ?? "Not provided"}
+              <p className="mt-1 text-sm text-slate-500">
+                Visible because this member belongs to a department you lead.
               </p>
             </div>
 
-            <div className="rounded-xl bg-purple-50 p-4">
-              <FiHome className="text-xl text-[#6b21a8]" />
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl bg-purple-50 p-4">
+                <FiCalendar className="text-xl text-[#6b21a8]" />
 
-              <p className="mt-2 text-xs font-bold uppercase text-slate-400">
-                Home address
-              </p>
+                <p className="mt-2 text-xs font-bold uppercase text-slate-400">
+                  Date of birth
+                </p>
 
-              <p className="mt-1 text-sm font-semibold">
-                {person.homeAddress ?? "Not provided"}
-              </p>
+                <p className="mt-1 text-sm font-semibold">
+                  {view.member.dateOfBirth ?? "Not provided"}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-purple-50 p-4">
+                <FiMail className="text-xl text-[#6b21a8]" />
+
+                <p className="mt-2 text-xs font-bold uppercase text-slate-400">
+                  Email
+                </p>
+
+                <p className="mt-1 break-all text-sm font-semibold">
+                  {view.member.email}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-purple-50 p-4">
+                <FiHome className="text-xl text-[#6b21a8]" />
+
+                <p className="mt-2 text-xs font-bold uppercase text-slate-400">
+                  Home address
+                </p>
+
+                <p className="mt-1 text-sm font-semibold">
+                  {view.member.homeAddress ?? "Not provided"}
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-purple-50 p-4">
+                <FiMapPin className="text-xl text-[#6b21a8]" />
+
+                <p className="mt-2 text-xs font-bold uppercase text-slate-400">
+                  Closest landmark
+                </p>
+
+                <p className="mt-1 text-sm font-semibold">
+                  {view.member.closestLandmark ?? "Not provided"}
+                </p>
+              </div>
             </div>
+          </section>
+        ) : (
+          <section className="mt-4 rounded-[1.75rem] border border-purple-100 bg-white p-5">
+            <p className="text-sm leading-6 text-slate-500">
+              This member is outside the departments you lead. You are seeing
+              the same directory information available to other church members.
+            </p>
+          </section>
+        )}
 
-            <div className="rounded-xl bg-purple-50 p-4">
-              <FiMapPin className="text-xl text-[#6b21a8]" />
-
-              <p className="mt-2 text-xs font-bold uppercase text-slate-400">
-                Closest landmark
-              </p>
-
-              <p className="mt-1 text-sm font-semibold">
-                {person.closestLandmark ?? "Not provided"}
-              </p>
-            </div>
-          </div>
-        </section>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <section className="rounded-[1.75rem] border border-purple-100 bg-white p-5">
             <h2 className="flex items-center gap-2 font-black text-[#6b21a8]">
-              <FiUsers /> Serves with
+              <FiUsers />
+              Serves with
             </h2>
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -148,7 +246,7 @@ export default async function LeaderPersonPage({
                     className="rounded-full bg-purple-50 px-3 py-1.5 text-xs font-bold text-[#6b21a8]"
                     key={department.id}
                   >
-                    {department.departmentName}
+                    {department.name}
                     {department.isPrimary ? " · Primary" : ""}
                   </span>
                 ))
@@ -157,8 +255,10 @@ export default async function LeaderPersonPage({
               )}
             </div>
           </section>
+
           <section className="rounded-[1.75rem] border border-purple-100 bg-white p-5">
             <h2 className="font-black text-[#6b21a8]">Skills and gifts</h2>
+
             <div className="mt-4 flex flex-wrap gap-2">
               {person.skills.length ? (
                 person.skills.map((skill) => (

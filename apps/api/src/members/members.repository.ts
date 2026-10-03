@@ -71,6 +71,44 @@ export class MembersRepository {
     return rows.map((row) => row.departmentId);
   }
 
+  async isMemberInDepartments(
+    memberId: string,
+    churchId: string,
+    departmentIds: string[],
+  ): Promise<boolean> {
+    if (departmentIds.length === 0) {
+      return false;
+    }
+
+    const [member] = await this.database
+      .select({
+        id: memberProfiles.id,
+      })
+      .from(memberProfiles)
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .innerJoin(
+        departmentMembers,
+        eq(departmentMembers.memberId, memberProfiles.id),
+      )
+      .innerJoin(
+        departments,
+        eq(departments.id, departmentMembers.departmentId),
+      )
+      .where(
+        and(
+          eq(memberProfiles.id, memberId),
+          eq(users.churchId, churchId),
+          eq(departments.churchId, churchId),
+          eq(departments.isActive, true),
+          inArray(departmentMembers.departmentId, departmentIds),
+          isNull(departmentMembers.leftAt),
+        ),
+      )
+      .limit(1);
+
+    return Boolean(member);
+  }
+
   async findOwnProfile(userId: string, churchId: string) {
     const [member] = await this.database
       .select({
