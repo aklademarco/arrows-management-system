@@ -27,6 +27,130 @@ describe('MembersService', () => {
     expect(setPrimaryDepartment).toHaveBeenCalledWith(input);
   });
 
+  it('gives a leader full access to a member in a department they lead', async () => {
+    const findLedDepartmentIds = jest.fn().mockResolvedValue(['department-a']);
+
+    const isMemberInDepartments = jest.fn().mockResolvedValue(true);
+
+    const findById = jest.fn().mockResolvedValue({
+      id: 'member-id',
+      email: 'member@example.com',
+    });
+
+    const directoryProfile = jest.fn();
+
+    const service = new MembersService({
+      findLedDepartmentIds,
+      isMemberInDepartments,
+      findById,
+      directoryProfile,
+    } as unknown as MembersRepository);
+
+    const result = await service.leaderView('member-id', leader);
+
+    expect(findLedDepartmentIds).toHaveBeenCalledWith('leader-id', 'church-id');
+
+    expect(isMemberInDepartments).toHaveBeenCalledWith(
+      'member-id',
+      'church-id',
+      ['department-a'],
+    );
+
+    expect(findById).toHaveBeenCalledWith('member-id', 'church-id', [
+      'department-a',
+    ]);
+
+    expect(directoryProfile).not.toHaveBeenCalled();
+
+    expect(result.accessLevel).toBe('FULL');
+  });
+
+  it('gives a leader directory access to a member outside their departments', async () => {
+    const findLedDepartmentIds = jest.fn().mockResolvedValue(['department-a']);
+
+    const isMemberInDepartments = jest.fn().mockResolvedValue(false);
+
+    const findById = jest.fn();
+
+    const directoryProfile = jest.fn().mockResolvedValue({
+      id: 'member-id',
+      firstName: 'Outside',
+    });
+
+    const service = new MembersService({
+      findLedDepartmentIds,
+      isMemberInDepartments,
+      findById,
+      directoryProfile,
+    } as unknown as MembersRepository);
+
+    const result = await service.leaderView('member-id', leader);
+
+    expect(findById).not.toHaveBeenCalled();
+
+    expect(directoryProfile).toHaveBeenCalledWith('member-id', 'church-id');
+
+    expect(result.accessLevel).toBe('DIRECTORY');
+  });
+
+  it('falls back to directory access when a leader has no active department assignment', async () => {
+    const findLedDepartmentIds = jest.fn().mockResolvedValue([]);
+
+    const isMemberInDepartments = jest.fn();
+
+    const directoryProfile = jest.fn().mockResolvedValue({
+      id: 'member-id',
+    });
+
+    const service = new MembersService({
+      findLedDepartmentIds,
+      isMemberInDepartments,
+      directoryProfile,
+    } as unknown as MembersRepository);
+
+    const result = await service.leaderView('member-id', leader);
+
+    expect(isMemberInDepartments).not.toHaveBeenCalled();
+
+    expect(directoryProfile).toHaveBeenCalledWith('member-id', 'church-id');
+
+    expect(result.accessLevel).toBe('DIRECTORY');
+  });
+
+  it('gives church-wide leadership full member access', async () => {
+    const findById = jest.fn().mockResolvedValue({
+      id: 'member-id',
+    });
+
+    const findLedDepartmentIds = jest.fn();
+
+    const service = new MembersService({
+      findById,
+      findLedDepartmentIds,
+    } as unknown as MembersRepository);
+
+    const result = await service.leaderView('member-id', admin);
+
+    expect(findById).toHaveBeenCalledWith('member-id', 'church-id');
+
+    expect(findLedDepartmentIds).not.toHaveBeenCalled();
+
+    expect(result.accessLevel).toBe('FULL');
+  });
+
+  it('rejects leadership profile access from an ordinary member', async () => {
+    const service = new MembersService({} as MembersRepository);
+
+    await expect(
+      service.leaderView('member-id', {
+        id: 'member-user-id',
+        churchId: 'church-id',
+        email: 'member@example.com',
+        roles: ['MEMBER'],
+      }),
+    ).rejects.toThrow('Leadership access is required.');
+  });
+
   it('archives a member within the administrator church', async () => {
     const archiveMember = jest.fn().mockResolvedValue(undefined);
     const service = new MembersService({

@@ -107,6 +107,19 @@ export class MembersController {
     };
   }
 
+  @Get('leader-view/:memberId')
+  @UseGuards(AuthenticatedGuard)
+  async leaderView(
+    @Param('memberId', ParseUUIDPipe) memberId: string,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Leadership member view retrieved.',
+      data: await this.service.leaderView(memberId, viewer),
+    };
+  }
+
   @Get(':memberId')
   @UseGuards(AuthenticatedGuard)
   async findById(
