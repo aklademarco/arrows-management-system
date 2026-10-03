@@ -22,6 +22,7 @@ describe('AuthService', () => {
         get: jest.fn(() => '00000000-0000-4000-8000-000000000001'),
       } as unknown as ConfigService,
       {
+        sendAccountApprovedEmail: jest.fn(),
         sendVerificationEmail: jest.fn(),
         sendPasswordResetEmail: jest.fn(),
         sendAttendanceReportEmail: jest.fn(),
@@ -50,6 +51,7 @@ describe('AuthService', () => {
     const emailVerificationRepository =
       {} as unknown as EmailVerificationRepository;
     const emailDelivery = {
+      sendAccountApprovedEmail: jest.fn(),
       sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
       sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
       sendAttendanceReportEmail: jest.fn().mockResolvedValue(undefined),
@@ -113,6 +115,7 @@ describe('AuthService', () => {
       revokeOtherTokens,
     } as unknown as EmailVerificationRepository;
     const emailDelivery = {
+      sendAccountApprovedEmail: jest.fn(),
       sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
       sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
       sendAttendanceReportEmail: jest.fn().mockResolvedValue(undefined),
@@ -170,6 +173,7 @@ describe('AuthService', () => {
       emailVerificationRepository,
       {} as ConfigService,
       {
+        sendAccountApprovedEmail: jest.fn(),
         sendVerificationEmail: jest
           .fn()
           .mockRejectedValue(new Error('Resend rejected the sender')),
@@ -200,6 +204,7 @@ describe('AuthService', () => {
       emailVerificationRepository,
       {} as ConfigService,
       {
+        sendAccountApprovedEmail: jest.fn(),
         sendVerificationEmail: jest.fn(),
         sendPasswordResetEmail: jest.fn(),
         sendAttendanceReportEmail: jest.fn(),
