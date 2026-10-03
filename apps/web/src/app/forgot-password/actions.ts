@@ -5,14 +5,7 @@ import { z } from "zod";
 export type PasswordResetState = { success: boolean; message: string };
 
 const emailSchema = z.email("Enter a valid email address.").max(255);
-const passwordSchema = z
-  .string()
-  .min(6, "Use at least 6 characters.")
-  .max(128)
-  .regex(/[a-z]/, "Include a lowercase letter.")
-  .regex(/[A-Z]/, "Include an uppercase letter.")
-  .regex(/\d/, "Include a number.")
-  .regex(/[^A-Za-z0-9]/, "Include a special character.");
+const passwordSchema = z.string().min(6, "Use at least 6 characters.").max(128, "Password is too long");
 
 async function post(path: string, payload: Record<string, string>) {
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
