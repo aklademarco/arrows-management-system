@@ -12,6 +12,11 @@ export type PasswordResetEmail = {
   token: string;
 };
 
+export type AccountApprovedEmail = {
+  recipient: string;
+  firstName: string;
+};
+
 export type AttendanceReportEmail = {
   recipient: string;
   recipientName: string;
@@ -30,5 +35,6 @@ export type AttendanceReportEmail = {
 export interface EmailDelivery {
   sendVerificationEmail(message: VerificationEmail): Promise<void>;
   sendPasswordResetEmail(message: PasswordResetEmail): Promise<void>;
+  sendAccountApprovedEmail(message: AccountApprovedEmail): Promise<void>;
   sendAttendanceReportEmail(message: AttendanceReportEmail): Promise<void>;
 }

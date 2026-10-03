@@ -57,18 +57,17 @@ COPY --from=builder --chown=nextjs:nodejs \
     /app/apps/web/public ./apps/web/public
 
 
-    # Work around Next 16.3.1 standalone/pnpm SWC helper tracing issue.
+# Work around Next 16.3.1 standalone/pnpm SWC helper tracing issue.
+COPY --from=builder /tmp/swc-helpers /tmp/swc-helpers
 RUN set -eux; \
-    mkdir -p /app/node_modules/.pnpm/node_modules/@swc; \
-    rm -rf /app/node_modules/.pnpm/node_modules/@swc/helpers; \
-    cp -R /app/apps/web/node_modules/@swc/helpers \
-        /app/node_modules/.pnpm/node_modules/@swc/helpers; \
-    for swc_dir in /app/node_modules/.pnpm/next@*/node_modules/@swc; do \
-        if [ -d "$swc_dir" ]; then \
-            rm -rf "$swc_dir/helpers"; \
-            cp -R /app/apps/web/node_modules/@swc/helpers "$swc_dir/helpers"; \
-        fi; \
-    done  
+    for swc_dir in \
+        /app/node_modules/.pnpm/node_modules/@swc \
+        /app/node_modules/.pnpm/next@*/node_modules/@swc; do \
+        mkdir -p "$swc_dir"; \
+        rm -rf "$swc_dir/helpers"; \
+        cp -rL /tmp/swc-helpers "$swc_dir/helpers"; \
+    done; \
+        rm -rf /tmp/swc-helpers 
 
 USER nextjs
 

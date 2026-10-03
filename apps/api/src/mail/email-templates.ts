@@ -1,4 +1,5 @@
 import type {
+  AccountApprovedEmail,
   AttendanceReportEmail,
   PasswordResetEmail,
   VerificationEmail,
@@ -54,6 +55,57 @@ export function verificationEmailBody(
           </a>
         </p>
         <p>This link expires in 24 hours and can be used only once.</p>
+      </div>
+    `,
+  };
+}
+
+export function accountApprovedEmailBody(
+  message: AccountApprovedEmail,
+  webUrl: string,
+): EmailBody {
+  const loginUrl = new URL('/login', webUrl);
+  const safeFirstName = escapeHtml(message.firstName);
+  const safeLoginUrl = escapeHtml(loginUrl.toString());
+
+  return {
+    subject: 'Your Arrows account has been approved',
+    text: [
+      `Hello ${message.firstName},`,
+      '',
+      'Your Arrows account has been approved.',
+      'You can now sign in and access your member dashboard.',
+      '',
+      loginUrl.toString(),
+      '',
+      'Love Community Chapel Youth Ministry — Arrows',
+    ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1e293b">
+        <h1 style="color:#240046">Your account has been approved</h1>
+
+        <p>Hello ${safeFirstName},</p>
+
+        <p>
+          Your account has been approved.
+        </p>
+
+        <p>
+          You can now sign in and access your member dashboard.
+        </p>
+
+        <p>
+          <a
+            href="${safeLoginUrl}"
+            style="display:inline-block;padding:12px 20px;border-radius:10px;background:#240046;color:#fff;text-decoration:none;font-weight:700"
+          >
+            Sign in to Arrows
+          </a>
+        </p>
+
+        <p style="margin-top:24px;color:#64748b">
+          Love Community Chapel Youth Ministry — Arrows
+        </p>
       </div>
     `,
   };

@@ -1,5 +1,13 @@
 import { AdminRegistrationRepository } from './admin-registration.repository';
 import { AdminRegistrationService } from './admin-registration.service';
+import type { EmailDelivery } from '../mail/email-delivery';
+
+const emailDelivery = {
+  sendVerificationEmail: jest.fn(),
+  sendPasswordResetEmail: jest.fn(),
+  sendAccountApprovedEmail: jest.fn().mockResolvedValue(undefined),
+  sendAttendanceReportEmail: jest.fn(),
+} satisfies EmailDelivery;
 
 describe('AdminRegistrationService', () => {
   it('loads a registration within the administrator church', async () => {
@@ -7,7 +15,7 @@ describe('AdminRegistrationService', () => {
     const repository = {
       findRegistration,
     } as unknown as AdminRegistrationRepository;
-    const service = new AdminRegistrationService(repository);
+    const service = new AdminRegistrationService(repository, emailDelivery);
 
     await service.findRegistration('user-id', 'church-id');
 
@@ -17,7 +25,7 @@ describe('AdminRegistrationService', () => {
   it('passes the confirmed primary department into the approval transaction', async () => {
     const review = jest.fn().mockResolvedValue(undefined);
     const repository = { review } as unknown as AdminRegistrationRepository;
-    const service = new AdminRegistrationService(repository);
+    const service = new AdminRegistrationService(repository, emailDelivery);
 
     await service.approve({
       userId: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',

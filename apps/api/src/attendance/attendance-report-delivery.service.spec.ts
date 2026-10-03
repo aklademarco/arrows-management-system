@@ -60,6 +60,7 @@ describe('AttendanceReportDeliveryService', () => {
       generate: jest.fn().mockResolvedValue(Buffer.from('%PDF-test')),
     } as unknown as AttendanceReportPdfService;
     const email = {
+      sendAccountApprovedEmail: jest.fn(),
       sendVerificationEmail: jest.fn(),
       sendPasswordResetEmail: jest.fn(),
       sendAttendanceReportEmail: jest.fn().mockResolvedValue(undefined),
@@ -99,6 +100,7 @@ describe('AttendanceReportDeliveryService', () => {
       generate: jest.fn().mockResolvedValue(Buffer.from('%PDF-test')),
     } as unknown as AttendanceReportPdfService;
     const email = {
+      sendAccountApprovedEmail: jest.fn(),
       sendVerificationEmail: jest.fn(),
       sendPasswordResetEmail: jest.fn(),
       sendAttendanceReportEmail: jest
