@@ -108,35 +108,35 @@ export function InstallAppPrompt() {
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-24 z-[100] mx-auto max-w-md rounded-[1.75rem] border border-purple-100 bg-white p-5 shadow-[0_20px_60px_rgba(36,0,70,0.22)] sm:bottom-6">
+    <div className="fixed bottom-20 left-3 z-[100] w-[calc(100vw-1.5rem)] max-w-xs rounded-2xl border border-purple-100 bg-white p-4 shadow-[0_16px_45px_rgba(36,0,70,0.18)] sm:bottom-4 sm:left-4">
       <button
         aria-label="Close install instructions"
-        className="absolute right-4 top-4 grid size-9 place-items-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+        className="absolute right-3 top-3 grid size-7 place-items-center rounded-full bg-slate-100 text-xs text-slate-500 transition hover:bg-slate-200"
         onClick={dismiss}
         type="button"
       >
         <FiX />
       </button>
 
-      <div className="flex items-start gap-4 pr-8">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-purple-100 text-xl text-[#6b21a8]">
+      <div className="flex items-start gap-3 pr-7">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-purple-100 text-base text-[#6b21a8]">
           <FiDownload />
         </span>
 
         <div>
-          <h2 className="font-black text-slate-950">
-            Add Arrows to your Home Screen
+          <h2 className="text-sm font-black text-slate-950">
+            Add Arrows to Home Screen
           </h2>
 
-          <p className="mt-1 text-sm leading-6 text-slate-500">
-            Open Application like a normal app from your phone.
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Open Arrows quickly like a normal app.
           </p>
         </div>
       </div>
 
       {installPrompt ? (
         <button
-          className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#6b21a8] font-extrabold text-white shadow-[0_5px_0_#4c1677] active:translate-y-1 active:shadow-none"
+          className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#6b21a8] text-xs font-extrabold text-white shadow-[0_3px_0_#4c1677] active:translate-y-0.5 active:shadow-none"
           onClick={install}
           type="button"
         >
@@ -144,11 +144,11 @@ export function InstallAppPrompt() {
           Install Arrows
         </button>
       ) : isIos ? (
-        <div className="mt-5 grid gap-3">
+        <div className="mt-3 grid gap-2">
           <Instruction
             icon={<FiShare />}
             number="1"
-            text="Tap the Share button in Safari."
+            text="Tap Share in Safari."
           />
 
           <Instruction
@@ -160,7 +160,7 @@ export function InstallAppPrompt() {
           <Instruction number="3" text='Tap "Add" to finish.' />
         </div>
       ) : (
-        <div className="mt-5 grid gap-3">
+        <div className="mt-3 grid gap-2">
           <Instruction
             icon={<FiMoreVertical />}
             number="1"
@@ -178,7 +178,7 @@ export function InstallAppPrompt() {
       )}
 
       <button
-        className="mt-5 w-full text-center text-sm font-bold text-slate-400"
+        className="mt-3 w-full text-center text-xs font-bold text-slate-400"
         onClick={dismiss}
         type="button"
       >
@@ -198,14 +198,16 @@ function Instruction({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-purple-50 p-3">
-      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#6b21a8] text-xs font-black text-white">
+    <div className="flex items-center gap-2 rounded-xl bg-purple-50 px-2.5 py-2">
+      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#6b21a8] text-[10px] font-black text-white">
         {number}
       </span>
 
-      <p className="flex-1 text-sm font-semibold text-slate-700">{text}</p>
+      <p className="flex-1 text-xs font-semibold leading-4 text-slate-700">
+        {text}
+      </p>
 
-      {icon ? <span className="text-lg text-[#6b21a8]">{icon}</span> : null}
+      {icon ? <span className="text-sm text-[#6b21a8]">{icon}</span> : null}
     </div>
   );
 }
