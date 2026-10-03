@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
+  AccountApprovedEmail,
   AttendanceReportEmail,
   EmailDelivery,
   PasswordResetEmail,
   VerificationEmail,
 } from './email-delivery';
 import {
+  accountApprovedEmailBody,
   attendanceReportEmailBody,
   passwordResetEmailBody,
   verificationEmailBody,
@@ -30,6 +32,11 @@ export class ResendEmailDelivery implements EmailDelivery {
 
   async sendVerificationEmail(message: VerificationEmail): Promise<void> {
     const body = verificationEmailBody(message, this.webUrl);
+    await this.send(message.recipient, body);
+  }
+
+  async sendAccountApprovedEmail(message: AccountApprovedEmail): Promise<void> {
+    const body = accountApprovedEmailBody(message, this.webUrl);
     await this.send(message.recipient, body);
   }
 
