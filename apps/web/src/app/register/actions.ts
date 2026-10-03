@@ -85,11 +85,8 @@ const registrationSchema = z
     password: z
       .string()
       .min(6, "Use at least 6 characters.")
-      .max(128)
-      .regex(/[a-z]/, "Add a lowercase letter.")
-      .regex(/[A-Z]/, "Add an uppercase letter.")
-      .regex(/\d/, "Add a number.")
-      .regex(/[^A-Za-z0-9]/, "Add a special character."),
+      .max(128, "Password is too long"),
+      
 
     confirmPassword: z.string(),
   })

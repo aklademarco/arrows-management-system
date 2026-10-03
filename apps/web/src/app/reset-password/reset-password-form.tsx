@@ -42,8 +42,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         Choose a new password
       </h1>
       <p className="mt-2 text-sm leading-6 text-slate-500">
-        Use at least 6  characters with uppercase, lowercase, number, and special
-        characters.
+        Use at least 6  characters.
       </p>
       <form action={action} className="mt-7 grid gap-4" noValidate>
         <input name="token" type="hidden" value={token} />
