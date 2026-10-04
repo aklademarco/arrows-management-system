@@ -19,6 +19,8 @@ import { AttendanceService } from './attendance.service';
 import { CheckInDto } from './dto/check-in.dto';
 import { CorrectAttendanceDto } from './dto/correct-attendance.dto';
 import { ManualAttendanceDto } from './dto/manual-attendance.dto';
+import { Throttle } from '@nestjs/throttler';
+import { RATE_LIMITS } from '../common/security/rate-limits';
 
 @Controller()
 @UseGuards(AuthenticatedGuard)
@@ -104,7 +106,9 @@ export class AttendanceController {
       data: await this.service.finalizeEvent(eventId, admin),
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.attendanceCheckIn,
+  })
   @Post('attendance/check-in')
   async checkIn(
     @AuthenticatedUser() user: AuthenticatedPrincipal,

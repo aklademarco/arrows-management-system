@@ -19,12 +19,20 @@ import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { MinistryContentModule } from './ministry-content/ministry-content.module';
 import { LeadershipMessagesModule } from './leadership-messages/leadership-messages.module';
 import { LiturgiesModule } from './liturgies/liturgies.module';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './common/security/app-throttler.guard';
+import { RATE_LIMITS } from './common/security/rate-limits';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['../../.env', '.env'],
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [RATE_LIMITS.general],
+      errorMessage: 'Too many requests. Please try again later.',
     }),
     DatabaseModule,
     HealthModule,
@@ -45,6 +53,12 @@ import { LiturgiesModule } from './liturgies/liturgies.module';
     LiturgiesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: AppThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -3,10 +3,13 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { validateEnvironment } from './config/validate-environment';
 import type { NextFunction, Request, Response } from 'express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
   validateEnvironment();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.set('trust proxy', 1);
   app.use((_request: Request, response: Response, next: NextFunction) => {
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('X-Frame-Options', 'DENY');
