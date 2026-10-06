@@ -36,6 +36,8 @@ import {
 } from './refresh-cookie';
 import { SessionService } from './session.service';
 import type { RefreshTokenContext } from './refresh-token.repository';
+import { Throttle } from '@nestjs/throttler';
+import { RATE_LIMITS } from '../common/security/rate-limits';
 
 function refreshContext(request: Request): RefreshTokenContext {
   const userAgent = request.headers['user-agent'];
@@ -54,7 +56,9 @@ export class AuthController {
     private readonly passwordResetService: PasswordResetService,
     private readonly currentUser: CurrentUserRepository,
   ) {}
-
+  @Throttle({
+    default: RATE_LIMITS.login,
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -73,7 +77,9 @@ export class AuthController {
       },
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.refresh,
+  })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -116,7 +122,9 @@ export class AuthController {
       data: account,
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.registration,
+  })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() body: RegisterDto, @Ip() ip: string) {
@@ -138,7 +146,9 @@ export class AuthController {
       data: await this.authService.listRegistrationDepartments(),
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.emailVerificationRequest,
+  })
   @Post('email-verification/request')
   @HttpCode(HttpStatus.OK)
   async requestEmailVerification(
@@ -152,7 +162,9 @@ export class AuthController {
       data: null,
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.accountActionConfirm,
+  })
   @Post('email-verification/confirm')
   @HttpCode(HttpStatus.OK)
   async confirmEmailVerification(@Body() body: ConfirmEmailVerificationDto) {
@@ -167,7 +179,9 @@ export class AuthController {
       },
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.passwordResetRequest,
+  })
   @Post('password-reset/request')
   @HttpCode(HttpStatus.OK)
   async requestPasswordReset(
@@ -181,7 +195,9 @@ export class AuthController {
       data: null,
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.login,
+  })
   @Post('account-status')
   @HttpCode(HttpStatus.OK)
   async accountStatus(@Body() body: LoginDto) {
@@ -191,7 +207,9 @@ export class AuthController {
       data: await this.loginService.accountStatus(body),
     };
   }
-
+  @Throttle({
+    default: RATE_LIMITS.accountActionConfirm,
+  })
   @Post('password-reset/confirm')
   @HttpCode(HttpStatus.OK)
   async confirmPasswordReset(@Body() body: ConfirmPasswordResetDto) {

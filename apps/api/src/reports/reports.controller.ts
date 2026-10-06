@@ -7,7 +7,12 @@ import {
 } from '../auth/authenticated.guard';
 import { AttendanceReportQueryDto } from './dto/attendance-report-query.dto';
 import { ReportsService } from './reports.service';
+import { Throttle } from '@nestjs/throttler';
+import { RATE_LIMITS } from '../common/security/rate-limits';
 
+@Throttle({
+  default: RATE_LIMITS.reports,
+})
 @Controller('reports')
 @UseGuards(AuthenticatedGuard)
 export class ReportsController {

@@ -50,6 +50,30 @@ export class PasswordResetRepository {
     return Number(result.value) < 3;
   }
 
+  async isTokenUsable(tokenHash: string, now: Date): Promise<boolean> {
+    const [token] = await this.database
+      .select({
+        expiresAt: accountActionTokens.expiresAt,
+        usedAt: accountActionTokens.usedAt,
+        revokedAt: accountActionTokens.revokedAt,
+      })
+      .from(accountActionTokens)
+      .where(
+        and(
+          eq(accountActionTokens.tokenHash, tokenHash),
+          eq(accountActionTokens.type, 'PASSWORD_RESET'),
+        ),
+      )
+      .limit(1);
+
+    return Boolean(
+      token &&
+      token.usedAt === null &&
+      token.revokedAt === null &&
+      token.expiresAt > now,
+    );
+  }
+
   async replaceToken(input: {
     userId: string;
     tokenHash: string;

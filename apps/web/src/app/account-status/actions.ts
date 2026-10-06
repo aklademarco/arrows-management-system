@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { getClientIpHeaders } from "@/lib/client-api";
 
 export type AccountStatusState = {
   success: boolean;
@@ -25,9 +26,10 @@ export async function checkAccountStatus(
     return { success: false, message: result.error.issues[0].message };
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
   try {
+    const clientIpHeaders = await getClientIpHeaders();
     const response = await fetch(`${apiUrl}/auth/account-status`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...clientIpHeaders },
       body: JSON.stringify(result.data),
       cache: "no-store",
     });

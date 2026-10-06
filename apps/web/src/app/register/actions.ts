@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { getClientIpHeaders } from "@/lib/client-api";
 
 export type RegistrationState = {
   success: boolean;
@@ -86,7 +87,6 @@ const registrationSchema = z
       .string()
       .min(6, "Use at least 6 characters.")
       .max(128, "Password is too long"),
-      
 
     confirmPassword: z.string(),
   })
@@ -125,10 +125,12 @@ export async function register(
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
 
   try {
+    const clientIpHeaders = await getClientIpHeaders();
     const response = await fetch(`${apiUrl}/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...clientIpHeaders,
       },
       body: JSON.stringify({
         ...payload,

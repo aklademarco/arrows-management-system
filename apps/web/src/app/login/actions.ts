@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { getClientIpHeaders } from "@/lib/client-api";
 
 export type MemberLoginState = {
   message: string;
@@ -32,9 +33,10 @@ export async function memberLogin(
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
   let destination = "/member";
   try {
+    const clientHeaders = await getClientIpHeaders();
     const response = await fetch(`${apiUrl}/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...clientHeaders },
       body: JSON.stringify(result.data),
       cache: "no-store",
     });
@@ -66,7 +68,6 @@ export async function memberLogin(
     store.set("acms_member_session", body.data.accessToken, sessionOptions);
     store.delete("acms_pastor_session");
     store.delete("acms_leader_session");
-
 
     if (body.data.user.roles.includes("PASTOR")) {
       store.set("acms_pastor_session", body.data.accessToken, sessionOptions);

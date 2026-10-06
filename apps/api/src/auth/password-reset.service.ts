@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import { hash } from 'argon2';
 import { EMAIL_DELIVERY, type EmailDelivery } from '../mail/email-delivery';
@@ -13,11 +13,6 @@ export class PasswordResetService {
     @Inject(EMAIL_DELIVERY) private readonly emailDelivery: EmailDelivery,
   ) {}
 
-  /**
-   * Issues a single-use reset token. Always resolves the same way regardless of
-   * whether the address exists, is verified, or is rate-limited, so the response
-   * never reveals which accounts are registered.
-   */
   async requestReset(email: string, requestedIp?: string): Promise<void> {
     const candidate = await this.repository.findCandidate(email);
     if (
@@ -58,19 +53,26 @@ export class PasswordResetService {
     }
   }
 
-  /**
-   * Consumes a reset token and applies the new password. The repository performs
-   * the password swap, lockout clear, token consumption, session revocation, and
-   * audit write atomically; here we only hash the raw token and password.
-   */
   async confirmReset(token: string, newPassword: string): Promise<void> {
     const tokenHash = createHash('sha256').update(token).digest('hex');
+
+    const now = new Date();
+
+    const tokenUsable = await this.repository.isTokenUsable(tokenHash, now);
+
+    if (!tokenUsable) {
+      throw new BadRequestException(
+        'This password-reset link is invalid or has expired.',
+      );
+    }
+
     const passwordHash = await hash(newPassword, {
       type: 2,
       memoryCost: 19_456,
       timeCost: 2,
       parallelism: 1,
     });
-    await this.repository.consumeToken(tokenHash, passwordHash, new Date());
+
+    await this.repository.consumeToken(tokenHash, passwordHash, now);
   }
 }
