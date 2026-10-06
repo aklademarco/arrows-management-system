@@ -33,7 +33,7 @@ export async function memberLogin(
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
   let destination = "/member";
   try {
-    const clientHeaders = await getClientIpHeaders;
+    const clientHeaders = await getClientIpHeaders();
     const response = await fetch(`${apiUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...clientHeaders },

@@ -29,7 +29,7 @@ export async function adminLogin(
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
   let response: Response;
   try {
-    const clientIpHeaders = await getClientIpHeaders;
+    const clientIpHeaders = await getClientIpHeaders();
     response = await fetch(`${apiUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...clientIpHeaders },
