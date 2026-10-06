@@ -1,11 +1,11 @@
-import { Controller, Get, INestApplication, Module } from '@nestjs/common';
+import { Controller, Get, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule, JwtService } from '@nestjs/jwt';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
-import type { App } from 'supertest/types';
 import { AppThrottlerGuard } from '../src/common/security/app-throttler.guard';
 
 const TEST_SECRET = 'test-secret-that-is-at-least-32-characters';
@@ -54,20 +54,44 @@ class LimitedController {
 class RateLimitTestModule {}
 
 describe('Rate limiting', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
       imports: [RateLimitTestModule],
     }).compile();
 
-    app = module.createNestApplication();
+    app = module.createNestApplication<NestExpressApplication>();
+
+    app.set('trust proxy', 1);
 
     await app.init();
   });
 
   afterEach(async () => {
     await app.close();
+  });
+
+  it('keeps forwarded client IPs in separate anonymous buckets', async () => {
+    await request(app.getHttpServer())
+      .get('/limited')
+      .set('X-Forwarded-For', '203.0.113.10')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/limited')
+      .set('X-Forwarded-For', '203.0.113.10')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/limited')
+      .set('X-Forwarded-For', '203.0.113.10')
+      .expect(429);
+
+    await request(app.getHttpServer())
+      .get('/limited')
+      .set('X-Forwarded-For', '203.0.113.11')
+      .expect(200);
   });
 
   it('returns 429 when an anonymous client exceeds its limit', async () => {

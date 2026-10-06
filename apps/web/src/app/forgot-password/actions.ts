@@ -1,17 +1,22 @@
 "use server";
 
 import { z } from "zod";
+import { getClientIpHeaders } from "@/lib/client-api";
 
 export type PasswordResetState = { success: boolean; message: string };
 
 const emailSchema = z.email("Enter a valid email address.").max(255);
-const passwordSchema = z.string().min(6, "Use at least 6 characters.").max(128, "Password is too long");
+const passwordSchema = z
+  .string()
+  .min(6, "Use at least 6 characters.")
+  .max(128, "Password is too long");
 
 async function post(path: string, payload: Record<string, string>) {
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
+  const clientIpHeaders = await getClientIpHeaders();
   const response = await fetch(`${apiUrl}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...clientIpHeaders },
     body: JSON.stringify(payload),
     cache: "no-store",
   });
