@@ -77,6 +77,36 @@ describe('HubtelSmsProvider', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('accepts the PascalCase response returned by Hubtel gateways', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          Message: 'Message accepted.',
+          ResponseCode: '0000',
+          Data: { MessageId: 'hubtel-message-2', Status: 'Sent' },
+        },
+        201,
+      ),
+    );
+
+    await expect(provider.send('+233241234567', 'Notice')).resolves.toEqual({
+      success: true,
+      providerId: 'hubtel-message-2',
+    });
+  });
+
+  it('reports an actionable error when a successful response has no message ID', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ ResponseCode: '0000', Data: { Status: 'Sent' } }, 201),
+    );
+
+    await expect(provider.send('+233241234567', 'Notice')).resolves.toEqual({
+      success: false,
+      retryable: false,
+      error: 'Hubtel accepted the request but returned no message ID (201).',
+    });
+  });
+
   it('marks rate-limited requests as retryable', async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ message: 'Too many requests.' }, 429),
@@ -110,6 +140,22 @@ describe('HubtelSmsProvider', () => {
           Authorization: `Basic ${Buffer.from('client-id:client-secret').toString('base64')}`,
         },
       }),
+    );
+  });
+
+  it('recognizes delivery status in a PascalCase response', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          ResponseCode: '0000',
+          Data: { MessageId: 'message-2', Status: 'Delivered' },
+        },
+        200,
+      ),
+    );
+
+    await expect(provider.deliveryStatus('message-2')).resolves.toBe(
+      'DELIVERED',
     );
   });
 

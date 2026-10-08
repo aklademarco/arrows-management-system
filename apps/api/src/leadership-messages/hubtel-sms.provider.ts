@@ -1,12 +1,23 @@
 import { Injectable } from '@nestjs/common';
 
+type HubtelMessageData = {
+  messageId?: string;
+  MessageId?: string;
+  status?: string;
+  Status?: string;
+};
+
 type HubtelEnvelope = {
   message?: string | null;
+  Message?: string | null;
   responseCode?: string;
-  data?: {
-    messageId?: string;
-    status?: string;
-  } | null;
+  ResponseCode?: string;
+  data?: HubtelMessageData | null;
+  Data?: HubtelMessageData | null;
+  messageId?: string;
+  MessageId?: string;
+  status?: string;
+  Status?: string;
 };
 
 export function isHubtelConfigured() {
@@ -56,7 +67,7 @@ export class HubtelSmsProvider {
       const body = (await response
         .json()
         .catch(() => null)) as HubtelEnvelope | null;
-      const providerId = body?.data?.messageId;
+      const providerId = this.messageId(body);
       if (response.ok && providerId)
         return { success: true as const, providerId };
 
@@ -68,7 +79,10 @@ export class HubtelSmsProvider {
           response.status >= 500,
         error:
           body?.message ??
-          `SMS provider rejected the request (${response.status}).`,
+          body?.Message ??
+          (response.ok
+            ? `Hubtel accepted the request but returned no message ID (${response.status}).`
+            : `SMS provider rejected the request (${response.status}).`),
       };
     } catch (error) {
       return {
@@ -96,9 +110,10 @@ export class HubtelSmsProvider {
         .json()
         .catch(() => null)) as HubtelEnvelope | null;
       if (!response.ok) return null;
-      return body?.data?.status?.toLowerCase() === 'delivered'
-        ? 'DELIVERED'
-        : null;
+      const data = body?.data ?? body?.Data;
+      const status =
+        data?.status ?? data?.Status ?? body?.status ?? body?.Status;
+      return status?.toLowerCase() === 'delivered' ? 'DELIVERED' : null;
     } catch {
       return null;
     }
@@ -107,6 +122,13 @@ export class HubtelSmsProvider {
   private authorization() {
     const credentials = `${process.env.HUBTEL_CLIENT_ID ?? ''}:${process.env.HUBTEL_CLIENT_SECRET ?? ''}`;
     return `Basic ${Buffer.from(credentials).toString('base64')}`;
+  }
+
+  private messageId(body: HubtelEnvelope | null) {
+    const data = body?.data ?? body?.Data;
+    return (
+      data?.messageId ?? data?.MessageId ?? body?.messageId ?? body?.MessageId
+    );
   }
 
   private baseUrl() {
