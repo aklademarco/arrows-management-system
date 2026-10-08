@@ -9,7 +9,7 @@ import {
   type CreateLeadershipMessageDto,
 } from './dto/create-leadership-message.dto';
 import { LeadershipMessagesRepository } from './leadership-messages.repository';
-import { isMoolreConfigured } from './moolre-sms.provider';
+import { isHubtelConfigured } from './hubtel-sms.provider';
 
 @Injectable()
 export class LeadershipMessagesService {
@@ -28,7 +28,7 @@ export class LeadershipMessagesService {
     return {
       canMessageChurch,
       departments,
-      smsAvailable: isMoolreConfigured(),
+      smsAvailable: isHubtelConfigured(),
     };
   }
 

@@ -4,7 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { MoolreSmsProvider } from './moolre-sms.provider';
+import { HubtelSmsProvider } from './hubtel-sms.provider';
 import { LeadershipMessagesRepository } from './leadership-messages.repository';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class SmsDispatchService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly repository: LeadershipMessagesRepository,
-    private readonly provider: MoolreSmsProvider,
+    private readonly provider: HubtelSmsProvider,
   ) {}
 
   onModuleInit() {

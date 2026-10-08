@@ -47,12 +47,21 @@ export function validateEnvironment(
   }
 
   if (environment.SMS_ENABLED === 'true') {
-    const missingSms = ['MOOLRE_SMS_VAS_KEY', 'MOOLRE_SENDER_ID'].filter(
-      (name) => !environment[name]?.trim(),
-    );
+    const missingSms = [
+      'HUBTEL_CLIENT_ID',
+      'HUBTEL_CLIENT_SECRET',
+      'HUBTEL_SENDER_ID',
+    ].filter((name) => !environment[name]?.trim());
     if (missingSms.length)
       throw new Error(`SMS_ENABLED requires: ${missingSms.join(', ')}`);
-    if ((environment.MOOLRE_SENDER_ID?.length ?? 0) > 11)
-      throw new Error('MOOLRE_SENDER_ID must contain at most 11 characters.');
+    if (!/^[a-z0-9]{1,11}$/i.test(environment.HUBTEL_SENDER_ID ?? ''))
+      throw new Error(
+        'HUBTEL_SENDER_ID must contain 1 to 11 alphanumeric characters.',
+      );
+    if (
+      environment.HUBTEL_BASE_URL &&
+      !environment.HUBTEL_BASE_URL.startsWith('https://')
+    )
+      throw new Error('HUBTEL_BASE_URL must use HTTPS in production.');
   }
 }

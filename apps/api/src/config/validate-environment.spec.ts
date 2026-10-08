@@ -47,4 +47,51 @@ describe('validateEnvironment', () => {
   it('accepts complete secure production configuration', () => {
     expect(() => validateEnvironment(validProductionEnvironment)).not.toThrow();
   });
+
+  it('requires every Hubtel credential when SMS is enabled', () => {
+    expect(() =>
+      validateEnvironment({
+        ...validProductionEnvironment,
+        SMS_ENABLED: 'true',
+        HUBTEL_CLIENT_ID: 'client-id',
+      }),
+    ).toThrow('HUBTEL_CLIENT_SECRET, HUBTEL_SENDER_ID');
+  });
+
+  it('accepts a complete Hubtel SMS configuration', () => {
+    expect(() =>
+      validateEnvironment({
+        ...validProductionEnvironment,
+        SMS_ENABLED: 'true',
+        HUBTEL_CLIENT_ID: 'client-id',
+        HUBTEL_CLIENT_SECRET: 'client-secret',
+        HUBTEL_SENDER_ID: 'ARROWS',
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects an invalid Hubtel sender ID', () => {
+    expect(() =>
+      validateEnvironment({
+        ...validProductionEnvironment,
+        SMS_ENABLED: 'true',
+        HUBTEL_CLIENT_ID: 'client-id',
+        HUBTEL_CLIENT_SECRET: 'client-secret',
+        HUBTEL_SENDER_ID: 'ARROWS CHURCH',
+      }),
+    ).toThrow('1 to 11 alphanumeric characters');
+  });
+
+  it('requires an HTTPS Hubtel base URL in production', () => {
+    expect(() =>
+      validateEnvironment({
+        ...validProductionEnvironment,
+        SMS_ENABLED: 'true',
+        HUBTEL_CLIENT_ID: 'client-id',
+        HUBTEL_CLIENT_SECRET: 'client-secret',
+        HUBTEL_SENDER_ID: 'ARROWS',
+        HUBTEL_BASE_URL: 'http://sms.example.test/v1',
+      }),
+    ).toThrow('HUBTEL_BASE_URL must use HTTPS');
+  });
 });
