@@ -17,7 +17,7 @@ to the internet. Certbot obtains and renews the TLS certificate.
 - A domain with an `A` record pointing to the VPS
 - Verified Resend sending domain and API key
 - Cloudinary credentials
-- Optional Moolre credentials if SMS is enabled
+- Optional Hubtel Programmable SMS credentials if SMS is enabled
 
 ## 1. Prepare the server
 
@@ -229,6 +229,6 @@ pnpm dev
 - Migrations and initial admin creation complete successfully.
 - Member and administrator login work through the public domain.
 - Phone geolocation and attendance check-in work over HTTPS.
-- Resend, Cloudinary, and optional Moolre integrations are tested.
+- Resend, Cloudinary, and optional Hubtel integrations are tested.
 - A database backup has been restored successfully.
 - External monitoring checks `/api/v1/health` every five minutes.
