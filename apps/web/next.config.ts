@@ -13,6 +13,13 @@ if (existsSync(workspaceEnv)) {
 }
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Profile photos are validated to a maximum decoded size of 5 MB.
+      // Base64 encoding adds roughly 33% plus the Server Action envelope.
+      bodySizeLimit: "8mb",
+    },
+  },
   ...(process.env.VERCEL
     ? {}
     : {
