@@ -85,6 +85,28 @@ export class AdminRegistrationController {
     };
   }
 
+  @Post(':userId/send-verification-reminder')
+  @HttpCode(HttpStatus.OK)
+  async sendVerificationReminder(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @AdminUser() admin: AdminPrincipal,
+    @Ip() requestedIp: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    await this.service.sendVerificationReminder({
+      userId,
+      reviewerId: admin.id,
+      reviewerChurchId: admin.churchId,
+      requestedIp,
+      userAgent,
+    });
+    return {
+      success: true,
+      message: 'Verification reminder sent.',
+      data: null,
+    };
+  }
+
   @Post(':userId/reject')
   @HttpCode(HttpStatus.OK)
   async reject(

@@ -127,7 +127,9 @@ describe('AuthService', () => {
       emailDelivery,
     );
 
-    await service.requestEmailVerification('bismark@example.com', '127.0.0.1');
+    await expect(
+      service.requestEmailVerification('bismark@example.com', '127.0.0.1'),
+    ).resolves.toBe('SENT');
 
     expect(createToken).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -184,7 +186,7 @@ describe('AuthService', () => {
 
     await expect(
       service.requestEmailVerification('bismark@example.com'),
-    ).resolves.toBeUndefined();
+    ).resolves.toBe('DELIVERY_FAILED');
     const createdTokenHash = createToken.mock.calls[0]?.[0].tokenHash;
     expect(createdTokenHash).toBeDefined();
     expect(revokeToken).toHaveBeenCalledWith(
@@ -192,6 +194,57 @@ describe('AuthService', () => {
       expect.any(Date),
     );
     expect(revokeOtherTokens).not.toHaveBeenCalled();
+  });
+
+  it('reports when an email-verification request is rate limited', async () => {
+    const emailVerificationRepository = {
+      findCandidate: jest.fn().mockResolvedValue({
+        id: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+        email: 'bismark@example.com',
+        firstName: 'Bismark',
+        emailVerifiedAt: null,
+      }),
+      mayIssueToken: jest.fn().mockResolvedValue(false),
+      createToken: jest.fn(),
+    } as unknown as EmailVerificationRepository;
+    const sendVerificationEmail = jest.fn();
+    const service = new AuthService(
+      {} as RegistrationRepository,
+      emailVerificationRepository,
+      {} as ConfigService,
+      {
+        sendAccountApprovedEmail: jest.fn(),
+        sendVerificationEmail,
+        sendPasswordResetEmail: jest.fn(),
+        sendAttendanceReportEmail: jest.fn(),
+      },
+    );
+
+    await expect(
+      service.requestEmailVerification('bismark@example.com'),
+    ).resolves.toBe('RATE_LIMITED');
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
+  });
+
+  it('reports when email verification is not required', async () => {
+    const emailVerificationRepository = {
+      findCandidate: jest.fn().mockResolvedValue(undefined),
+    } as unknown as EmailVerificationRepository;
+    const service = new AuthService(
+      {} as RegistrationRepository,
+      emailVerificationRepository,
+      {} as ConfigService,
+      {
+        sendAccountApprovedEmail: jest.fn(),
+        sendVerificationEmail: jest.fn(),
+        sendPasswordResetEmail: jest.fn(),
+        sendAttendanceReportEmail: jest.fn(),
+      },
+    );
+
+    await expect(
+      service.requestEmailVerification('unknown@example.com'),
+    ).resolves.toBe('NOT_REQUIRED');
   });
 
   it('hashes and consumes a submitted verification token', async () => {

@@ -1,4 +1,5 @@
 import type { EmailDelivery } from '../mail/email-delivery';
+import { AuthService } from '../auth/auth.service';
 import { AdminRegistrationRepository } from './admin-registration.repository';
 import { AdminRegistrationService } from './admin-registration.service';
 
@@ -8,6 +9,10 @@ const emailDelivery = {
   sendAccountApprovedEmail: jest.fn().mockResolvedValue(undefined),
   sendAttendanceReportEmail: jest.fn(),
 } satisfies EmailDelivery;
+
+const authService = {
+  requestEmailVerification: jest.fn(),
+} as unknown as AuthService;
 
 describe('AdminRegistrationService', () => {
   beforeEach(() => {
@@ -23,7 +28,11 @@ describe('AdminRegistrationService', () => {
       findRegistration,
     } as unknown as AdminRegistrationRepository;
 
-    const service = new AdminRegistrationService(repository, emailDelivery);
+    const service = new AdminRegistrationService(
+      repository,
+      authService,
+      emailDelivery,
+    );
 
     await service.findRegistration('user-id', 'church-id');
 
@@ -44,7 +53,11 @@ describe('AdminRegistrationService', () => {
       review,
     } as unknown as AdminRegistrationRepository;
 
-    const service = new AdminRegistrationService(repository, emailDelivery);
+    const service = new AdminRegistrationService(
+      repository,
+      authService,
+      emailDelivery,
+    );
 
     await service.approve({
       userId: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
@@ -95,7 +108,11 @@ describe('AdminRegistrationService', () => {
       new Error('Resend unavailable'),
     );
 
-    const service = new AdminRegistrationService(repository, emailDelivery);
+    const service = new AdminRegistrationService(
+      repository,
+      authService,
+      emailDelivery,
+    );
 
     await expect(
       service.approve({
@@ -113,5 +130,131 @@ describe('AdminRegistrationService', () => {
       recipient: 'bismark@example.com',
       firstName: 'Bismark',
     });
+  });
+
+  it('sends and audits a verification reminder for an unverified pending registration', async () => {
+    const findRegistration = jest.fn().mockResolvedValue({
+      id: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+      email: 'bismark@example.com',
+      accountStatus: 'PENDING_APPROVAL',
+      emailVerifiedAt: null,
+    });
+    const recordVerificationReminderRequest = jest
+      .fn()
+      .mockResolvedValue(undefined);
+    const repository = {
+      findRegistration,
+      recordVerificationReminderRequest,
+    } as unknown as AdminRegistrationRepository;
+    const requestEmailVerification = jest.fn().mockResolvedValue('SENT');
+    const reminderAuthService = {
+      requestEmailVerification,
+    } as unknown as AuthService;
+    const service = new AdminRegistrationService(
+      repository,
+      reminderAuthService,
+      emailDelivery,
+    );
+    const input = {
+      userId: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+      reviewerId: 'b76e8f50-aee7-40f7-9662-cb29a39ea168',
+      reviewerChurchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
+      requestedIp: '127.0.0.1',
+      userAgent: 'Jest',
+    };
+
+    await expect(
+      service.sendVerificationReminder(input),
+    ).resolves.toBeUndefined();
+
+    expect(findRegistration).toHaveBeenCalledWith(
+      input.userId,
+      input.reviewerChurchId,
+    );
+    expect(recordVerificationReminderRequest).toHaveBeenCalledWith(input);
+    expect(requestEmailVerification).toHaveBeenCalledWith(
+      'bismark@example.com',
+      '127.0.0.1',
+    );
+  });
+
+  it('does not send a reminder after the email has been verified', async () => {
+    const repository = {
+      findRegistration: jest.fn().mockResolvedValue({
+        email: 'bismark@example.com',
+        accountStatus: 'PENDING_APPROVAL',
+        emailVerifiedAt: new Date(),
+      }),
+      recordVerificationReminderRequest: jest.fn(),
+    } as unknown as AdminRegistrationRepository;
+    const requestEmailVerification = jest.fn();
+    const service = new AdminRegistrationService(
+      repository,
+      { requestEmailVerification } as unknown as AuthService,
+      emailDelivery,
+    );
+
+    await expect(
+      service.sendVerificationReminder({
+        userId: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+        reviewerId: 'b76e8f50-aee7-40f7-9662-cb29a39ea168',
+        reviewerChurchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
+      }),
+    ).rejects.toThrow('already verified');
+    expect(requestEmailVerification).not.toHaveBeenCalled();
+  });
+
+  it('reports the verification-email cooldown to the administrator', async () => {
+    const repository = {
+      findRegistration: jest.fn().mockResolvedValue({
+        email: 'bismark@example.com',
+        accountStatus: 'PENDING_APPROVAL',
+        emailVerifiedAt: null,
+      }),
+      recordVerificationReminderRequest: jest.fn().mockResolvedValue(undefined),
+    } as unknown as AdminRegistrationRepository;
+    const service = new AdminRegistrationService(
+      repository,
+      {
+        requestEmailVerification: jest.fn().mockResolvedValue('RATE_LIMITED'),
+      } as unknown as AuthService,
+      emailDelivery,
+    );
+
+    await expect(
+      service.sendVerificationReminder({
+        userId: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+        reviewerId: 'b76e8f50-aee7-40f7-9662-cb29a39ea168',
+        reviewerChurchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
+      }),
+    ).rejects.toMatchObject({ status: 429 });
+  });
+
+  it('reports a provider failure to the administrator', async () => {
+    const repository = {
+      findRegistration: jest.fn().mockResolvedValue({
+        email: 'bismark@example.com',
+        accountStatus: 'PENDING_APPROVAL',
+        emailVerifiedAt: null,
+      }),
+      recordVerificationReminderRequest: jest.fn().mockResolvedValue(undefined),
+    } as unknown as AdminRegistrationRepository;
+    const service = new AdminRegistrationService(
+      repository,
+      {
+        requestEmailVerification: jest
+          .fn()
+          .mockResolvedValue('DELIVERY_FAILED'),
+      } as unknown as AuthService,
+      emailDelivery,
+    );
+
+    await expect(
+      service.sendVerificationReminder({
+        userId: 'a65d7e4f-9dd6-40b5-8c83-431bd84f9f57',
+        reviewerId: 'b76e8f50-aee7-40f7-9662-cb29a39ea168',
+        reviewerChurchId: 'e091b273-d11a-40ca-8995-fe5cd621d49b',
+      }),
+    ).rejects.toMatchObject({ status: 503 });
   });
 });

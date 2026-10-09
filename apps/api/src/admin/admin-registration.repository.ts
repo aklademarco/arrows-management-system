@@ -134,6 +134,25 @@ export class AdminRegistrationRepository {
     return registration;
   }
 
+  async recordVerificationReminderRequest(input: {
+    userId: string;
+    reviewerId: string;
+    reviewerChurchId: string;
+    requestedIp?: string;
+    userAgent?: string;
+  }): Promise<void> {
+    await this.database.insert(auditLogs).values({
+      churchId: input.reviewerChurchId,
+      actorUserId: input.reviewerId,
+      action: 'EMAIL_VERIFICATION_REMINDER_REQUESTED',
+      entityType: 'USER',
+      entityId: input.userId,
+      metadata: { channel: 'EMAIL' },
+      requestedIp: input.requestedIp,
+      userAgent: input.userAgent,
+    });
+  }
+
   async review(input: {
     userId: string;
     reviewerId: string;

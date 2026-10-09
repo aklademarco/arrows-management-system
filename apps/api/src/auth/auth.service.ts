@@ -22,6 +22,9 @@ export type RegistrationResult = {
   verificationEmailSent: boolean;
 };
 
+export type EmailVerificationRequestResult =
+  'SENT' | 'NOT_REQUIRED' | 'RATE_LIMITED' | 'DELIVERY_FAILED';
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -113,18 +116,18 @@ export class AuthService {
   async requestEmailVerification(
     email: string,
     requestedIp?: string,
-  ): Promise<void> {
+  ): Promise<EmailVerificationRequestResult> {
     const candidate =
       await this.emailVerificationRepository.findCandidate(email);
     if (!candidate || candidate.emailVerifiedAt) {
-      return;
+      return 'NOT_REQUIRED';
     }
 
     const now = new Date();
     if (
       !(await this.emailVerificationRepository.mayIssueToken(candidate.id, now))
     ) {
-      return;
+      return 'RATE_LIMITED';
     }
 
     const tokenBytes = randomBytes(32);
@@ -168,7 +171,7 @@ export class AuthService {
         }
         // The controller intentionally returns a generic response to prevent
         // account enumeration. The provider error remains visible in API logs.
-        return;
+        return 'DELIVERY_FAILED';
       }
 
       try {
@@ -187,6 +190,7 @@ export class AuthService {
             message,
         );
       }
+      return 'SENT';
     } finally {
       tokenBytes.fill(0);
     }

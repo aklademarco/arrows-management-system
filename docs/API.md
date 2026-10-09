@@ -542,7 +542,32 @@ GET /admin/registrations/:userId
 
 ---
 
-## 6.3 Approve Registration
+## 6.3 Send Email-Verification Reminder
+
+```http
+POST /admin/registrations/:userId/send-verification-reminder
+```
+
+**Roles:** `SUPER_ADMIN`, `ADMIN`
+
+The account must belong to the administrator's church, remain in
+`PENDING_APPROVAL`, and have an unverified email address. The endpoint reuses
+the standard 24-hour verification-token flow and its limit of three issued
+tokens per account per hour. The request is recorded in the audit log.
+
+### Response
+
+```json
+{
+  "success": true,
+  "message": "Verification reminder sent.",
+  "data": null
+}
+```
+
+---
+
+## 6.4 Approve Registration
 
 ```http
 POST /admin/registrations/:userId/approve
@@ -577,7 +602,7 @@ The backend should:
 
 ---
 
-## 6.4 Reject Registration
+## 6.5 Reject Registration
 
 ```http
 POST /admin/registrations/:userId/reject
@@ -595,7 +620,7 @@ POST /admin/registrations/:userId/reject
 
 ---
 
-## 6.5 Suspend User
+## 6.6 Suspend User
 
 ```http
 POST /admin/users/:userId/suspend
@@ -613,7 +638,7 @@ POST /admin/users/:userId/suspend
 
 ---
 
-## 6.6 Reactivate User
+## 6.7 Reactivate User
 
 ```http
 POST /admin/users/:userId/reactivate
