@@ -151,6 +151,14 @@ export const pastoralFollowUpOutcome = pgEnum('pastoral_follow_up_outcome', [
   'RETURNING_SOON',
   'CARE_COMPLETED',
 ]);
+export const pastoralCareRequestType = pgEnum('pastoral_care_request_type', [
+  'MESSAGE',
+  'PRAYER_REQUEST',
+]);
+export const pastoralCareRequestStatus = pgEnum(
+  'pastoral_care_request_status',
+  ['NEW', 'IN_REVIEW', 'RESOLVED'],
+);
 
 export const reviewDecision = pgEnum('review_decision', [
   'APPROVED',
@@ -643,6 +651,54 @@ export const pastoralFollowUps = pgTable(
     index('pastoral_follow_ups_member_contacted_idx').on(
       table.memberId,
       table.contactedAt,
+    ),
+  ],
+);
+
+export const pastoralCareRequests = pgTable(
+  'pastoral_care_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => memberProfiles.id),
+    type: pastoralCareRequestType('type').notNull(),
+    subject: varchar('subject', { length: 160 }).notNull(),
+    body: text('body').notNull(),
+    status: pastoralCareRequestStatus('status').notNull().default('NEW'),
+    handledBy: uuid('handled_by').references(() => users.id),
+    handledAt: timestamp('handled_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('pastoral_care_requests_church_status_created_idx').on(
+      table.churchId,
+      table.status,
+      table.createdAt,
+    ),
+    index('pastoral_care_requests_member_created_idx').on(
+      table.memberId,
+      table.createdAt,
+    ),
+    check(
+      'pastoral_care_requests_subject_not_blank',
+      sql`char_length(btrim(${table.subject})) > 0`,
+    ),
+    check(
+      'pastoral_care_requests_body_not_blank',
+      sql`char_length(btrim(${table.body})) > 0`,
+    ),
+    check(
+      'pastoral_care_requests_handler_consistent',
+      sql`(${table.status} = 'NEW' and ${table.handledBy} is null and ${table.handledAt} is null) or (${table.status} <> 'NEW' and ${table.handledBy} is not null and ${table.handledAt} is not null)`,
     ),
   ],
 );

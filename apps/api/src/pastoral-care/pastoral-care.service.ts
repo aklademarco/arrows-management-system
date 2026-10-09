@@ -4,7 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
+import type { CreateCareRequestDto } from './dto/create-care-request.dto';
 import type { CreateFollowUpDto } from './dto/create-follow-up.dto';
+import type { UpdateCareRequestStatusDto } from './dto/update-care-request-status.dto';
 import { PastoralCareRepository } from './pastoral-care.repository';
 
 const CARE_ROLES = ['SUPER_ADMIN', 'ADMIN', 'PASTOR'];
@@ -94,6 +96,53 @@ export class PastoralCareService {
           b.absenceCount - a.absenceCount ||
           a.displayName.localeCompare(b.displayName),
       );
+  }
+
+  async submitRequest(
+    input: CreateCareRequestDto,
+    user: AuthenticatedPrincipal,
+  ) {
+    const memberId = await this.repository.findActiveMemberId(
+      user.id,
+      user.churchId,
+    );
+    if (!memberId) {
+      throw new NotFoundException('Active member profile was not found.');
+    }
+    return this.repository.createCareRequest(memberId, input, user);
+  }
+
+  async listOwnRequests(user: AuthenticatedPrincipal) {
+    const memberId = await this.repository.findActiveMemberId(
+      user.id,
+      user.churchId,
+    );
+    if (!memberId) {
+      throw new NotFoundException('Active member profile was not found.');
+    }
+    return this.repository.listOwnCareRequests(memberId, user.churchId);
+  }
+
+  listRequestInbox(user: AuthenticatedPrincipal) {
+    this.ensureAccess(user);
+    return this.repository.listCareRequestInbox(user.churchId);
+  }
+
+  async updateRequestStatus(
+    requestId: string,
+    input: UpdateCareRequestStatusDto,
+    user: AuthenticatedPrincipal,
+  ) {
+    this.ensureAccess(user);
+    const updated = await this.repository.updateCareRequestStatus(
+      requestId,
+      input.status,
+      user,
+    );
+    if (!updated) {
+      throw new NotFoundException('Pastoral care request was not found.');
+    }
+    return updated;
   }
 
   async record(

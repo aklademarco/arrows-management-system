@@ -45,4 +45,9 @@ export const RATE_LIMITS = {
     limit: 20,
     ttl: minutes(5),
   },
+
+  pastoralCareRequest: {
+    limit: 5,
+    ttl: hours(1),
+  },
 } as const;

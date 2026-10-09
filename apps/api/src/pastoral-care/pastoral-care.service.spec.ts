@@ -1,4 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
+import { PastoralCareRepository } from './pastoral-care.repository';
 import { PastoralCareService } from './pastoral-care.service';
 
 describe('PastoralCareService', () => {
@@ -110,5 +112,92 @@ describe('PastoralCareService', () => {
       service.record('member-id', { method: 'CALL', outcome: 'REACHED' }, user),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(repository.createFollowUp).not.toHaveBeenCalled();
+  });
+
+  it('submits a private care request through the active member profile', async () => {
+    const repository = {
+      findActiveMemberId: jest.fn().mockResolvedValue('member-id'),
+      createCareRequest: jest.fn().mockResolvedValue({ id: 'request-id' }),
+    } as unknown as PastoralCareRepository;
+    const service = new PastoralCareService(repository);
+    const member: AuthenticatedPrincipal = {
+      id: 'member-user-id',
+      churchId: 'church-id',
+      email: 'member@example.com',
+      roles: ['MEMBER'],
+    };
+    const input = {
+      type: 'PRAYER_REQUEST' as const,
+      subject: 'Please pray with me',
+      body: 'I would appreciate prayer for my family this week.',
+    };
+
+    await expect(service.submitRequest(input, member)).resolves.toEqual({
+      id: 'request-id',
+    });
+    // Repository methods are Jest mocks in this focused unit test.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(repository.createCareRequest).toHaveBeenCalledWith(
+      'member-id',
+      input,
+      member,
+    );
+  });
+
+  it('does not expose the pastoral inbox to an ordinary member', async () => {
+    const repository = {
+      listCareRequestInbox: jest.fn(),
+    } as unknown as PastoralCareRepository;
+    const service = new PastoralCareService(repository);
+    const member: AuthenticatedPrincipal = {
+      id: 'member-user-id',
+      churchId: 'church-id',
+      email: 'member@example.com',
+      roles: ['MEMBER'],
+    };
+
+    expect(() => service.listRequestInbox(member)).toThrow(ForbiddenException);
+    // Repository methods are Jest mocks in this focused unit test.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(repository.listCareRequestInbox).not.toHaveBeenCalled();
+  });
+
+  it('scopes the pastoral inbox to the pastor church', async () => {
+    const repository = {
+      listCareRequestInbox: jest.fn().mockResolvedValue([]),
+    } as unknown as PastoralCareRepository;
+    const service = new PastoralCareService(repository);
+    const pastor: AuthenticatedPrincipal = {
+      id: 'pastor-user-id',
+      churchId: 'church-id',
+      email: 'pastor@example.com',
+      roles: ['PASTOR'],
+    };
+
+    await expect(service.listRequestInbox(pastor)).resolves.toEqual([]);
+    // Repository methods are Jest mocks in this focused unit test.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(repository.listCareRequestInbox).toHaveBeenCalledWith('church-id');
+  });
+
+  it('does not update a care request outside the pastor church', async () => {
+    const repository = {
+      updateCareRequestStatus: jest.fn().mockResolvedValue(null),
+    } as unknown as PastoralCareRepository;
+    const service = new PastoralCareService(repository);
+    const pastor: AuthenticatedPrincipal = {
+      id: 'pastor-user-id',
+      churchId: 'church-id',
+      email: 'pastor@example.com',
+      roles: ['PASTOR'],
+    };
+
+    await expect(
+      service.updateRequestStatus(
+        'request-id',
+        { status: 'RESOLVED' },
+        pastor,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
