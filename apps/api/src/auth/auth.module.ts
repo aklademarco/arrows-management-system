@@ -34,6 +34,12 @@ import { AuthenticatedGuard } from './authenticated.guard';
     AdminGuard,
     AuthenticatedGuard,
   ],
-  exports: [JwtModule, LoginRepository, AdminGuard, AuthenticatedGuard],
+  exports: [
+    JwtModule,
+    AuthService,
+    LoginRepository,
+    AdminGuard,
+    AuthenticatedGuard,
+  ],
 })
 export class AuthModule {}

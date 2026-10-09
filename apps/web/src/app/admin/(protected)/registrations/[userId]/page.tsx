@@ -1,6 +1,17 @@
 import Link from "next/link";
-import { FiArrowLeft, FiCheckCircle, FiMail, FiPhone } from "react-icons/fi";
-import { reactivateUser, suspendUser } from "../actions";
+import {
+  FiArrowLeft,
+  FiCheckCircle,
+  FiMail,
+  FiPhone,
+} from "react-icons/fi";
+import { AdminActionButton } from "@/components/admin-action-button";
+import { AdminFeedback } from "@/components/admin-feedback";
+import {
+  reactivateUser,
+  sendVerificationReminder,
+  suspendUser,
+} from "../actions";
 import { getAdminResource } from "../admin-api";
 
 type RegistrationDetail = {
@@ -25,10 +36,12 @@ function formatStatus(status: string) {
 
 export default async function RegistrationDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ userId: string }>;
+  searchParams: Promise<{ feedback?: string; message?: string }>;
 }) {
-  const { userId } = await params;
+  const [{ userId }, feedback] = await Promise.all([params, searchParams]);
   const registration = await getAdminResource<RegistrationDetail>(
     `/admin/registrations/${userId}`,
     { notFoundOn404: true },
@@ -77,6 +90,44 @@ export default async function RegistrationDetailPage({
             )}
           </div>
         </header>
+
+        {(feedback.feedback === "success" || feedback.feedback === "error") &&
+        feedback.message ? (
+          <AdminFeedback
+            kind={feedback.feedback}
+            message={feedback.message}
+          />
+        ) : null}
+
+        {!registration.emailVerifiedAt &&
+        registration.accountStatus === "PENDING_APPROVAL" ? (
+          <section className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/4 p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-amber-200">
+              Email verification required
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Send a new verification link to {registration.email}. The link
+              expires after 24 hours and the account is protected by a resend
+              limit.
+            </p>
+            <form action={sendVerificationReminder} className="mt-4">
+              <input name="userId" type="hidden" value={registration.id} />
+              <input
+                name="returnTo"
+                type="hidden"
+                value={`/admin/registrations/${registration.id}`}
+              />
+              <AdminActionButton
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-violet-600 px-5 font-bold text-white transition hover:bg-violet-500"
+                pendingLabel="Sending reminder…"
+                type="submit"
+              >
+                <FiMail aria-hidden="true" />
+                Send verification reminder
+              </AdminActionButton>
+            </form>
+          </section>
+        ) : null}
 
         <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
           <h2 className="text-xl font-bold">Member information</h2>
@@ -139,7 +190,7 @@ export default async function RegistrationDetailPage({
         </section>
 
         {registration.accountStatus === "ACTIVE" ? (
-          <section className="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/[0.04] p-6 shadow-sm">
+          <section className="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/4 p-6 shadow-sm">
             <h2 className="text-xl font-bold text-rose-300">Suspend account</h2>
             <p className="mt-2 text-sm text-slate-400">
               Suspension immediately blocks protected access while preserving
@@ -165,7 +216,7 @@ export default async function RegistrationDetailPage({
         ) : null}
 
         {registration.accountStatus === "SUSPENDED" ? (
-          <section className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-6 shadow-sm">
+          <section className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/4 p-6 shadow-sm">
             <h2 className="text-xl font-bold text-emerald-300">
               Reactivate account
             </h2>

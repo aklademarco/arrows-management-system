@@ -7,9 +7,12 @@ import {
   FiUserCheck,
   FiX,
 } from "react-icons/fi";
+import { AdminActionButton } from "@/components/admin-action-button";
+import { AdminFeedback } from "@/components/admin-feedback";
 import {
   approveRegistration,
   rejectRegistration,
+  sendVerificationReminder,
 } from "./actions";
 import { getAdminResource } from "./admin-api";
 
@@ -46,6 +49,8 @@ export default async function RegistrationsPage({
     search?: string;
     requestedDepartmentId?: string;
     page?: string;
+    feedback?: string;
+    message?: string;
   }>;
 }) {
   const parameters = await searchParams;
@@ -67,6 +72,7 @@ export default async function RegistrationsPage({
     ),
   ]);
   const registrations = registrationPage.items;
+  const currentReturnTo = `/admin/registrations?${query.toString()}`;
   const pageHref = (page: number) => {
     const nextQuery = new URLSearchParams(query);
     nextQuery.set("page", String(page));
@@ -99,6 +105,15 @@ export default async function RegistrationsPage({
             Member directory
           </Link>
         </div>
+
+        {(parameters.feedback === "success" ||
+          parameters.feedback === "error") &&
+        parameters.message ? (
+          <AdminFeedback
+            kind={parameters.feedback}
+            message={parameters.message}
+          />
+        ) : null}
 
         <form
           className="mt-8 grid gap-3 rounded-2xl border border-white/10 bg-[#111318] p-4 shadow-sm md:grid-cols-[1fr_18rem_auto]"
@@ -200,9 +215,32 @@ export default async function RegistrationsPage({
                 </Link>
 
                 {!registration.emailVerifiedAt ? (
-                  <p className="mt-5 rounded-lg border border-amber-400/15 bg-amber-400/[0.08] p-3 text-sm text-amber-200">
-                    Review controls will become available after the member verifies their email address.
-                  </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-400/15 bg-amber-400/8 p-3 text-sm text-amber-200">
+                    <p>
+                      Review controls will become available after the member
+                      verifies their email address.
+                    </p>
+                    <form action={sendVerificationReminder}>
+                      <input
+                        name="userId"
+                        type="hidden"
+                        value={registration.id}
+                      />
+                      <input
+                        name="returnTo"
+                        type="hidden"
+                        value={currentReturnTo}
+                      />
+                      <AdminActionButton
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-amber-300/25 bg-amber-300/10 px-3 font-bold text-amber-100 transition hover:bg-amber-300/15"
+                        pendingLabel="Sending reminder…"
+                        type="submit"
+                      >
+                        <FiMail aria-hidden="true" />
+                        Send verification reminder
+                      </AdminActionButton>
+                    </form>
+                  </div>
                 ) : null}
                 <div className={`mt-5 grid gap-4 border-t border-white/[0.07] pt-5 lg:grid-cols-2 ${registration.emailVerifiedAt ? "" : "pointer-events-none opacity-50"}`} aria-disabled={!registration.emailVerifiedAt}>
                   <form action={approveRegistration} className="grid gap-3">

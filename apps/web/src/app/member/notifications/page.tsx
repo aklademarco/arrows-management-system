@@ -55,7 +55,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
 
         <section className="mt-7 space-y-3" aria-label="Notification inbox">
           {notifications.items.length === 0 ? (
-            <div className="rounded-[2rem] border border-purple-100 bg-white px-6 py-14 text-center shadow-sm">
+            <div className="rounded-4xl border border-purple-100 bg-white px-6 py-14 text-center shadow-sm">
               <span className="mx-auto grid size-16 place-items-center rounded-full bg-purple-50 text-2xl text-[#6b21a8]"><FiBell aria-hidden="true" /></span>
               <h2 className="mt-4 text-xl font-black">You are all caught up</h2>
               <p className="mt-2 text-sm font-medium text-slate-500">New announcements and ministry updates will appear here.</p>
@@ -71,7 +71,6 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                   </div>
                   <p className="mt-2 text-sm font-medium leading-6 text-slate-600">{item.body}</p>
                   <div className="mt-4 flex flex-wrap items-center gap-4">
-                    {item.link && <Link className="text-sm font-extrabold text-[#6b21a8] hover:underline" href={item.link}>Open update →</Link>}
                     {!item.readAt && (
                       <form action={markNotificationRead}>
                         <input name="notificationId" type="hidden" value={item.id} />

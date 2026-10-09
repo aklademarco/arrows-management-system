@@ -6,6 +6,34 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const userIdSchema = z.uuid();
+const localAdminOrigin = "http://acms.local";
+
+function safeRegistrationReturnTo(value: FormDataEntryValue | null, userId: string) {
+  const fallback = `/admin/registrations/${userId}`;
+  if (typeof value !== "string") return fallback;
+  try {
+    const url = new URL(value, localAdminOrigin);
+    const allowedPath =
+      url.pathname === "/admin/registrations" ||
+      url.pathname === `/admin/registrations/${userId}`;
+    return url.origin === localAdminOrigin && allowedPath
+      ? `${url.pathname}${url.search}`
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function feedbackUrl(
+  returnTo: string,
+  feedback: "success" | "error",
+  message: string,
+) {
+  const url = new URL(returnTo, localAdminOrigin);
+  url.searchParams.set("feedback", feedback);
+  url.searchParams.set("message", message);
+  return `${url.pathname}${url.search}`;
+}
 
 async function review(
   path: string,
@@ -30,11 +58,29 @@ async function review(
     redirect("/admin/login");
   }
   if (!response.ok) {
-    const body = (await response.json()) as { message?: string };
+    const body = (await response.json()) as { message?: string | string[] };
+    if (Array.isArray(body.message)) return body.message.join(" ");
     return body.message ?? "The administrative action failed.";
   }
   revalidatePath("/admin/registrations");
   return null;
+}
+
+export async function sendVerificationReminder(formData: FormData) {
+  const userId = userIdSchema.parse(formData.get("userId"));
+  const returnTo = safeRegistrationReturnTo(formData.get("returnTo"), userId);
+  const error = await review(
+    `/admin/registrations/${userId}/send-verification-reminder`,
+    {},
+  );
+  revalidatePath(`/admin/registrations/${userId}`);
+  redirect(
+    feedbackUrl(
+      returnTo,
+      error ? "error" : "success",
+      error ?? "Verification reminder sent.",
+    ),
+  );
 }
 
 export async function approveRegistration(formData: FormData) {
