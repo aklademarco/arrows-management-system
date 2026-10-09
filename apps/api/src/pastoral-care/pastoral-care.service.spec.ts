@@ -144,7 +144,7 @@ describe('PastoralCareService', () => {
     );
   });
 
-  it('does not expose the pastoral inbox to an ordinary member', async () => {
+  it('does not expose the pastoral inbox to an ordinary member', () => {
     const repository = {
       listCareRequestInbox: jest.fn(),
     } as unknown as PastoralCareRepository;
@@ -193,11 +193,7 @@ describe('PastoralCareService', () => {
     };
 
     await expect(
-      service.updateRequestStatus(
-        'request-id',
-        { status: 'RESOLVED' },
-        pastor,
-      ),
+      service.updateRequestStatus('request-id', { status: 'RESOLVED' }, pastor),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

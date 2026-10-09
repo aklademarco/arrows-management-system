@@ -3,6 +3,7 @@ import {
   FiArrowRight,
   FiCalendar,
   FiCheckCircle,
+  FiHeart,
   FiMapPin,
 } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -186,6 +187,25 @@ export default async function MemberPage() {
             </div>
           </article>
         </section>
+
+        <Link
+          className="mt-6 flex items-center gap-4 rounded-4xl border border-purple-100 bg-white p-5 shadow-[0_18px_45px_rgba(70,40,100,0.06)] transition hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+          href="/member/care"
+        >
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-purple-100 text-xl text-[#6b21a8]">
+            <FiHeart aria-hidden="true" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-black">Need prayer or want to talk?</span>
+            <span className="mt-1 block text-sm font-medium text-slate-500">
+              Send a private request to the pastoral team.
+            </span>
+          </span>
+          <FiArrowRight
+            aria-hidden="true"
+            className="shrink-0 text-[#6b21a8]"
+          />
+        </Link>
 
         <div className="mb-4 mt-10 flex items-center justify-between">
           <h2 className="text-2xl font-black tracking-[-0.03em]">Trends</h2>

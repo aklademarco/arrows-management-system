@@ -6,6 +6,7 @@ import {
   FiChevronRight,
   FiEdit3,
   FiFileText,
+  FiHeart,
   FiImage,
 } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -132,6 +133,11 @@ export default async function MemberProfilePage({
               label="Media hub"
             />
             <ProfileLink
+              href="/member/care"
+              icon={<FiHeart />}
+              label="Pastoral care"
+            />
+            <ProfileLink
               href="/member/notifications"
               icon={<FiBell />}
               label="Notifications"
@@ -229,6 +235,11 @@ export default async function MemberProfilePage({
                 href="/member/media-hub"
                 icon={<FiImage />}
                 label="Media hub"
+              />
+              <ProfileLink
+                href="/member/care"
+                icon={<FiHeart />}
+                label="Pastoral care"
               />
               <ProfileLink
                 href="/member/notifications"

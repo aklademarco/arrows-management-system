@@ -1540,6 +1540,13 @@ GET /reports/repeated-absences
 
 Department leaders are constrained to actively led departments and cannot retrieve church-wide repeated-absence results.
 
+### Query Parameters
+
+```text
+minimumConsecutiveAbsences=3
+departmentId=<uuid>
+```
+
 ### Pastoral Care Queue
 
 ```http
@@ -1560,12 +1567,50 @@ an outcome, optional private note, and optional next follow-up date. The API
 must verify church ownership from the authenticated session and create an audit
 record without copying the private note into audit metadata.
 
-### Query Parameters
+### Private Pastoral Care Requests
 
-```text
-minimumConsecutiveAbsences=3
-departmentId=<uuid>
+```http
+POST /pastoral-care/requests
 ```
+
+Creates a private message or prayer request for the authenticated member. The
+member must have an active member profile in the authenticated church. Request
+submission is limited to five requests per hour per authenticated client.
+
+```json
+{
+  "type": "PRAYER_REQUEST",
+  "subject": "Prayer for my family",
+  "body": "Please remember my family in prayer this week."
+}
+```
+
+```http
+GET /pastoral-care/requests/me
+```
+
+Returns only the authenticated member's requests in the current church, newest
+first.
+
+```http
+GET /pastoral-care/requests/inbox
+```
+
+**Roles:** `SUPER_ADMIN`, `ADMIN`, `PASTOR`
+
+Returns the current church's private pastoral-care inbox, newest first. A
+request from another church must never be returned.
+
+```http
+PATCH /pastoral-care/requests/:requestId/status
+```
+
+**Roles:** `SUPER_ADMIN`, `ADMIN`, `PASTOR`
+
+Updates a request to `IN_REVIEW` or `RESOLVED`. The request must belong to the
+authenticated user's church. Submission and status changes create audit
+records, but the private subject and message body are deliberately excluded
+from audit metadata.
 
 ---
 

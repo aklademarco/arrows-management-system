@@ -32,6 +32,15 @@ type CareCandidate = {
   careStatus: string;
 };
 
+type CareRequest = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  type: "MESSAGE" | "PRAYER_REQUEST";
+  subject: string;
+  status: "NEW" | "IN_REVIEW" | "RESOLVED";
+};
+
 type Report = {
   totals: {
     attendanceRate: number;
@@ -83,13 +92,23 @@ function greeting() {
 }
 
 export default async function PastorPage() {
-  const [account, members, care, report, departments, upcomingEvents] =
+  const [
+    account,
+    members,
+    care,
+    requests,
+    report,
+    departments,
+    upcomingEvents,
+  ] =
     await Promise.all([
       getPastorResource<Account>("/auth/me"),
 
       getPastorResource<MemberPage>("/members?page=1&limit=1"),
 
       getPastorResource<CareCandidate[]>("/pastoral-care/queue"),
+
+      getPastorResource<CareRequest[]>("/pastoral-care/requests/inbox"),
 
       getPastorResource<Report>("/reports/attendance-summary"),
 
@@ -108,6 +127,9 @@ export default async function PastorPage() {
     (person) =>
       person.careStatus === "FOLLOW_UP_DUE" ||
       person.careStatus === "NEEDS_CONTACT",
+  );
+  const openRequests = requests.filter(
+    (request) => request.status !== "RESOLVED",
   );
 
   return (
@@ -188,7 +210,10 @@ export default async function PastorPage() {
                 value={`${report.totals.attendanceRate}%`}
               />
 
-              <Snapshot label="Need care" value={urgentCare.length} />
+              <Snapshot
+                label="Need care"
+                value={urgentCare.length + openRequests.length}
+              />
             </div>
 
             <Link
@@ -219,7 +244,7 @@ export default async function PastorPage() {
         </div>
 
         <section className="mt-4">
-          {urgentCare.length === 0 ? (
+          {urgentCare.length === 0 && openRequests.length === 0 ? (
             <div className="rounded-[1.75rem] border border-slate-200 bg-white p-8 text-center">
               <span className="mx-auto grid size-14 place-items-center rounded-full bg-emerald-50 text-2xl text-emerald-600">
                 <FiHeart />
@@ -233,6 +258,32 @@ export default async function PastorPage() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {openRequests.slice(0, 3).map((request) => (
+                <Link
+                  className="rounded-[1.5rem] border border-purple-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+                  href="/pastor/pastoral-care"
+                  key={request.id}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="grid size-11 place-items-center rounded-xl bg-purple-50 text-purple-600">
+                      {request.type === "PRAYER_REQUEST" ? (
+                        <FiHeart />
+                      ) : (
+                        <FiMessageCircle />
+                      )}
+                    </span>
+                    <span className="rounded-full bg-purple-50 px-3 py-1 text-[10px] font-black uppercase text-purple-700">
+                      {request.status.replaceAll("_", " ")}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 font-black">
+                    {request.firstName} {request.lastName}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                    {request.subject}
+                  </p>
+                </Link>
+              ))}
               {urgentCare.slice(0, 3).map((person) => (
                 <Link
                   className="rounded-[1.5rem] border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"

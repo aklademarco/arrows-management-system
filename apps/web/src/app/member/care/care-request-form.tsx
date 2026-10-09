@@ -28,7 +28,6 @@ export function CareRequestForm() {
   useEffect(() => {
     if (state.status === "success") {
       formRef.current?.reset();
-      setType("PRAYER_REQUEST");
     }
   }, [state.status]);
 

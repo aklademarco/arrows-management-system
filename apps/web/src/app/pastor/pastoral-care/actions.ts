@@ -22,6 +22,11 @@ const schema = z.object({
   nextFollowUpOn: z.string().trim(),
 });
 
+const requestStatusSchema = z.object({
+  requestId: z.uuid(),
+  status: z.enum(["IN_REVIEW", "RESOLVED"]),
+});
+
 export async function recordPastorFollowUp(formData: FormData) {
   const input = schema.parse({
     memberId: formData.get("memberId"),
@@ -63,4 +68,40 @@ export async function recordPastorFollowUp(formData: FormData) {
   }
 
   revalidatePath("/pastor/pastoral-care");
+}
+
+export async function updatePastoralRequestStatus(formData: FormData) {
+  const input = requestStatusSchema.parse({
+    requestId: formData.get("requestId"),
+    status: formData.get("status"),
+  });
+  const token = (await cookies()).get("acms_pastor_session")?.value;
+  if (!token) redirect("/login");
+
+  const response = await fetch(
+    `${process.env.API_URL ?? "http://localhost:4000/api/v1"}/pastoral-care/requests/${input.requestId}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status: input.status }),
+      cache: "no-store",
+    },
+  );
+  if (response.status === 401 || response.status === 403) redirect("/login");
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      message?: string | string[];
+    } | null;
+    throw new Error(
+      Array.isArray(body?.message)
+        ? body.message.join(" ")
+        : (body?.message ?? "The request could not be updated."),
+    );
+  }
+
+  revalidatePath("/pastor/pastoral-care");
+  revalidatePath("/pastor");
 }
