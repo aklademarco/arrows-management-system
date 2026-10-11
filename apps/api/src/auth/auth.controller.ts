@@ -37,6 +37,7 @@ import {
 import { SessionService } from './session.service';
 import type { RefreshTokenContext } from './refresh-token.repository';
 import { Throttle } from '@nestjs/throttler';
+import { getLoginAttemptTracker } from '../common/security/login-rate-limit';
 import { RATE_LIMITS } from '../common/security/rate-limits';
 
 function refreshContext(request: Request): RefreshTokenContext {
@@ -57,7 +58,10 @@ export class AuthController {
     private readonly currentUser: CurrentUserRepository,
   ) {}
   @Throttle({
-    default: RATE_LIMITS.login,
+    default: {
+      ...RATE_LIMITS.login,
+      getTracker: getLoginAttemptTracker,
+    },
   })
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -196,7 +200,10 @@ export class AuthController {
     };
   }
   @Throttle({
-    default: RATE_LIMITS.login,
+    default: {
+      ...RATE_LIMITS.login,
+      getTracker: getLoginAttemptTracker,
+    },
   })
   @Post('account-status')
   @HttpCode(HttpStatus.OK)
