@@ -25,6 +25,7 @@ const memberNavigation = [
   { href: "/member/attendance", label: "Activity", icon: FiCalendar },
   { href: "/member/directory", label: "People", icon: FiUsers },
   { href: "/member/absences", label: "Absences", icon: FiFileText },
+  { href: "/member/care", label: "Pastoral care", icon: FiHeart },
   { href: "/member/leaderboard", label: "Ranks", icon: FiAward },
   { href: "/member/media-hub", label: "Media hub", icon: FiImage },
   { href: "/member/profile", label: "Profile", icon: FiUser },
@@ -65,7 +66,8 @@ export function PortalNavigation({
         ? memberNavigation.filter(
             (item) =>
               item.href !== "/member/media-hub" &&
-              item.href !== "/member/absences",
+              item.href !== "/member/absences" &&
+              item.href !== "/member/care",
           )
         : memberNavigation
       : showAuditLogs

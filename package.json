@@ -20,5 +20,8 @@
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test"
+  },
+  "dependencies": {
+    "firebase": "^13.0.0"
   }
 }
