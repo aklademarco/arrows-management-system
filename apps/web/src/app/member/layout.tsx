@@ -1,3 +1,4 @@
+import { PushNotificationListener } from "@/components/push-notification-listener";
 import Link from "next/link";
 import Image from "next/image";
 import { FiBell, FiLogOut } from "react-icons/fi";
@@ -29,6 +30,7 @@ export default async function MemberLayout({
   const memberName = `${member.firstName} ${member.lastName}`;
   return (
     <div className="member-shell min-h-screen bg-[#f8f7fb] text-slate-950">
+      <PushNotificationListener />
       <header className="sticky top-0 z-20 border-b border-purple-100/80 bg-[#f8f7fb]/90 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-5 py-3">
           <Link className="flex items-center gap-2" href="/member">

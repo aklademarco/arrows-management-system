@@ -1,3 +1,5 @@
+import { PushDevicesRepository } from '../notifications/push-devices.repository';
+import type { AccountStatusDto } from './dto/account-status.dto';
 import {
   ForbiddenException,
   Injectable,
@@ -30,6 +32,7 @@ export class LoginService {
     private readonly repository: LoginRepository,
     private readonly accessTokens: AccessTokenService,
     private readonly refreshTokens: RefreshTokenRepository,
+    private readonly pushDevices: PushDevicesRepository,
   ) {}
 
   async login(
@@ -86,7 +89,7 @@ export class LoginService {
     };
   }
 
-  async accountStatus(dto: LoginDto) {
+  async accountStatus(dto: AccountStatusDto) {
     const account = await this.repository.findByEmail(dto.email);
     const now = new Date();
     if (!account || (account.lockedUntil && account.lockedUntil > now))
@@ -101,9 +104,32 @@ export class LoginService {
       throw new UnauthorizedException('Invalid email or password.');
     }
     await this.repository.recordSuccess(account.id, now);
+    const canRegister =
+      account.accountStatus === 'PENDING_APPROVAL' &&
+      account.emailVerifiedAt !== null;
+    const revocationSecret =
+      dto.pushToken && canRegister
+        ? await this.pushDevices.update(
+            dto.pushToken,
+            true,
+            {
+              id: account.id,
+              churchId: account.churchId,
+              email: account.email,
+              roles: [],
+            },
+            true,
+          )
+        : undefined;
+    // Approval may have raced with the subscription request. Show the latest status
+    // after registration so an already-approved applicant is not told to wait.
+    const latest = revocationSecret
+      ? await this.repository.findByEmail(dto.email)
+      : account;
     return {
-      accountStatus: account.accountStatus,
+      accountStatus: latest?.accountStatus ?? account.accountStatus,
       emailVerified: account.emailVerifiedAt !== null,
+      ...(revocationSecret ? { pushRegistered: true, revocationSecret } : {}),
     };
   }
 }

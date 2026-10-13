@@ -73,3 +73,20 @@ export async function generateEventLiturgy(input: z.infer<typeof schema>) {
   }
   revalidatePath(`/admin/events/${data.eventId}`);
 }
+
+export async function assignServiceDuty(_previous: { message: string; success: boolean }, formData: FormData) {
+  const result = z.object({ eventId: z.uuid(), itemId: z.uuid(), memberId: z.union([z.uuid(), z.literal("")]) })
+    .safeParse(Object.fromEntries(formData));
+  if (!result.success) return { success: false, message: "Choose a valid member." };
+  const token = (await cookies()).get("acms_admin_session")?.value;
+  if (!token) return { success: false, message: "Sign in again to assign this duty." };
+  try {
+    const response = await fetch(`${process.env.API_URL ?? "http://localhost:4000/api/v1"}/liturgies/items/${result.data.itemId}/assignment`, {
+      method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId: result.data.memberId || null }), cache: "no-store",
+    });
+    if (!response.ok) return { success: false, message: "The duty could not be assigned. Check that the member is eligible and the duty is still pending." };
+    revalidatePath(`/admin/events/${result.data.eventId}`);
+    return { success: true, message: "Assignment saved and affected members notified." };
+  } catch { return { success: false, message: "The assignment service is unavailable. Please try again." }; }
+}

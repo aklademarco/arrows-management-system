@@ -1,3 +1,4 @@
+import { NotificationPublisher } from '../notifications/notification-publisher.service';
 import {
   BadRequestException,
   ConflictException,
@@ -38,7 +39,10 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 
 @Injectable()
 export class MembersRepository {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly publisher: NotificationPublisher,
+  ) {}
 
   async findLedDepartmentIds(
     userId: string,
@@ -617,6 +621,20 @@ export class MembersRepository {
         previousData: { roles: current.map((role) => role.name) },
         newData: { roles: input.roles },
       });
+      if (
+        current
+          .map((role) => role.name)
+          .sort()
+          .join(',') !== [...input.roles].sort().join(',')
+      ) {
+        await this.publisher.toUsers(transaction, [member.userId], {
+          churchId: input.churchId,
+          actorUserId: input.actorUserId,
+          type: 'LEADERSHIP_CHANGED',
+          title: 'Ministry roles changed',
+          body: 'Your ministry roles have been updated. Sign in again to access your current workspace.',
+        });
+      }
       return { memberId: input.memberId, roles: input.roles };
     });
   }
@@ -1122,6 +1140,13 @@ export class MembersRepository {
           effectiveOn,
           reason: input.reason,
         },
+      });
+      await this.publisher.toMember(transaction, member.id, {
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        type: 'DEPARTMENT_CHANGED',
+        title: 'Primary department changed',
+        body: `Your primary department assignment has changed, effective ${effectiveOn}. Review your profile for details.`,
       });
       return {
         departmentMembershipId: targetMembership?.id ?? null,

@@ -61,12 +61,24 @@ describe('Push device API', () => {
       .put('/notifications/push-device')
       .send({ token: 'device:token' })
       .expect(200);
-    expect(update).toHaveBeenLastCalledWith('device:token', true, user);
+    expect(update).toHaveBeenLastCalledWith(
+      'device:token',
+      true,
+      user,
+      false,
+      undefined,
+    );
     await request(app.getHttpServer() as Server)
       .delete('/notifications/push-device')
       .send({ token: 'device:token' })
       .expect(200);
-    expect(update).toHaveBeenLastCalledWith('device:token', false, user);
+    expect(update).toHaveBeenLastCalledWith(
+      'device:token',
+      false,
+      user,
+      false,
+      undefined,
+    );
   });
   it('rejects forged ownership and malformed tokens', async () => {
     for (const body of [

@@ -1,10 +1,11 @@
+import { NotificationPublisher } from '../notifications/notification-publisher.service';
 import {
   BadRequestException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, desc, eq, gte, inArray, lt } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   absenceRequests,
@@ -22,7 +23,10 @@ import type { UpdateGeofenceSettingsDto } from './dto/update-geofence-settings.d
 
 @Injectable()
 export class EventsRepository {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly publisher: NotificationPublisher,
+  ) {}
 
   list(churchId: string, query: ListEventsDto = {}) {
     const filters = [eq(events.churchId, churchId)];
@@ -149,10 +153,22 @@ export class EventsRepository {
             eq(events.churchId, admin.churchId),
             inArray(events.status, ['DRAFT', 'SCHEDULED']),
             gte(events.attendanceClosesAt, now),
+            sql`(${events.locationName}, ${events.latitude}, ${events.longitude}, ${events.geofenceRadiusMeters}, ${events.maximumAccuracyMeters})
+              IS DISTINCT FROM (${setting.locationName}::text, ${setting.latitude}::numeric, ${setting.longitude}::numeric, ${setting.geofenceRadiusMeters}::integer, ${setting.maximumAccuracyMeters}::integer)`,
           ),
         )
-        .returning({ id: events.id });
+        .returning();
 
+      for (const event of scheduledEvents) {
+        if (event.status !== 'DRAFT')
+          await this.publisher.event(
+            transaction,
+            event,
+            'EVENT_UPDATED',
+            undefined,
+            admin.id,
+          );
+      }
       await transaction.insert(auditLogs).values({
         churchId: admin.churchId,
         actorUserId: admin.id,
@@ -239,6 +255,7 @@ export class EventsRepository {
           requiredDepartmentIds,
         },
       });
+      await this.publisher.event(transaction, event, 'EVENT_CREATED');
       return { ...event, requiredDepartmentIds };
     });
   }
@@ -267,6 +284,16 @@ export class EventsRepository {
     actorId: string,
   ) {
     return this.database.transaction(async (transaction) => {
+      const [before] = await transaction
+        .select()
+        .from(events)
+        .where(and(eq(events.id, eventId), eq(events.churchId, churchId)))
+        .for('update');
+      if (!before) throw new NotFoundException('Event not found.');
+      if (!['DRAFT', 'SCHEDULED'].includes(before.status))
+        throw new BadRequestException(
+          'Only draft or scheduled events can be edited.',
+        );
       const [event] = await transaction
         .update(events)
         .set({
@@ -306,6 +333,23 @@ export class EventsRepository {
         entityId: eventId,
         newData: dto,
       });
+      const changed = Object.keys(dto).some((key) => {
+        const field = key as keyof typeof event;
+        const previous = before[field];
+        const current = event[field];
+        return (
+          (previous instanceof Date ? previous.getTime() : previous) !==
+          (current instanceof Date ? current.getTime() : current)
+        );
+      });
+      if (changed && event.status !== 'DRAFT')
+        await this.publisher.event(
+          transaction,
+          event,
+          'EVENT_UPDATED',
+          undefined,
+          actorId,
+        );
       return event;
     });
   }
@@ -384,6 +428,13 @@ export class EventsRepository {
           cancelledAbsenceRequests: cancelledRequests.length,
         },
       });
+      await this.publisher.event(
+        transaction,
+        event,
+        'EVENT_CANCELLED',
+        undefined,
+        actorId,
+      );
       return {
         event,
         preservedAttendanceRecords: affected.length,

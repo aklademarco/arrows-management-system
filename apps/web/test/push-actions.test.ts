@@ -4,8 +4,8 @@ import { updatePushDevice } from "../src/app/push-actions";
 jest.mock("next/headers", () => ({ cookies: jest.fn() }));
 let fetchMock: jest.SpiedFunction<typeof fetch>;
 beforeEach(() => {
-  fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 200 }));
-  jest.mocked(cookies).mockResolvedValue({ get: () => ({ value: "session" }) } as unknown as Awaited<ReturnType<typeof cookies>>);
+  fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ data: { revocationSecret: "a".repeat(64) } }), { status: 200 }));
+  jest.mocked(cookies).mockResolvedValue({ get: (name: string) => name === "acms_member_session" ? { value: "session" } : undefined, set: jest.fn(), delete: jest.fn() } as unknown as Awaited<ReturnType<typeof cookies>>);
 });
 afterEach(() => jest.restoreAllMocks());
 

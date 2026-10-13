@@ -42,6 +42,7 @@ const primaryItems = [
 ];
 
 const secondaryItems = [
+  { href: "/pastor/notifications", label: "Notifications", icon: FiMessageCircle },
   {
     href: "/pastor/reports",
     label: "Reports",

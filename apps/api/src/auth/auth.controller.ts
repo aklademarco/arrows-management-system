@@ -1,3 +1,4 @@
+import { AccountStatusDto } from './dto/account-status.dto';
 import {
   Body,
   Controller,
@@ -207,7 +208,7 @@ export class AuthController {
   })
   @Post('account-status')
   @HttpCode(HttpStatus.OK)
-  async accountStatus(@Body() body: LoginDto) {
+  async accountStatus(@Body() body: AccountStatusDto) {
     return {
       success: true,
       message: 'Account status retrieved.',

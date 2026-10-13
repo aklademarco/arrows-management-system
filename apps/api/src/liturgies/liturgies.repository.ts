@@ -1,3 +1,5 @@
+import { eligibleMemberCondition } from '../events/event-eligibility';
+import { NotificationPublisher } from '../notifications/notification-publisher.service';
 import {
   ConflictException,
   Inject,
@@ -16,6 +18,7 @@ import {
   liturgyTemplateItems,
   liturgyTemplates,
   memberProfiles,
+  users,
 } from '../database/schema';
 import type { GenerateEventLiturgyDto } from './dto/generate-event-liturgy.dto';
 
@@ -56,7 +59,10 @@ const DAY_OF_TRUMPETS: DefaultItem[] = [
 
 @Injectable()
 export class LiturgiesRepository {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly publisher: NotificationPublisher,
+  ) {}
 
   async ensureSundayDefaults(churchId: string, actorUserId: string) {
     const definitions = [
@@ -324,6 +330,136 @@ export class LiturgiesRepository {
         },
       });
       return { ...liturgy, items };
+    });
+  }
+
+  async assignableMembers(eventId: string, churchId: string) {
+    const [event] = await this.database
+      .select()
+      .from(events)
+      .where(and(eq(events.id, eventId), eq(events.churchId, churchId)));
+    if (!event) throw new NotFoundException('Event not found.');
+    return this.database
+      .select({
+        id: memberProfiles.id,
+        firstName: memberProfiles.firstName,
+        lastName: memberProfiles.lastName,
+      })
+      .from(memberProfiles)
+      .innerJoin(users, eq(users.id, memberProfiles.userId))
+      .where(
+        and(
+          eq(users.churchId, churchId),
+          eq(users.accountStatus, 'ACTIVE'),
+          eq(memberProfiles.membershipStatus, 'ACTIVE'),
+          eligibleMemberCondition(
+            eventId,
+            event.startsAt.toISOString().slice(0, 10),
+          ),
+        ),
+      )
+      .orderBy(memberProfiles.firstName, memberProfiles.lastName);
+  }
+
+  async assignDuty(input: {
+    itemId: string;
+    memberId: string | null;
+    churchId: string;
+    actorUserId: string;
+  }) {
+    return this.database.transaction(async (tx) => {
+      const [current] = await tx
+        .select({ item: eventLiturgyItems, event: events })
+        .from(eventLiturgyItems)
+        .innerJoin(
+          eventLiturgies,
+          eq(eventLiturgies.id, eventLiturgyItems.liturgyId),
+        )
+        .innerJoin(events, eq(events.id, eventLiturgies.eventId))
+        .where(
+          and(
+            eq(eventLiturgyItems.id, input.itemId),
+            eq(events.churchId, input.churchId),
+          ),
+        )
+        .for('update');
+      if (!current) throw new NotFoundException('Service duty not found.');
+      if (
+        !['SCHEDULED', 'ACTIVE'].includes(current.event.status) ||
+        current.item.status !== 'PENDING'
+      ) {
+        throw new ConflictException(
+          'Only pending duties in scheduled or active services can be assigned.',
+        );
+      }
+      if (current.item.assignedMemberId === input.memberId)
+        return { id: input.itemId, memberId: input.memberId };
+      let ownerLabel: string | null = null;
+      if (input.memberId) {
+        const [member] = await tx
+          .select({
+            firstName: memberProfiles.firstName,
+            lastName: memberProfiles.lastName,
+          })
+          .from(memberProfiles)
+          .innerJoin(users, eq(users.id, memberProfiles.userId))
+          .where(
+            and(
+              eq(memberProfiles.id, input.memberId),
+              eq(users.churchId, input.churchId),
+              eq(users.accountStatus, 'ACTIVE'),
+              eq(memberProfiles.membershipStatus, 'ACTIVE'),
+              eligibleMemberCondition(
+                current.event.id,
+                current.event.startsAt.toISOString().slice(0, 10),
+              ),
+            ),
+          );
+        if (!member)
+          throw new NotFoundException(
+            'Eligible active member not found in this church.',
+          );
+        ownerLabel = `${member.firstName} ${member.lastName}`.slice(0, 120);
+      }
+      await tx
+        .update(eventLiturgyItems)
+        .set({
+          assignedMemberId: input.memberId,
+          ownerLabel,
+          updatedAt: new Date(),
+        })
+        .where(eq(eventLiturgyItems.id, input.itemId));
+      const notice = {
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        eventId: current.event.id,
+        eventStartsAt: current.event.startsAt,
+        expiresAt: current.event.endsAt,
+      };
+      if (current.item.assignedMemberId)
+        await this.publisher.toMember(tx, current.item.assignedMemberId, {
+          ...notice,
+          type: 'DUTY_REMOVED',
+          title: 'Service assignment changed',
+          body: `You are no longer assigned to ${current.item.title} for ${current.event.name}.`,
+        });
+      if (input.memberId)
+        await this.publisher.toMember(tx, input.memberId, {
+          ...notice,
+          type: 'DUTY_ASSIGNED',
+          title: 'New service assignment',
+          body: `You are assigned to ${current.item.title} for ${current.event.name}. Please be ready for the scheduled service.`,
+        });
+      await tx.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'SERVICE_DUTY_ASSIGNED',
+        entityType: 'EVENT_LITURGY_ITEM',
+        entityId: input.itemId,
+        previousData: { memberId: current.item.assignedMemberId },
+        newData: { memberId: input.memberId },
+      });
+      return { id: input.itemId, memberId: input.memberId };
     });
   }
 

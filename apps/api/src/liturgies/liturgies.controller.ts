@@ -1,3 +1,4 @@
+import { AssignDutyDto } from './dto/assign-duty.dto';
 import {
   Body,
   Controller,
@@ -5,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { AdminUser } from '../auth/admin-user.decorator';
@@ -16,6 +18,29 @@ import { GenerateEventLiturgyDto } from './dto/generate-event-liturgy.dto';
 @UseGuards(AdminGuard)
 export class LiturgiesController {
   constructor(private readonly service: LiturgiesService) {}
+
+  @Get('events/:eventId/assignees')
+  async assignees(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      data: await this.service.assignableMembers(eventId, admin),
+    };
+  }
+
+  @Put('items/:itemId/assignment')
+  async assignDuty(
+    @Param('itemId', ParseUUIDPipe) itemId: string,
+    @Body() body: AssignDutyDto,
+    @AdminUser() admin: AdminPrincipal,
+  ) {
+    return {
+      success: true,
+      data: await this.service.assignDuty(itemId, body.memberId, admin),
+    };
+  }
 
   @Get('templates')
   async templates(@AdminUser() admin: AdminPrincipal) {

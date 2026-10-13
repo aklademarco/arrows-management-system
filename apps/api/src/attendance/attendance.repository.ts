@@ -1,3 +1,4 @@
+import { NotificationPublisher } from '../notifications/notification-publisher.service';
 import {
   ConflictException,
   Inject,
@@ -52,7 +53,10 @@ function isUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class AttendanceRepository {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly publisher: NotificationPublisher,
+  ) {}
 
   async ensureRecurringEvents(churchId: string, now: Date) {
     const templates = await this.database
@@ -118,28 +122,37 @@ export class AttendanceRepository {
       const attendanceOpensAt =
         attendanceWindow?.opensAt ?? new Date(startsAt.getTime() - 30 * 60_000);
       const lateAfter = new Date(startsAt.getTime() + 10 * 60_000);
-      await this.database
-        .insert(events)
-        .values({
-          churchId,
-          name: template.name,
-          eventType: 'SUNDAY_SERVICE',
-          recurringTemplateId: template.id,
-          startsAt,
-          endsAt,
-          attendanceOpensAt,
-          attendanceClosesAt: attendanceWindow?.closesAt ?? endsAt,
-          earlyUntil: startsAt,
-          lateAfter,
-          locationName: template.locationName,
-          latitude: template.latitude,
-          longitude: template.longitude,
-          geofenceRadiusMeters: template.geofenceRadiusMeters,
-          maximumAccuracyMeters: template.maximumAccuracyMeters,
-          status: 'SCHEDULED',
-          createdBy: template.createdBy,
-        })
-        .onConflictDoNothing();
+      const latitude = template.latitude;
+      const longitude = template.longitude;
+      const geofenceRadiusMeters = template.geofenceRadiusMeters;
+      const createdBy = template.createdBy;
+      await this.database.transaction(async (transaction) => {
+        const [created] = await transaction
+          .insert(events)
+          .values({
+            churchId,
+            name: template.name,
+            eventType: 'SUNDAY_SERVICE',
+            recurringTemplateId: template.id,
+            startsAt,
+            endsAt,
+            attendanceOpensAt,
+            attendanceClosesAt: attendanceWindow?.closesAt ?? endsAt,
+            earlyUntil: startsAt,
+            lateAfter,
+            locationName: template.locationName,
+            latitude,
+            longitude,
+            geofenceRadiusMeters,
+            maximumAccuracyMeters: template.maximumAccuracyMeters,
+            status: 'SCHEDULED',
+            createdBy,
+          })
+          .onConflictDoNothing()
+          .returning();
+        if (created)
+          await this.publisher.event(transaction, created, 'EVENT_CREATED');
+      });
       occupiedDates.add(dateKey);
     }
   }

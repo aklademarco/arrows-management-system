@@ -1,3 +1,4 @@
+import { PushDevicesRepository } from '../notifications/push-devices.repository';
 import { hash } from 'argon2';
 import { AccessTokenService } from './access-token.service';
 import { LoginRepository } from './login.repository';
@@ -32,7 +33,12 @@ describe('LoginService', () => {
         expiresAt: refreshExpiresAt,
       }),
     } as unknown as RefreshTokenRepository;
-    const service = new LoginService(repository, accessTokens, refreshTokens);
+    const service = new LoginService(
+      repository,
+      accessTokens,
+      refreshTokens,
+      {} as PushDevicesRepository,
+    );
 
     const result = await service.login({
       email: 'admin@example.com',
@@ -66,6 +72,7 @@ describe('LoginService', () => {
       repository,
       {} as AccessTokenService,
       {} as RefreshTokenRepository,
+      {} as PushDevicesRepository,
     );
 
     await expect(
@@ -100,6 +107,7 @@ describe('LoginService', () => {
       repository,
       {} as AccessTokenService,
       {} as RefreshTokenRepository,
+      {} as PushDevicesRepository,
     ).accountStatus({
       email: 'member@example.com',
       password: 'StrongPassword123!',
@@ -109,4 +117,51 @@ describe('LoginService', () => {
       emailVerified: true,
     });
   });
+});
+
+it('registers approval push only for verified pending accounts after checking their password', async () => {
+  const account = {
+    id: 'applicant',
+    churchId: 'church',
+    email: 'member@example.test',
+    passwordHash: await hash('StrongPassword123!'),
+    emailVerifiedAt: new Date() as Date | null,
+    accountStatus: 'PENDING_APPROVAL',
+    failedLoginAttempts: 0,
+    lockedUntil: null,
+  };
+  const repository = {
+    findByEmail: jest.fn().mockResolvedValue(account),
+    recordSuccess: jest.fn(),
+    recordFailure: jest.fn(),
+  };
+  const update = jest.fn().mockResolvedValue('device-cleanup-secret');
+  const service = new LoginService(
+    repository as unknown as LoginRepository,
+    {} as AccessTokenService,
+    {} as RefreshTokenRepository,
+    { update } as unknown as PushDevicesRepository,
+  );
+  const input = {
+    email: account.email,
+    password: 'StrongPassword123!',
+    pushToken: 'device:token',
+  };
+  await expect(
+    service.accountStatus({ ...input, password: 'wrong' }),
+  ).rejects.toThrow('Invalid email or password');
+  expect(update).not.toHaveBeenCalled();
+  account.emailVerifiedAt = null;
+  await service.accountStatus(input);
+  expect(update).not.toHaveBeenCalled();
+  account.emailVerifiedAt = new Date();
+  expect(await service.accountStatus(input)).toMatchObject({
+    pushRegistered: true,
+  });
+  expect(update).toHaveBeenCalledWith(
+    'device:token',
+    true,
+    expect.objectContaining({ id: account.id, churchId: account.churchId }),
+    true,
+  );
 });

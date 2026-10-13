@@ -1,5 +1,7 @@
 "use server";
 
+import { revokePushOnLogout } from "@/lib/push-session";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -145,6 +147,7 @@ export async function reactivateUser(formData: FormData) {
 }
 
 export async function adminLogout() {
+  await revokePushOnLogout();
   (await cookies()).delete("acms_admin_session");
   redirect("/admin/login");
 }

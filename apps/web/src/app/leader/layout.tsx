@@ -1,3 +1,4 @@
+import { PushNotificationListener } from "@/components/push-notification-listener";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -39,6 +40,7 @@ export default async function LeaderLayout({
 
   return (
     <div className="leader-shell min-h-screen bg-[#f8f7fb] text-slate-950">
+      <PushNotificationListener />
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-purple-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur lg:hidden">
         <Link className="flex items-center gap-2" href="/leader">
           <span className="church-logo-tile relative size-10 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-purple-100">

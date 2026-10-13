@@ -19,7 +19,13 @@ it.each([true, false])(
     await expect(
       service.update('device:token', enabled, user),
     ).resolves.toEqual({ enabled });
-    expect(update).toHaveBeenCalledWith('device:token', enabled, user);
+    expect(update).toHaveBeenCalledWith(
+      'device:token',
+      enabled,
+      user,
+      false,
+      undefined,
+    );
   },
 );
 it.each(['', 'bad token', 'x'.repeat(4097)])(

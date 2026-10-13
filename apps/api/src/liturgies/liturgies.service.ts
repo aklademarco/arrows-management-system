@@ -48,6 +48,19 @@ export class LiturgiesService {
     });
   }
 
+  assignableMembers(eventId: string, admin: AdminPrincipal) {
+    return this.repository.assignableMembers(eventId, admin.churchId);
+  }
+
+  assignDuty(itemId: string, memberId: string | null, admin: AdminPrincipal) {
+    return this.repository.assignDuty({
+      itemId,
+      memberId,
+      churchId: admin.churchId,
+      actorUserId: admin.id,
+    });
+  }
+
   private async assertOperator(user: AuthenticatedPrincipal) {
     if (
       user.roles.some((role) =>

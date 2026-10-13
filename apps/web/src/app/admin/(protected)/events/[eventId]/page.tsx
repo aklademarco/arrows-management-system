@@ -1,3 +1,4 @@
+import { DutyAssignmentForm, type DutyMember } from "./duty-assignment-form";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -41,6 +42,7 @@ type LiturgyItem = {
   plannedStartAt: string;
   plannedDurationMinutes: number;
   ownerLabel: string | null;
+  assignedMemberId: string | null;
   status: string;
   showOnProjection: boolean;
 };
@@ -65,6 +67,7 @@ export default async function EventDetailPage({
     getAdminResource<Template[]>("/liturgies/templates"),
     getAdminResource<Liturgy | null>(`/liturgies/events/${eventId}`),
   ]);
+  const dutyMembers = liturgy ? await getAdminResource<DutyMember[]>(`/liturgies/events/${eventId}/assignees`) : [];
   const editable = event.status === "DRAFT" || event.status === "SCHEDULED";
   const cancellable = !["CANCELLED", "COMPLETED"].includes(event.status);
   const finalizable =
@@ -166,6 +169,7 @@ export default async function EventDetailPage({
                         {item.ownerLabel ?? "To be assigned"}
                         {item.showOnProjection ? " · Projected" : ""}
                       </p>
+                      {item.status === "PENDING" && ["SCHEDULED", "ACTIVE"].includes(event.status) && <DutyAssignmentForm eventId={eventId} itemId={item.id} memberId={item.assignedMemberId} members={dutyMembers} />}
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-bold text-slate-300">

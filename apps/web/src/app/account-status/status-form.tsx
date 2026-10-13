@@ -1,5 +1,6 @@
 "use client";
 
+import { browserPushToken } from "@/lib/browser-push";
 import Link from "next/link";
 import { useActionState } from "react";
 import {
@@ -16,7 +17,13 @@ const initialState: AccountStatusState = { success: false, message: "" };
 
 export function StatusForm() {
   const [state, action, pending] = useActionState(
-    checkAccountStatus,
+    async (previous: AccountStatusState, data: FormData) => {
+      if (data.get("notifyApproval") === "on") {
+        try { data.set("pushToken", await browserPushToken(true)); }
+        catch { return { success: false, message: "Could not enable browser notifications. Allow them in site settings, or uncheck approval alerts and try again." }; }
+      }
+      return checkAccountStatus(previous, data);
+    },
     initialState,
   );
   if (state.success) return <StatusResult state={state} />;
@@ -28,6 +35,10 @@ export function StatusForm() {
       <form action={action} className="mt-7 grid gap-4" noValidate>
         <Field label="Email address" name="email" type="email" />
         <Field label="Password" name="password" type="password" />
+        <label className="flex items-start gap-3 text-sm text-slate-600">
+          <input type="checkbox" name="notifyApproval" className="mt-1" />
+          Notify this browser when my account is approved (verify your email first).
+        </label>
         {state.message ? (
           <p
             className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-700"
@@ -90,6 +101,7 @@ function StatusResult({ state }: { state: AccountStatusState }) {
       </span>
       <h1 className="mt-6 text-3xl font-black tracking-[-0.04em]">{title}</h1>
       <p className="mt-3 leading-7 text-slate-500">{description}</p>
+      {state.pushRegistered && <p className="mt-3 text-sm text-purple-700">Approval alerts are enabled on this browser.</p>}
       <div className="mt-7 flex flex-col gap-3">
         {active ? (
           <Link

@@ -1,5 +1,7 @@
 "use server";
 
+import { revokeBrowserPush } from "@/lib/push-session";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -57,6 +59,7 @@ export async function adminLogin(
     return { message: "This account does not have administrator access." };
   }
 
+  try { await revokeBrowserPush(); } catch { return { message: "Could not clear the previous device registration. Please try again." }; }
   const cookieStore = await cookies();
   cookieStore.set("acms_admin_session", body.data.accessToken, {
     httpOnly: true,

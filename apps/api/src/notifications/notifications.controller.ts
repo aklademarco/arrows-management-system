@@ -34,7 +34,12 @@ export class NotificationsController {
   ) {
     return {
       success: true,
-      data: await this.pushDevices.update(input.token, true, user),
+      data: await this.pushDevices.update(
+        input.token,
+        true,
+        user,
+        input.previousSecret,
+      ),
     };
   }
 

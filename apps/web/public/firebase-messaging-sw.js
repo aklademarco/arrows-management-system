@@ -4,7 +4,7 @@ self.addEventListener("notificationclick", (event) => {
   if (!event.notification.data?.acms) return;
   event.stopImmediatePropagation();
   event.notification.close();
-  const fallback = new URL("/member/notifications", self.location.origin);
+  const fallback = new URL("/notifications", self.location.origin);
   let target = fallback;
   try {
     const candidate = new URL(event.notification.data.link, self.location.origin);
@@ -25,7 +25,7 @@ firebase.messaging().onBackgroundMessage((payload) => {
   if (payload.notification || !payload.data?.title) return;
   return self.registration.showNotification(payload.data.title, {
     body: payload.data.body ?? "",
-    tag: payload.messageId,
-    data: { acms: true, link: payload.data.link ?? "/member/notifications" },
+    tag: payload.data.notificationId ?? payload.messageId,
+    data: { acms: true, link: payload.data.link ?? "/notifications" },
   });
 });

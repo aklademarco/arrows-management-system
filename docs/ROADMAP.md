@@ -1179,10 +1179,14 @@ docs
 
 ### Browser push implementation progress
 
-- [x] Firebase configuration and service worker groundwork.
-- [x] Member/leader inbox opt-in controls and authenticated device registration/revocation.
-- [x] Background data-message display, duplicate suppression and safe custom click links.
-- [ ] Apply device migration and verify live Firebase delivery across browsers.
-- [ ] Add automatic server delivery, retries, logout cleanup and token lifecycle management.
+- [x] Firebase configuration, service worker and member/leader/pastor notification screens.
+- [x] Authenticated browser registration, revocation, logout cleanup and approval-only opt-in.
+- [x] Durable FCM delivery queue with retries, expiry, ownership checks and invalid-token cleanup.
+- [x] Pastor/leader messages and new/changed/cancelled events, including recurring services.
+- [x] Event reminders at 24 hours and 1 hour with restart-safe deduplication.
+- [x] Service-duty member assignments, account approvals and department/leadership changes.
+- [x] Validate migrations and notification workflows against isolated PostgreSQL.
+- [ ] Apply migrations and configure server Firebase credentials in the target environment.
+- [ ] Verify live Firebase delivery and browser OS alerts on supported devices.
 
-See [Push notifications](PUSH_NOTIFICATIONS.md) for setup, review findings and testing.
+See [Push notifications](PUSH_NOTIFICATIONS.md) for setup, behavior and testing.

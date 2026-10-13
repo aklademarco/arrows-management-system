@@ -25,7 +25,7 @@ it("displays data-only notifications and avoids duplicating FCM notifications", 
 it.each(["https://evil.test/phishing", "javascript:alert(1)", "//evil.test", "http://acms.test/insecure"])("rejects unsafe notification link %s", async (link) => {
   const w = worker();
   w.listeners.notificationclick({ notification: { data: { acms: true, link }, close: jest.fn() }, stopImmediatePropagation: jest.fn(), waitUntil: jest.fn() });
-  expect(w.openWindow).toHaveBeenCalledWith("https://acms.test/member/notifications");
+  expect(w.openWindow).toHaveBeenCalledWith("https://acms.test/notifications");
 });
 it("opens same-origin notification links", () => {
   const w = worker();

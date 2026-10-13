@@ -1,3 +1,4 @@
+import { NotificationPublisher } from '../notifications/notification-publisher.service';
 import {
   BadRequestException,
   ConflictException,
@@ -23,7 +24,10 @@ import { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @Injectable()
 export class DepartmentsRepository {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly publisher: NotificationPublisher,
+  ) {}
 
   async list(churchId: string) {
     const items = await this.database
@@ -298,7 +302,7 @@ export class DepartmentsRepository {
   }) {
     return this.database.transaction(async (transaction) => {
       const [department] = await transaction
-        .select({ id: departments.id })
+        .select({ id: departments.id, name: departments.name })
         .from(departments)
         .where(
           and(
@@ -408,6 +412,13 @@ export class DepartmentsRepository {
           makePrimary: input.makePrimary,
         },
       });
+      await this.publisher.toMember(transaction, member.id, {
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        type: 'DEPARTMENT_CHANGED',
+        title: 'Department assignment added',
+        body: `You have been assigned to ${department.name}${input.makePrimary ? ' as your primary department' : ''}, effective ${joinedAt}.`,
+      });
       return { id: membership.id, joinedAt, isPrimary: input.makePrimary };
     });
   }
@@ -425,6 +436,7 @@ export class DepartmentsRepository {
       const [membership] = await transaction
         .select({
           id: departmentMembers.id,
+          departmentName: departments.name,
           memberId: departmentMembers.memberId,
           joinedAt: departmentMembers.joinedAt,
           leftAt: departmentMembers.leftAt,
@@ -573,6 +585,13 @@ export class DepartmentsRepository {
             input.replacementPrimaryMembershipId ?? null,
         },
       });
+      await this.publisher.toMember(transaction, membership.memberId, {
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        type: 'DEPARTMENT_CHANGED',
+        title: 'Department membership ended',
+        body: `Your membership in ${membership.departmentName} ends ${leftAt}. Review your profile for any replacement primary assignment.`,
+      });
       return { id: membership.id, leftAt };
     });
   }
@@ -590,6 +609,7 @@ export class DepartmentsRepository {
       const [candidate] = await transaction
         .select({
           departmentId: departments.id,
+          departmentName: departments.name,
           memberId: memberProfiles.id,
           userId: users.id,
           membershipLeftAt: departmentMembers.leftAt,
@@ -701,6 +721,13 @@ export class DepartmentsRepository {
           ...assignment,
         },
       });
+      await this.publisher.toMember(transaction, input.memberId, {
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        type: 'LEADERSHIP_CHANGED',
+        title: 'Leadership assignment added',
+        body: `You have been assigned to lead ${candidate.departmentName}, effective ${input.startsAt}${input.endsAt ? ` through ${input.endsAt}` : ''}.`,
+      });
       return assignment;
     });
   }
@@ -716,6 +743,8 @@ export class DepartmentsRepository {
       const [assignment] = await transaction
         .select({
           id: departmentLeaders.id,
+          memberId: departmentLeaders.memberId,
+          departmentName: departments.name,
           revokedAt: departmentLeaders.revokedAt,
           revocationReason: departmentLeaders.revocationReason,
         })
@@ -764,6 +793,13 @@ export class DepartmentsRepository {
         entityId: assignment.id,
         previousData: { revokedAt: null },
         newData: { revokedAt: now, reason: input.reason },
+      });
+      await this.publisher.toMember(transaction, assignment.memberId, {
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        type: 'LEADERSHIP_CHANGED',
+        title: 'Leadership assignment ended',
+        body: `Your leadership assignment for ${assignment.departmentName} has ended. Contact the church office if you have questions.`,
       });
       return { id: assignment.id, revokedAt: now };
     });
