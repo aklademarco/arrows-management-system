@@ -1,6 +1,6 @@
 import { getApps, initializeApp } from "firebase/app";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -9,5 +9,12 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-export const firebaseApp =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+export function isFirebaseConfigured() {
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId &&
+    firebaseConfig.messagingSenderId && firebaseConfig.appId);
+}
+
+export function getFirebaseApp() {
+  if (!isFirebaseConfigured()) return null;
+  return getApps().find((app) => app.name === "[DEFAULT]") ?? initializeApp(firebaseConfig);
+}

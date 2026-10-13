@@ -1176,3 +1176,13 @@ apps/api
 packages/shared
 docs
 ```
+
+### Browser push implementation progress
+
+- [x] Firebase configuration and service worker groundwork.
+- [x] Member/leader inbox opt-in controls and authenticated device registration/revocation.
+- [x] Background data-message display, duplicate suppression and safe custom click links.
+- [ ] Apply device migration and verify live Firebase delivery across browsers.
+- [ ] Add automatic server delivery, retries, logout cleanup and token lifecycle management.
+
+See [Push notifications](PUSH_NOTIFICATIONS.md) for setup, review findings and testing.

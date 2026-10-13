@@ -1328,3 +1328,29 @@ export const accountActionTokens = pgTable(
     ),
   ],
 );
+
+export const pushDevices = pgTable(
+  'push_devices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    token: varchar('token', { length: 4096 }).notNull(),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('push_devices_token_hash_idx').on(table.tokenHash),
+    index('push_devices_recipient_idx').on(table.churchId, table.userId),
+  ],
+);

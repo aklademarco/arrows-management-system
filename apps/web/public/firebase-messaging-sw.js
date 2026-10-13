@@ -1,22 +1,31 @@
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js",
-);
-
-importScripts(
-  "https://www.gstatic.com/firebasejs/12.19.0/firebase-messaging-compat.js",
-);
-
-firebase.initializeApp({
-  apiKey: "AIzaSyBys2mIwb6lmTV_Vvl0Mo_-A1X5McinfY8",
-  authDomain: "arrows-push-notification.firebaseapp.com",
-  projectId: "arrows-push-notification",
-  storageBucket: "arrows-push-notification.firebasestorage.app",
-  messagingSenderId: "358002349295",
-  appId: "1:358002349295:web:3082cf57a02c207bb6371a",
+/* global firebase, ACMS_FIREBASE_CONFIG */
+// Register click handling before Firebase installs its default handler.
+self.addEventListener("notificationclick", (event) => {
+  if (!event.notification.data?.acms) return;
+  event.stopImmediatePropagation();
+  event.notification.close();
+  const fallback = new URL("/member/notifications", self.location.origin);
+  let target = fallback;
+  try {
+    const candidate = new URL(event.notification.data.link, self.location.origin);
+    if (candidate.origin === self.location.origin && candidate.protocol === self.location.protocol) {
+      target = candidate;
+    }
+  } catch { /* Invalid links open the inbox. */ }
+  event.waitUntil(self.clients.openWindow(target.href));
 });
 
-const messaging = firebase.messaging();
+importScripts("/firebase-config.js");
+importScripts("https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/12.19.0/firebase-messaging-compat.js");
+firebase.initializeApp(ACMS_FIREBASE_CONFIG);
 
-messaging.onBackgroundMessage((payload) => {
-  console.log("Background message received:", payload);
+firebase.messaging().onBackgroundMessage((payload) => {
+  // FCM already displays notification payloads. Only render data-only messages.
+  if (payload.notification || !payload.data?.title) return;
+  return self.registration.showNotification(payload.data.title, {
+    body: payload.data.body ?? "",
+    tag: payload.messageId,
+    data: { acms: true, link: payload.data.link ?? "/member/notifications" },
+  });
 });

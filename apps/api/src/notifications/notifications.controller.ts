@@ -1,4 +1,7 @@
 import {
+  Body,
+  Delete,
+  Put,
   Controller,
   Get,
   Param,
@@ -12,13 +15,39 @@ import {
   AuthenticatedGuard,
   type AuthenticatedPrincipal,
 } from '../auth/authenticated.guard';
+import { PushDeviceDto } from './dto/push-device.dto';
+import { PushDevicesService } from './push-devices.service';
 import { ListNotificationsDto } from './dto/list-notifications.dto';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
 @UseGuards(AuthenticatedGuard)
 export class NotificationsController {
-  constructor(private readonly service: NotificationsService) {}
+  constructor(
+    private readonly service: NotificationsService,
+    private readonly pushDevices: PushDevicesService,
+  ) {}
+
+  @Put('push-device') async registerPushDevice(
+    @Body() input: PushDeviceDto,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      data: await this.pushDevices.update(input.token, true, user),
+    };
+  }
+
+  @Delete('push-device') async revokePushDevice(
+    @Body() input: PushDeviceDto,
+    @AuthenticatedUser() user: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      data: await this.pushDevices.update(input.token, false, user),
+    };
+  }
+
   @Get() async list(
     @Query() query: ListNotificationsDto,
     @AuthenticatedUser() user: AuthenticatedPrincipal,
