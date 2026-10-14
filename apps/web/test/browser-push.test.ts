@@ -57,12 +57,34 @@ it("requests permission before async setup and passes the VAPID key and worker",
     { vapidKey: "public-vapid-key", serviceWorkerRegistration: {} },
   );
 });
-it("refreshes an existing token without prompting", async () => {
-  await browserPushToken(false);
-  expect(requestPermission).not.toHaveBeenCalled();
-});
 it("does not register a worker when permission is denied", async () => {
   requestPermission.mockResolvedValue("denied");
   await expect(browserPushToken(true)).rejects.toThrow("Allow notifications");
   expect(register).not.toHaveBeenCalled();
 });
+
+it("restores registration after logout without a saved local token or another permission request", async () => {
+  // The browser still grants permission, but logout has cleared server registration.
+  // No stored token is read: Firebase supplies the current token for re-registration.
+  expect(await browserPushToken(false)).toBe("device:token");
+  expect(requestPermission).not.toHaveBeenCalled();
+  expect(localStorage.setItem).toHaveBeenCalledWith(
+    "acms_push_token",
+    "device:token",
+  );
+});
+
+it.each(["default", "denied"])(
+  "never prompts automatically when permission is %s",
+  async (permission) => {
+    Object.defineProperty(globalThis, "Notification", {
+      configurable: true,
+      value: { permission, requestPermission },
+    });
+    await expect(browserPushToken(false)).rejects.toThrow(
+      "Allow notifications",
+    );
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(register).not.toHaveBeenCalled();
+  },
+);

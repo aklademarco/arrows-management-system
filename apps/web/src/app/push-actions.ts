@@ -78,13 +78,6 @@ export async function updatePushDevice(input: {
   }
 }
 
-export async function canRefreshPushDevice() {
-  const store = await cookies();
-  return Boolean(
-    store.get("acms_member_session")?.value && store.get(pushCookie)?.value,
-  );
-}
-
 export async function shouldShowPushPrompt() {
   const store = await cookies();
   return Boolean(

@@ -68,15 +68,18 @@ the same origin.
 
 The inbox no longer includes a browser registration panel. A floating invitation
 appears across member, leader and pastor workspaces when registration is needed.
-Existing opt-ins are refreshed with the API before deciding to show it. “Not now”
+When browser permission is already granted, registration is restored silently
+for the signed-in account, even after logout revoked the previous server record. “Not now”
 or the close button dismisses it for the current login, including page reloads;
 a fresh successful login clears that dismissal. Unsupported or unconfigured
 browsers do not show the invitation. Permission is requested only after clicking
-“Enable notifications”. Logout still revokes registration, so the next login may
-require opting in again.
+“Enable notifications”. Logout still revokes server registration. Browser permission survives logout,
+so the next login does not ask the user to enable notifications again. Temporary
+registration failures do not show another permission invitation; returning to the
+workspace or reloading retries registration.
 
 Registrations expire after 30 days and are refreshed on authenticated workspace
-loads only when the browser already opted in. Permission is requested only on a
+loads only when browser notification permission is already granted. Permission is requested only on a
 user gesture. Token rotation soft-revokes the browser's previous token; account
 switching changes its subscription generation so queued notices cannot transfer
 to a new owner.
