@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import {
   pushCookie,
+  pushPromptDismissedCookie,
   revokeBrowserPush,
   savePushRevocationSecret,
 } from "@/lib/push-session";
@@ -82,4 +83,23 @@ export async function canRefreshPushDevice() {
   return Boolean(
     store.get("acms_member_session")?.value && store.get(pushCookie)?.value,
   );
+}
+
+export async function shouldShowPushPrompt() {
+  const store = await cookies();
+  return Boolean(
+    store.get("acms_member_session")?.value &&
+    !store.get(pushPromptDismissedCookie)?.value,
+  );
+}
+
+export async function dismissPushPrompt() {
+  const store = await cookies();
+  if (!store.get("acms_member_session")?.value) return;
+  store.set(pushPromptDismissedCookie, "1", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
 }

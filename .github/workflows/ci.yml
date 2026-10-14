@@ -25,23 +25,26 @@ jobs:
       - run: pnpm build
 
   containers:
+    name: Build ${{ matrix.service }} container
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, web]
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/api.Dockerfile
+          file: docker/${{ matrix.service }}.Dockerfile
           push: false
-          tags: arrows-api:ci
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/web.Dockerfile
-          push: false
-          tags: arrows-web:ci
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+          tags: arrows-${{ matrix.service }}:ci
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+      - name: Show runner disk usage
+        if: always()
+        run: |
+          df -h
+          df -i
+          docker system df

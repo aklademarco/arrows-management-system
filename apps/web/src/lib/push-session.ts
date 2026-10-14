@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 
+export const pushPromptDismissedCookie = "acms_push_prompt_dismissed";
+
 export const pushCookie = "acms_push_revocation";
 export async function savePushRevocationSecret(secret: string) {
   if (!/^[a-f0-9]{64}$/.test(secret))

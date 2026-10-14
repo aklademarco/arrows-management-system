@@ -1,4 +1,3 @@
-import { PushNotificationSettings } from "@/components/push-notification-settings";
 import Link from "next/link";
 import { FiBell, FiCheck, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { getMemberResource } from "@/app/member/member-api";
@@ -73,7 +72,6 @@ export async function NotificationInbox({
           )}
         </header>
 
-        <PushNotificationSettings />
 
         <section className="mt-7 space-y-3" aria-label="Notification inbox">
           {notifications.items.length === 0 ? (

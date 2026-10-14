@@ -1,6 +1,10 @@
 "use server";
 
-import { revokeBrowserPush, revokePushOnLogout } from "@/lib/push-session";
+import {
+  pushPromptDismissedCookie,
+  revokeBrowserPush,
+  revokePushOnLogout,
+} from "@/lib/push-session";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -69,6 +73,7 @@ export async function memberLogin(
     };
 
     store.set("acms_member_session", body.data.accessToken, sessionOptions);
+    store.delete(pushPromptDismissedCookie);
     store.delete("acms_pastor_session");
     store.delete("acms_leader_session");
 

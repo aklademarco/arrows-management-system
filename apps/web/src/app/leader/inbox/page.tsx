@@ -1,4 +1,3 @@
-import { PushNotificationSettings } from "@/components/push-notification-settings";
 import Link from "next/link";
 import { FiBell, FiCheck, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { getLeaderResource } from "../leader-api";
@@ -56,7 +55,6 @@ export default async function LeaderInboxPage({
           ) : null}
         </header>
 
-        <PushNotificationSettings />
 
         <section aria-label="Leadership inbox" className="mt-7 space-y-3">
           {notifications.items.length === 0 ? (
