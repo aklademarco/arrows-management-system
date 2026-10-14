@@ -355,13 +355,11 @@ describeDatabase('Notification workflows with PostgreSQL', () => {
         messages.create({ ...input, recipientMemberId }),
       ).rejects.toThrow('only active members');
     }
-    await database
-      .update(schema.departmentLeaders)
-      .set({
-        revokedAt: new Date(),
-        revokedBy: actor.id,
-        revocationReason: 'Reassigned',
-      });
+    await database.update(schema.departmentLeaders).set({
+      revokedAt: new Date(),
+      revokedBy: actor.id,
+      revocationReason: 'Reassigned',
+    });
     expect(
       (await messages.team(actor.id, churchId, { page: 1, limit: 24 })).total,
     ).toBe(0);
