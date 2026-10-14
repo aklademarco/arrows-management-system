@@ -1,12 +1,10 @@
 import { getMessaging, isSupported } from "firebase/messaging";
-import { firebaseApp } from "./firebase";
+import { getFirebaseApp } from "./firebase";
 
 export async function getFirebaseMessaging() {
-  const supported = await isSupported();
-
-  if (!supported) {
+  if (typeof window === "undefined" || !window.isSecureContext || !(await isSupported())) {
     return null;
   }
-
-  return getMessaging(firebaseApp)
+  const app = getFirebaseApp();
+  return app ? getMessaging(app) : null;
 }

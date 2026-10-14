@@ -1,10 +1,13 @@
 "use server";
 
+import { revokePushOnLogout } from "@/lib/push-session";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { performCheckIn, type CheckInResult } from "@/lib/check-in";
 
 export async function leaderLogout() {
+  await revokePushOnLogout();
   const store = await cookies();
   store.delete("acms_leader_session");
   store.delete("acms_member_session");

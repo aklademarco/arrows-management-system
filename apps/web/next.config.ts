@@ -13,6 +13,12 @@ if (existsSync(workspaceEnv)) {
 }
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [{
+      source: "/firebase-messaging-sw.js",
+      headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }],
+    }];
+  },
   experimental: {
     serverActions: {
       // Profile photos are validated to a maximum decoded size of 5 MB.

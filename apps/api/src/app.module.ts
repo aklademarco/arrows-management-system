@@ -1,3 +1,4 @@
+import { NotificationPublishingModule } from './notifications/notification-publishing.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -35,6 +36,7 @@ import { RATE_LIMITS } from './common/security/rate-limits';
       errorMessage: 'Too many requests. Please try again later.',
     }),
     DatabaseModule,
+    NotificationPublishingModule,
     HealthModule,
     AuthModule,
     AdminModule,

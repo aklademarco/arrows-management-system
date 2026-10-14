@@ -1,3 +1,4 @@
+import { NotificationPublisher } from '../notifications/notification-publisher.service';
 import {
   BadRequestException,
   ConflictException,
@@ -23,7 +24,10 @@ import { ListRegistrationsDto } from './dto/list-registrations.dto';
 
 @Injectable()
 export class AdminRegistrationRepository {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly publisher: NotificationPublisher,
+  ) {}
 
   async listPending(query: ListRegistrationsDto, churchId: string) {
     const search = query.search?.trim();
@@ -277,6 +281,20 @@ export class AdminRegistrationRepository {
           .values({ userId: account.id, roleId: memberRole.id })
           .onConflictDoNothing();
       }
+
+      if (input.approve)
+        await this.publisher.toUsers(
+          transaction,
+          [account.id],
+          {
+            churchId: account.churchId,
+            actorUserId: input.reviewerId,
+            type: 'ACCOUNT_APPROVED',
+            title: 'Your account is approved',
+            body: 'Welcome to ACMS. Your account is ready and your department assignments are available in your profile.',
+          },
+          `approval:${account.id}`,
+        );
 
       await transaction.insert(accountReviews).values({
         userId: account.id,

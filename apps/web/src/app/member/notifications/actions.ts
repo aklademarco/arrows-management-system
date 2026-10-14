@@ -17,6 +17,7 @@ async function patchNotification(path: string) {
   if (response.status === 401 || response.status === 403) redirect("/login");
   if (!response.ok) throw new Error("Notification could not be updated.");
   revalidatePath("/member", "layout");
+  revalidatePath("/pastor", "layout");
 }
 
 export async function markNotificationRead(formData: FormData) {

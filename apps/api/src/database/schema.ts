@@ -1096,27 +1096,45 @@ export const ministrySongItems = pgTable('ministry_song_items', {
     .defaultNow(),
 });
 
-export const notifications = pgTable('notifications', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  churchId: uuid('church_id')
-    .notNull()
-    .references(() => churches.id),
-  recipientUserId: uuid('recipient_user_id')
-    .notNull()
-    .references(() => users.id),
-  actorUserId: uuid('actor_user_id').references(() => users.id),
-  type: varchar('type', { length: 100 }).notNull(),
-  title: varchar('title', { length: 180 }).notNull(),
-  body: text('body').notNull(),
-  link: text('link'),
-  ministryContentId: uuid('ministry_content_id').references(
-    () => ministryContent.id,
-  ),
-  readAt: timestamp('read_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    recipientUserId: uuid('recipient_user_id')
+      .notNull()
+      .references(() => users.id),
+    actorUserId: uuid('actor_user_id').references(() => users.id),
+    type: varchar('type', { length: 100 }).notNull(),
+    title: varchar('title', { length: 180 }).notNull(),
+    body: text('body').notNull(),
+    link: text('link'),
+    ministryContentId: uuid('ministry_content_id').references(
+      () => ministryContent.id,
+    ),
+    deduplicationKey: varchar('deduplication_key', { length: 255 }).unique(),
+    eventId: uuid('event_id').references(() => events.id),
+    eventStartsAt: timestamp('event_starts_at', { withTimezone: true }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    pushEnqueuedAt: timestamp('push_enqueued_at', { withTimezone: true }),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('notifications_push_pending_idx')
+      .on(table.createdAt)
+      .where(sql`${table.pushEnqueuedAt} IS NULL`),
+    index('notifications_recipient_created_idx').on(
+      table.churchId,
+      table.recipientUserId,
+      table.createdAt,
+    ),
+  ],
+);
 
 export const leadershipMessages = pgTable('leadership_messages', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -1261,6 +1279,9 @@ export const eventLiturgyItems = pgTable('event_liturgy_items', {
     withTimezone: true,
   }).notNull(),
   plannedDurationMinutes: integer('planned_duration_minutes').notNull(),
+  assignedMemberId: uuid('assigned_member_id').references(
+    () => memberProfiles.id,
+  ),
   ownerLabel: varchar('owner_label', { length: 120 }),
   notes: text('notes'),
   showOnProjection: boolean('show_on_projection').notNull().default(true),
@@ -1325,6 +1346,100 @@ export const accountActionTokens = pgTable(
       table.userId,
       table.type,
       table.createdAt,
+    ),
+  ],
+);
+
+export const pushDevices = pgTable(
+  'push_devices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    token: varchar('token', { length: 4096 }).notNull(),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    generation: uuid('generation').notNull().defaultRandom(),
+    revocationHash: varchar('revocation_hash', { length: 64 }).unique(),
+    approvalOnly: boolean('approval_only').notNull().default(false),
+    subscribedAt: timestamp('subscribed_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true })
+      .notNull()
+      .default(sql`now() + interval '30 days'`),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('push_devices_token_hash_idx').on(table.tokenHash),
+    index('push_devices_recipient_idx').on(table.churchId, table.userId),
+  ],
+);
+
+export const pushDeliveries = pgTable(
+  'push_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    notificationId: uuid('notification_id')
+      .notNull()
+      .references(() => notifications.id),
+    deviceId: uuid('device_id')
+      .notNull()
+      .references(() => pushDevices.id),
+    deviceGeneration: uuid('device_generation').notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('QUEUED'),
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    leaseId: uuid('lease_id'),
+    leaseUntil: timestamp('lease_until', { withTimezone: true }),
+    errorCode: varchar('error_code', { length: 100 }),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('push_deliveries_notification_device_idx').on(
+      table.notificationId,
+      table.deviceId,
+    ),
+    index('push_deliveries_due_idx').on(table.status, table.nextAttemptAt),
+    check(
+      'push_deliveries_status_check',
+      sql`${table.status} in ('QUEUED', 'SENT', 'FAILED', 'SKIPPED')`,
+    ),
+  ],
+);
+
+export const eventReminderRuns = pgTable(
+  'event_reminder_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    hoursBefore: integer('hours_before').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('event_reminder_runs_unique').on(
+      table.eventId,
+      table.startsAt,
+      table.hoursBefore,
     ),
   ],
 );

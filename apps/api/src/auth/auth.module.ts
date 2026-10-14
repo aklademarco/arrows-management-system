@@ -1,3 +1,4 @@
+import { PushDevicesRepository } from '../notifications/push-devices.repository';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MailModule } from '../mail/mail.module';
@@ -20,6 +21,7 @@ import { AuthenticatedGuard } from './authenticated.guard';
   imports: [MailModule, JwtModule.register({})],
   controllers: [AuthController],
   providers: [
+    PushDevicesRepository,
     AuthService,
     RegistrationRepository,
     EmailVerificationRepository,

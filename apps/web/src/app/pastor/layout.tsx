@@ -1,3 +1,4 @@
+import { PushNotificationListener } from "@/components/push-notification-listener";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -37,6 +38,7 @@ export default async function PastorLayout({
 
   return (
     <div className="min-h-screen bg-[#f8f7f4] text-slate-950">
+      <PushNotificationListener />
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-[#fffdfa]/95 px-4 py-3 backdrop-blur lg:hidden">
         <Link className="flex items-center gap-2" href="/pastor">
           <span className="church-logo-tile relative size-10 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">

@@ -1,18 +1,36 @@
-import { Controller, Get, Module } from '@nestjs/common';
+import { Controller, Get, Module, Post } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { Throttle, ThrottlerModule } from '@nestjs/throttler';
 import request from 'supertest';
 import { AppThrottlerGuard } from '../src/common/security/app-throttler.guard';
+import { getLoginAttemptTracker } from '../src/common/security/login-rate-limit';
 
 const TEST_SECRET = 'test-secret-that-is-at-least-32-characters';
 
 @Controller('limited')
 class LimitedController {
   @Get()
+  check() {
+    return {
+      success: true,
+    };
+  }
+}
+
+@Controller('login-limited')
+class LoginLimitedController {
+  @Post()
+  @Throttle({
+    default: {
+      limit: 2,
+      ttl: 60_000,
+      getTracker: getLoginAttemptTracker,
+    },
+  })
   check() {
     return {
       success: true,
@@ -42,7 +60,7 @@ class LimitedController {
     ]),
   ],
 
-  controllers: [LimitedController],
+  controllers: [LimitedController, LoginLimitedController],
 
   providers: [
     {
@@ -145,6 +163,52 @@ describe('Rate limiting', () => {
     await request(app.getHttpServer())
       .get('/limited')
       .set('Authorization', `Bearer ${userA}`)
+      .expect(429);
+  });
+
+  it('keeps login limits separate for members sharing one IP', async () => {
+    const sameIp = '203.0.113.20';
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await request(app.getHttpServer())
+        .post('/login-limited')
+        .set('X-Forwarded-For', sameIp)
+        .send({ email: 'member.one@example.com' })
+        .expect(201);
+    }
+
+    await request(app.getHttpServer())
+      .post('/login-limited')
+      .set('X-Forwarded-For', sameIp)
+      .send({ email: 'member.one@example.com' })
+      .expect(429);
+
+    await request(app.getHttpServer())
+      .post('/login-limited')
+      .set('X-Forwarded-For', sameIp)
+      .send({ email: 'member.two@example.com' })
+      .expect(201);
+  });
+
+  it('normalizes email casing and spacing in login buckets', async () => {
+    const sameIp = '203.0.113.21';
+
+    await request(app.getHttpServer())
+      .post('/login-limited')
+      .set('X-Forwarded-For', sameIp)
+      .send({ email: ' Member.One@Example.com ' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/login-limited')
+      .set('X-Forwarded-For', sameIp)
+      .send({ email: 'member.one@example.com' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/login-limited')
+      .set('X-Forwarded-For', sameIp)
+      .send({ email: 'MEMBER.ONE@EXAMPLE.COM' })
       .expect(429);
   });
 });

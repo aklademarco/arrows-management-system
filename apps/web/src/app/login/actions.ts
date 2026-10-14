@@ -1,5 +1,7 @@
 "use server";
 
+import { revokeBrowserPush, revokePushOnLogout } from "@/lib/push-session";
+
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -56,6 +58,7 @@ export async function memberLogin(
         message: "This account does not have an active member profile.",
       };
     }
+    await revokeBrowserPush();
     const store = await cookies();
     const sessionOptions = {
       httpOnly: true,
@@ -83,6 +86,7 @@ export async function memberLogin(
 }
 
 export async function memberLogout() {
+  await revokePushOnLogout();
   const store = await cookies();
   store.delete("acms_member_session");
   store.delete("acms_leader_session");
