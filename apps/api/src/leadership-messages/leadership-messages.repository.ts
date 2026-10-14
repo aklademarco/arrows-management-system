@@ -1,6 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import {
   and,
+  asc,
+  ilike,
   count,
   desc,
   eq,
@@ -12,6 +14,7 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
+import type { ListDirectoryDto } from '../members/dto/list-directory.dto';
 import { DATABASE, type Database } from '../database/database.module';
 import {
   auditLogs,
@@ -29,6 +32,73 @@ import {
 @Injectable()
 export class LeadershipMessagesRepository {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
+
+  // Use the same current membership boundary for both listing and private delivery.
+  private teamScope(userId: string, churchId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    return and(
+      eq(users.churchId, churchId),
+      eq(users.accountStatus, 'ACTIVE'),
+      sql`exists (
+        select 1 from department_members dm
+        join departments d on d.id = dm.department_id
+        join department_leaders dl on dl.department_id = d.id
+        join member_profiles leader on leader.id = dl.member_id
+        where dm.member_id = ${memberProfiles.id}
+          and d.church_id = ${churchId} and d.is_active = true
+          and leader.user_id = ${userId}
+          and dl.revoked_at is null and dl.starts_at <= ${today}
+          and (dl.ends_at is null or dl.ends_at >= ${today})
+          and dm.joined_at <= ${today}
+          and (dm.left_at is null or dm.left_at > ${today})
+      )`,
+    );
+  }
+
+  async team(userId: string, churchId: string, query: ListDirectoryDto) {
+    const search = query.search?.trim();
+    const where = and(
+      this.teamScope(userId, churchId),
+      search
+        ? or(
+            ilike(memberProfiles.firstName, `%${search}%`),
+            ilike(memberProfiles.lastName, `%${search}%`),
+            ilike(memberProfiles.otherNames, `%${search}%`),
+          )
+        : undefined,
+    );
+    const [items, [summary]] = await Promise.all([
+      this.database
+        .select({
+          id: memberProfiles.id,
+          firstName: memberProfiles.firstName,
+          lastName: memberProfiles.lastName,
+          otherNames: memberProfiles.otherNames,
+          profilePhotoUrl: memberProfiles.profilePhotoUrl,
+        })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(where)
+        .orderBy(
+          asc(memberProfiles.firstName),
+          asc(memberProfiles.lastName),
+          asc(memberProfiles.id),
+        )
+        .limit(query.limit)
+        .offset((query.page - 1) * query.limit),
+      this.database
+        .select({ total: count() })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(where),
+    ]);
+    return {
+      items,
+      total: summary.total,
+      page: query.page,
+      totalPages: Math.ceil(summary.total / query.limit),
+    };
+  }
 
   async activeLedDepartments(userId: string, churchId: string) {
     const today = new Date().toISOString().slice(0, 10);
@@ -92,7 +162,8 @@ export class LeadershipMessagesRepository {
   async create(input: {
     churchId: string;
     senderUserId: string;
-    audience: 'CHURCH' | 'DEPARTMENT';
+    audience: 'CHURCH' | 'DEPARTMENT' | 'MEMBER';
+    recipientMemberId?: string;
     title: string;
     body: string;
     departmentIds: string[];
@@ -100,6 +171,52 @@ export class LeadershipMessagesRepository {
   }) {
     const today = new Date().toISOString().slice(0, 10);
     return this.database.transaction(async (transaction) => {
+      const baseRecipients = transaction
+        .selectDistinct({
+          userId: users.id,
+          phone: users.phone,
+        })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId));
+      const recipients =
+        input.audience === 'MEMBER'
+          ? await baseRecipients.where(
+              and(
+                this.teamScope(input.senderUserId, input.churchId),
+                eq(memberProfiles.id, input.recipientMemberId ?? ''),
+              ),
+            )
+          : input.audience === 'CHURCH'
+            ? await baseRecipients.where(
+                and(
+                  eq(users.churchId, input.churchId),
+                  eq(users.accountStatus, 'ACTIVE'),
+                ),
+              )
+            : await baseRecipients
+                .innerJoin(
+                  departmentMembers,
+                  eq(departmentMembers.memberId, memberProfiles.id),
+                )
+                .where(
+                  and(
+                    eq(users.churchId, input.churchId),
+                    eq(users.accountStatus, 'ACTIVE'),
+                    inArray(
+                      departmentMembers.departmentId,
+                      input.departmentIds,
+                    ),
+                    lte(departmentMembers.joinedAt, today),
+                    or(
+                      isNull(departmentMembers.leftAt),
+                      gt(departmentMembers.leftAt, today),
+                    ),
+                  ),
+                );
+      if (input.audience === 'MEMBER' && recipients.length !== 1)
+        throw new ForbiddenException(
+          'You can privately message only active members of departments you currently lead.',
+        );
       const [message] = await transaction
         .insert(leadershipMessages)
         .values({
@@ -118,38 +235,6 @@ export class LeadershipMessagesRepository {
             departmentId,
           })),
         );
-      const baseRecipients = transaction
-        .selectDistinct({
-          userId: users.id,
-          phone: users.phone,
-        })
-        .from(memberProfiles)
-        .innerJoin(users, eq(users.id, memberProfiles.userId));
-      const recipients =
-        input.audience === 'CHURCH'
-          ? await baseRecipients.where(
-              and(
-                eq(users.churchId, input.churchId),
-                eq(users.accountStatus, 'ACTIVE'),
-              ),
-            )
-          : await baseRecipients
-              .innerJoin(
-                departmentMembers,
-                eq(departmentMembers.memberId, memberProfiles.id),
-              )
-              .where(
-                and(
-                  eq(users.churchId, input.churchId),
-                  eq(users.accountStatus, 'ACTIVE'),
-                  inArray(departmentMembers.departmentId, input.departmentIds),
-                  lte(departmentMembers.joinedAt, today),
-                  or(
-                    isNull(departmentMembers.leftAt),
-                    gt(departmentMembers.leftAt, today),
-                  ),
-                ),
-              );
       if (recipients.length) {
         await transaction.insert(leadershipMessageRecipients).values(
           recipients.map((recipient) => ({
@@ -172,7 +257,7 @@ export class LeadershipMessagesRepository {
             type: 'LEADERSHIP_MESSAGE',
             title: input.title,
             body: input.body,
-            link: '/member/notifications',
+            link: '/notifications',
           })),
         );
       }

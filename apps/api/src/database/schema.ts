@@ -92,6 +92,7 @@ export const ministryContentStatus = pgEnum('ministry_content_status', [
 export const messageAudience = pgEnum('message_audience', [
   'CHURCH',
   'DEPARTMENT',
+  'MEMBER',
 ]);
 export const smsDeliveryStatus = pgEnum('sms_delivery_status', [
   'NOT_REQUESTED',

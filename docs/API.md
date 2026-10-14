@@ -1893,3 +1893,22 @@ After those documents, implementation can begin with:
 3. Drizzle configuration
 4. Authentication module
 5. Account approval workflow
+
+### Department team and private messages
+
+- `GET /api/v1/leadership-messages/team?search=&page=1&limit=24` returns a
+  paginated list of active accounts currently belonging to departments the caller
+  actively leads. Requires `DEPARTMENT_LEADER`. Directory visibility does not hide
+  members from their own department leader. Future/ended memberships, revoked or
+  expired leadership assignments and inactive departments are excluded.
+- `POST /api/v1/leadership-messages` accepts `audience: "MEMBER"`,
+  `recipientMemberId`, `title` (up to 180 characters) and `body` (up to 5,000).
+  Private messages cannot include department selections or SMS. The transaction
+  checks current department scope and creates exactly one recipient and inbox
+  notification. Existing push delivery applies for opted-in browsers.
+- Private messages appear in the sender's sent history and the recipient's inbox.
+  This is one-way messaging; it does not create a reply conversation.
+
+Leaders use **People → select a team member → Private message**. Apply migration
+`0036_private_leadership_messages.sql` before starting the updated API; the normal
+container startup migration step handles this during deployment.

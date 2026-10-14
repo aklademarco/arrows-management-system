@@ -12,25 +12,31 @@ export function MessageForm({
   canMessageChurch,
   departments,
   smsAvailable,
+  recipient,
 }: {
   canMessageChurch: boolean;
   departments: Department[];
   smsAvailable: boolean;
+  recipient?: { id: string; name: string };
 }) {
-  const [audience, setAudience] = useState<"CHURCH" | "DEPARTMENT">(
-    canMessageChurch ? "CHURCH" : "DEPARTMENT",
+  const [audience, setAudience] = useState<"CHURCH" | "DEPARTMENT" | "MEMBER">(
+    recipient ? "MEMBER" : canMessageChurch ? "CHURCH" : "DEPARTMENT",
   );
   const [state, action, pending] = useActionState(
     sendLeadershipMessage,
     initialState,
   );
-  const { formRef } = useFormDraft("leader:message", {
-    clear: state.status === "success",
-  });
+  const { formRef } = useFormDraft(
+    recipient ? `leader:private-message:${recipient.id}` : "leader:message",
+    {
+      clear: state.status === "success",
+      exclude: recipient ? ["title", "body"] : [],
+    },
+  );
   useEffect(() => {
     if (state.status === "success") formRef.current?.reset();
   }, [state.status, formRef]);
-  if (!canMessageChurch && departments.length === 0) {
+  if (!recipient && !canMessageChurch && departments.length === 0) {
     return (
       <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 text-slate-900 sm:p-6">
         <div className="flex items-start gap-3">
@@ -59,14 +65,27 @@ export function MessageForm({
           <FiSend />
         </span>
         <div>
-          <h2 className="font-black">New message</h2>
+          <h2 className="font-black">
+            {recipient ? `Private message to ${recipient.name}` : "New message"}
+          </h2>
           <p className="text-sm text-slate-400">
-            This appears immediately in each recipient&apos;s church inbox.
+            {recipient
+              ? "Only this member receives the message in their church inbox."
+              : "This appears immediately in each recipient’s church inbox."}
           </p>
         </div>
       </div>
       <div className="mt-5 grid gap-4">
-        {canMessageChurch && departments.length ? (
+        {recipient ? (
+          <>
+            <input name="audience" type="hidden" value="MEMBER" />
+            <input
+              name="recipientMemberId"
+              type="hidden"
+              value={recipient.id}
+            />
+          </>
+        ) : canMessageChurch && departments.length ? (
           <fieldset>
             <legend className="mb-2 text-xs font-black uppercase tracking-wider text-slate-400">
               Audience
@@ -132,7 +151,7 @@ export function MessageForm({
             required
           />
         </label>
-        {smsAvailable ? (
+        {recipient ? null : smsAvailable ? (
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-[#17131f] p-4">
             <input
               className="mt-0.5 size-5 accent-purple-500"
@@ -156,7 +175,10 @@ export function MessageForm({
       </div>
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <p className="flex items-center gap-2 text-xs text-slate-500">
-          <FiUsers /> The API verifies your audience before delivery.
+          <FiUsers />{" "}
+          {recipient
+            ? "Private in-app message"
+            : "Send to your selected audience"}
         </p>
         <button
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-purple-600 px-6 text-sm font-black transition hover:bg-purple-500 disabled:opacity-60"
