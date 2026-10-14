@@ -6,7 +6,6 @@ import { getFirebaseMessaging } from "@/lib/firebase-messaging";
 import { isFirebaseConfigured } from "@/lib/firebase";
 import { browserPushToken } from "@/lib/browser-push";
 import {
-  canRefreshPushDevice,
   dismissPushPrompt,
   shouldShowPushPrompt,
   updatePushDevice,
@@ -27,16 +26,14 @@ export function PushNotificationPrompt() {
         )
           return;
         if (!(await getFirebaseMessaging()) || disposed) return;
-        // A saved browser token alone does not prove registration for this account.
-        // Refresh the server registration only when this browser has an existing opt-in.
-        if (
-          Notification.permission === "granted" &&
-          (await canRefreshPushDevice())
-        ) {
+        // Browser permission survives logout. Re-register for the authenticated
+        // account silently, even when logout revoked the previous server record.
+        if (Notification.permission === "granted") {
           const token = await browserPushToken(false);
           if (disposed) return;
-          const result = await updatePushDevice({ token, enabled: true });
-          if (result.success) return;
+          await updatePushDevice({ token, enabled: true });
+          // A delivery/API failure does not mean permission needs granting again.
+          return;
         }
         const show = await shouldShowPushPrompt();
         if (!disposed && show) {
