@@ -75,3 +75,29 @@ it("does not expose approval device cleanup credentials to the client", async ()
   expect(result).not.toHaveProperty("revocationSecret");
   expect(values.get(pushCookie)).toBe(secret);
 });
+
+jest.mock("next/navigation", () => ({ redirect: jest.fn() }));
+it("resets the dismissed invitation after a fresh successful login", async () => {
+  const { memberLogin } = await import("../src/app/login/actions");
+  const { pushPromptDismissedCookie } = await import("../src/lib/push-session");
+  values.set(pushPromptDismissedCookie, "1");
+  fetchMock
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: {
+            accessToken: "new-session",
+            user: { roles: [] },
+          },
+        }),
+        { status: 200 },
+      ),
+    )
+    .mockResolvedValueOnce(new Response("{}", { status: 200 }));
+  const form = new FormData();
+  form.set("email", "member@example.com");
+  form.set("password", "password");
+  await memberLogin({ message: "" }, form);
+  expect(values.get("acms_member_session")).toBe("new-session");
+  expect(values.has(pushPromptDismissedCookie)).toBe(false);
+});

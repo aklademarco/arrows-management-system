@@ -66,6 +66,15 @@ the same origin.
 
 ## Device lifecycle
 
+The inbox no longer includes a browser registration panel. A floating invitation
+appears across member, leader and pastor workspaces when registration is needed.
+Existing opt-ins are refreshed with the API before deciding to show it. “Not now”
+or the close button dismisses it for the current login, including page reloads;
+a fresh successful login clears that dismissal. Unsupported or unconfigured
+browsers do not show the invitation. Permission is requested only after clicking
+“Enable notifications”. Logout still revokes registration, so the next login may
+require opting in again.
+
 Registrations expire after 30 days and are refreshed on authenticated workspace
 loads only when the browser already opted in. Permission is requested only on a
 user gesture. Token rotation soft-revokes the browser's previous token; account

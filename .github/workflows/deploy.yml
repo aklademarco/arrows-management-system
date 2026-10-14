@@ -22,8 +22,12 @@ env:
 
 jobs:
   publish:
-    name: Build and publish images
+    name: Build and publish ${{ matrix.service }} image
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [api, web]
 
     steps:
       - name: Checkout repository
@@ -39,29 +43,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push API image
+      - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/api.Dockerfile
+          file: docker/${{ matrix.service }}.Dockerfile
           push: true
           tags: |
-            ${{ env.API_IMAGE }}:${{ github.sha }}
-            ${{ env.API_IMAGE }}:latest
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
+            ghcr.io/aklademarco/arrows-management-system-${{ matrix.service }}:${{ github.sha }}
+            ghcr.io/aklademarco/arrows-management-system-${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-      - name: Build and push Web image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/web.Dockerfile
-          push: true
-          tags: |
-            ${{ env.WEB_IMAGE }}:${{ github.sha }}
-            ${{ env.WEB_IMAGE }}:latest
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+      - name: Show runner disk usage
+        if: always()
+        run: |
+          df -h
+          df -i
+          docker system df
 
   deploy:
     name: Deploy to VPS
@@ -190,6 +189,14 @@ jobs:
       # ----------------------------------------------------------
       # DEPLOY
       # ----------------------------------------------------------
+
+      - name: Show VPS disk usage before pulling images
+        run: |
+          ssh \
+            -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            'df -h; df -i; docker system df'
 
       - name: Activate release
         run: |

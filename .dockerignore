@@ -20,3 +20,10 @@ npm-debug.log*
 pnpm-debug.log*
 
 .DS_Store
+
+# Local build output must be rebuilt inside the image.
+dist
+**/dist
+**/*.tsbuildinfo
+.turbo
+**/.turbo

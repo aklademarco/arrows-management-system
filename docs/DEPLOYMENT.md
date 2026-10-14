@@ -232,3 +232,36 @@ pnpm dev
 - Resend, Cloudinary, and optional Hubtel integrations are tested.
 - A database backup has been restored successfully.
 - External monitoring checks `/api/v1/health` every five minutes.
+
+## Troubleshooting: container storage is full
+
+`failed to copy ... /var/lib/containerd/.../data: no space left on device`
+means the host receiving container layers has exhausted disk space or inodes.
+Check the failed Actions step: image builds use GitHub runners; **Activate
+release** pulls images onto the VPS. Each image now builds on a separate runner
+in both CI and deployment to avoid retaining both builds on one disk. Deployment
+waits for both image jobs to succeed.
+
+For a VPS pull failure, SSH into the VPS and inspect storage before retrying:
+
+```bash
+df -h / /var/lib/containerd /var/lib/docker
+df -i / /var/lib/containerd /var/lib/docker
+docker system df -v
+docker image ls
+```
+
+Paths may differ with the Docker installation. The workflow also prints disk
+and inode usage before pulling images and after each runner build.
+
+If unused images are consuming the space, remove only old release images you
+no longer need with `docker image rm IMAGE_ID`, keeping the running release and
+any release needed for rollback. Unused build cache can be reclaimed with
+`docker builder prune --filter 'until=168h'` (review the interactive prompt).
+Recheck free space, then rerun the failed deployment job. If there is no
+reclaimable storage, expand the VPS disk before retrying; downloading and
+unpacking new layers requires space alongside the current release.
+
+Do not delete containerd files manually or prune volumes: PostgreSQL data lives
+in the `arrows_cms_postgres_data` volume. The workflow does not automatically
+remove production images, volumes, or rollback releases.
