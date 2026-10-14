@@ -1,0 +1,1 @@
+ALTER TYPE message_audience ADD VALUE IF NOT EXISTS 'MEMBER';

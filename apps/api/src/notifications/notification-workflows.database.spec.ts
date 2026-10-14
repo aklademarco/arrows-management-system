@@ -291,6 +291,87 @@ describeDatabase('Notification workflows with PostgreSQL', () => {
     await publish(applicant);
     expect(await database.select().from(schema.pushDeliveries)).toHaveLength(1);
   });
+  it('lists only the current team and delivers a private message to exactly one member', async () => {
+    await database.insert(schema.departmentLeaders).values({
+      departmentId,
+      memberId: actor.memberId,
+      startsAt: '2020-01-01',
+      assignedBy: actor.id,
+    });
+    const colleague = await createMember(churchId);
+    const future = await createMember(churchId);
+    const former = await createMember(churchId);
+    await database.insert(schema.departmentMembers).values([
+      { departmentId, memberId: member.memberId, joinedAt: '2020-01-01' },
+      { departmentId, memberId: colleague.memberId, joinedAt: '2020-01-01' },
+      { departmentId, memberId: future.memberId, joinedAt: '2099-01-01' },
+      {
+        departmentId,
+        memberId: former.memberId,
+        joinedAt: '2020-01-01',
+        leftAt: '2021-01-01',
+        endedBy: actor.id,
+        endReason: 'Transferred',
+      },
+    ]);
+    const messages = new LeadershipMessagesRepository(database);
+    const team = await messages.team(actor.id, churchId, { page: 1, limit: 1 });
+    expect(team.total).toBe(2);
+    expect(team.totalPages).toBe(2);
+    expect(team.items).toHaveLength(1);
+    const fullTeam = await messages.team(actor.id, churchId, {
+      page: 1,
+      limit: 24,
+    });
+    expect(fullTeam.items.map((item) => item.id).sort()).toEqual(
+      [member.memberId, colleague.memberId].sort(),
+    );
+    const input = {
+      churchId,
+      senderUserId: actor.id,
+      audience: 'MEMBER' as const,
+      title: 'Private follow-up',
+      body: 'Only for you',
+      departmentIds: [],
+      recipientMemberId: member.memberId,
+      smsRequested: false,
+    };
+    expect((await messages.create(input)).recipientCount).toBe(1);
+    expect((await notices()).map((notice) => notice.recipientUserId)).toEqual([
+      member.id,
+    ]);
+    const recipients = await database
+      .select()
+      .from(schema.leadershipMessageRecipients);
+    expect(recipients).toHaveLength(1);
+    expect(recipients[0].smsStatus).toBe('NOT_REQUESTED');
+    expect(await messages.sent(colleague.id, churchId)).toEqual([]);
+    for (const recipientMemberId of [
+      outsider.memberId,
+      future.memberId,
+      former.memberId,
+    ]) {
+      await expect(
+        messages.create({ ...input, recipientMemberId }),
+      ).rejects.toThrow('only active members');
+    }
+    await database
+      .update(schema.departmentLeaders)
+      .set({
+        revokedAt: new Date(),
+        revokedBy: actor.id,
+        revocationReason: 'Reassigned',
+      });
+    expect(
+      (await messages.team(actor.id, churchId, { page: 1, limit: 24 })).total,
+    ).toBe(0);
+    await expect(messages.create(input)).rejects.toThrow('only active members');
+    expect(
+      await database.select().from(schema.leadershipMessages),
+    ).toHaveLength(1);
+    expect(await notices()).toHaveLength(1);
+  });
+
   it('notifies affected members on membership, leadership and primary assignment changes', async () => {
     const departments = new DepartmentsRepository(database, publisher);
     const membership = await departments.addMember({

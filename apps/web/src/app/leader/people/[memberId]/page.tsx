@@ -10,6 +10,7 @@ import {
   FiUsers,
 } from "react-icons/fi";
 
+import { MessageForm } from "../../messages/message-form";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getLeaderResource } from "../../leader-api";
 
@@ -229,6 +230,17 @@ export default async function LeaderPersonPage({
               This member is outside the departments you lead. You are seeing
               the same directory information available to other church members.
             </p>
+          </section>
+        )}
+
+        {view.accessLevel === "FULL" && (
+          <section className="mt-5" aria-label="Private message">
+            <MessageForm
+              canMessageChurch={false}
+              departments={[]}
+              smsAvailable={false}
+              recipient={{ id: person.id, name }}
+            />
           </section>
         )}
 

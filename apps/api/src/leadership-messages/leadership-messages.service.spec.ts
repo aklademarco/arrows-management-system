@@ -159,4 +159,76 @@ describe('LeadershipMessagesService', () => {
       ),
     ).resolves.toEqual({ id: 'message', recipientCount: 10 });
   });
+  it('accepts a private member recipient without a department broadcast', async () => {
+    const repository = {
+      activeLedDepartments: jest
+        .fn()
+        .mockResolvedValue([{ id: 'department', name: 'Choir' }]),
+      create: jest.fn().mockResolvedValue({ recipientCount: 1 }),
+    };
+    const service = new LeadershipMessagesService(repository as never);
+    await service.create(
+      {
+        audience: LeadershipMessageAudience.MEMBER,
+        title: 'Hello',
+        body: 'Private',
+        recipientMemberId: 'member',
+      },
+      leader,
+    );
+    expect(repository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        audience: 'MEMBER',
+        recipientMemberId: 'member',
+        departmentIds: [],
+        smsRequested: false,
+      }),
+    );
+  });
+
+  it.each([
+    { audience: LeadershipMessageAudience.MEMBER },
+    {
+      audience: LeadershipMessageAudience.MEMBER,
+      recipientMemberId: 'member',
+      departmentIds: ['department'],
+    },
+    {
+      audience: LeadershipMessageAudience.MEMBER,
+      recipientMemberId: 'member',
+      smsRequested: true,
+    },
+    {
+      audience: LeadershipMessageAudience.DEPARTMENT,
+      recipientMemberId: 'member',
+      departmentIds: ['department'],
+    },
+  ])(
+    'rejects ambiguous or non-private recipient selections: %j',
+    async (selection) => {
+      const repository = {
+        activeLedDepartments: jest
+          .fn()
+          .mockResolvedValue([{ id: 'department', name: 'Choir' }]),
+        create: jest.fn(),
+      };
+      const service = new LeadershipMessagesService(repository as never);
+      await expect(
+        service.create(
+          { title: 'Hello', body: 'Message', ...selection },
+          leader,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repository.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it('does not expose the team list to ordinary members', async () => {
+    const repository = { team: jest.fn() };
+    const service = new LeadershipMessagesService(repository as never);
+    await expect(
+      service.team({ page: 1, limit: 24 }, { ...leader, roles: ['MEMBER'] }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(repository.team).not.toHaveBeenCalled();
+  });
 });

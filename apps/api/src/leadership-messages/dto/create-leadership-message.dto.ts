@@ -13,6 +13,7 @@ import {
 export enum LeadershipMessageAudience {
   CHURCH = 'CHURCH',
   DEPARTMENT = 'DEPARTMENT',
+  MEMBER = 'MEMBER',
 }
 
 export class CreateLeadershipMessageDto {
@@ -34,6 +35,10 @@ export class CreateLeadershipMessageDto {
   @ArrayMaxSize(20)
   @IsUUID('4', { each: true })
   departmentIds?: string[];
+
+  @IsOptional()
+  @IsUUID('4')
+  recipientMemberId?: string;
 
   @IsOptional()
   @IsBoolean()
