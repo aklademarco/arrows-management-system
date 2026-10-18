@@ -22,7 +22,7 @@ import { saveGeofence, type GeofenceSaveState } from "./actions";
 const GeofenceMap = dynamic(() => import("./geofence-map"), {
   ssr: false,
   loading: () => (
-    <div className="grid h-full place-items-center text-sm text-slate-400">
+    <div className="grid h-full place-items-center text-sm text-slate-600">
       Loading map...
     </div>
   ),
@@ -193,8 +193,8 @@ export default function GeofenceSetup({
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <section className="overflow-hidden rounded-lg border border-white/10 bg-[#111318] shadow-sm">
-        <div className="h-[min(62vh,42rem)] min-h-[28rem] bg-white/[0.07]">
+      <section className="overflow-hidden rounded-lg border border-[#dce3e4] bg-white/70 shadow-sm">
+        <div className="h-[min(62vh,42rem)] min-h-[28rem] bg-[#e4eaea]">
           {center ? (
             <GeofenceMap
               center={center}
@@ -206,7 +206,7 @@ export default function GeofenceSetup({
           ) : (
             <div className="grid h-full place-items-center px-6 text-center">
               <div className="max-w-sm">
-                <span className="mx-auto grid size-16 place-items-center rounded-full bg-violet-500/10 text-2xl text-violet-400">
+                <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e1eafa] text-2xl text-[#527193]">
                   <FiMapPin />
                 </span>
 
@@ -214,7 +214,7 @@ export default function GeofenceSetup({
                   Set the church location
                 </h2>
 
-                <p className="mt-2 text-sm leading-6 text-slate-400">
+                <p className="mt-2 text-sm leading-6 text-slate-600">
                   No church geofence has been configured yet. Capture your
                   current location to position the map.
                 </p>
@@ -223,7 +223,7 @@ export default function GeofenceSetup({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/10 px-4 py-3 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#dce3e4] px-4 py-3 text-xs text-slate-600">
           <span className="flex items-center gap-2">
             <span className="size-3 border-2 border-green-700 bg-green-100" />
             Church center and boundary
@@ -248,22 +248,22 @@ export default function GeofenceSetup({
 
       <aside className="space-y-5">
         {!initialSettings.configured && (
-          <section className="rounded-lg border border-violet-400/20 bg-violet-500/10 p-4">
-            <p className="font-bold text-violet-300">First-time setup</p>
+          <section className="rounded-lg border border-violet-400/20 bg-[#e1eafa] p-4">
+            <p className="font-bold text-[#426b9f]">First-time setup</p>
 
-            <p className="mt-1 text-sm leading-6 text-slate-300">
+            <p className="mt-1 text-sm leading-6 text-slate-700">
               Capture the church location and save it before members use
               geofence attendance.
             </p>
           </section>
         )}
 
-        <section className="rounded-lg border border-white/10 bg-[#111318] p-5 shadow-sm">
+        <section className="rounded-lg border border-[#dce3e4] bg-white/70 p-5 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold">Location reading</h2>
 
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-slate-600">
                 Best of {readings.length} captured reading
                 {readings.length === 1 ? "" : "s"}
               </p>
@@ -280,7 +280,7 @@ export default function GeofenceSetup({
           {bestReading ? (
             <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-slate-400">Latitude</dt>
+                <dt className="text-slate-600">Latitude</dt>
 
                 <dd className="mt-1 font-mono font-bold">
                   {bestReading.latitude.toFixed(7)}
@@ -288,7 +288,7 @@ export default function GeofenceSetup({
               </div>
 
               <div>
-                <dt className="text-slate-400">Longitude</dt>
+                <dt className="text-slate-600">Longitude</dt>
 
                 <dd className="mt-1 font-mono font-bold">
                   {bestReading.longitude.toFixed(7)}
@@ -296,13 +296,13 @@ export default function GeofenceSetup({
               </div>
 
               <div>
-                <dt className="text-slate-400">Accuracy</dt>
+                <dt className="text-slate-600">Accuracy</dt>
 
                 <dd
                   className={`mt-1 font-bold ${
                     bestReading.accuracyMeters <= MAXIMUM_ACCURACY_METERS
-                      ? "text-green-400"
-                      : "text-amber-400"
+                      ? "text-green-700"
+                      : "text-amber-800"
                   }`}
                 >
                   {bestReading.accuracyMeters.toFixed(1)} m
@@ -310,7 +310,7 @@ export default function GeofenceSetup({
               </div>
 
               <div>
-                <dt className="text-slate-400">Captured</dt>
+                <dt className="text-slate-600">Captured</dt>
 
                 <dd className="mt-1 font-bold">
                   {new Date(bestReading.capturedAt).toLocaleTimeString([], {
@@ -323,7 +323,7 @@ export default function GeofenceSetup({
 
               {distanceFromCenter !== null && (
                 <div className="col-span-2">
-                  <dt className="text-slate-400">
+                  <dt className="text-slate-600">
                     Distance from church center
                   </dt>
 
@@ -336,7 +336,7 @@ export default function GeofenceSetup({
           ) : center ? (
             <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-slate-400">Latitude</dt>
+                <dt className="text-slate-600">Latitude</dt>
 
                 <dd className="mt-1 font-mono font-bold">
                   {center.latitude.toFixed(6)}
@@ -344,7 +344,7 @@ export default function GeofenceSetup({
               </div>
 
               <div>
-                <dt className="text-slate-400">Longitude</dt>
+                <dt className="text-slate-600">Longitude</dt>
 
                 <dd className="mt-1 font-mono font-bold">
                   {center.longitude.toFixed(6)}
@@ -352,20 +352,20 @@ export default function GeofenceSetup({
               </div>
 
               <div className="col-span-2">
-                <dt className="text-slate-400">Source</dt>
+                <dt className="text-slate-600">Source</dt>
 
                 <dd className="mt-1 font-bold">Saved church center</dd>
               </div>
             </dl>
           ) : (
-            <p className="mt-5 text-sm leading-6 text-slate-400">
+            <p className="mt-5 text-sm leading-6 text-slate-600">
               No location has been captured yet.
             </p>
           )}
 
           {error && (
             <p
-              className="mt-4 rounded-md bg-red-500/10 p-3 text-sm text-red-300"
+              className="mt-4 rounded-md bg-red-500/10 p-3 text-sm text-red-700"
               role="alert"
             >
               {error}
@@ -374,7 +374,7 @@ export default function GeofenceSetup({
 
           {bestReading &&
             bestReading.accuracyMeters > MAXIMUM_ACCURACY_METERS && (
-              <p className="mt-4 rounded-md bg-amber-500/10 p-3 text-sm text-amber-300">
+              <p className="mt-4 rounded-md bg-amber-500/10 p-3 text-sm text-amber-800">
                 {bestReading.accuracyMeters > 1000
                   ? "This device is using an approximate network location. Capture from a GPS-enabled phone or select the center on the map."
                   : "Accuracy is above the 50 m acceptance limit. Move outdoors and capture again."}
@@ -382,7 +382,7 @@ export default function GeofenceSetup({
             )}
 
           <button
-            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-500"
+            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#242929] text-white px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-500"
             disabled={isWatching}
             onClick={startCapture}
             type="button"
@@ -398,7 +398,7 @@ export default function GeofenceSetup({
 
           {bestReading && (
             <button
-              className="mt-2 h-11 w-full rounded-lg border border-violet-400/40 font-bold text-violet-300"
+              className="mt-2 h-11 w-full rounded-lg border border-violet-400/40 font-bold text-[#426b9f]"
               onClick={() =>
                 setCenter({
                   latitude: bestReading.latitude,
@@ -413,7 +413,7 @@ export default function GeofenceSetup({
 
           {isWatching && (
             <button
-              className="mt-2 h-10 w-full font-bold text-slate-300"
+              className="mt-2 h-10 w-full font-bold text-slate-700"
               onClick={() => setIsWatching(false)}
               type="button"
             >
@@ -422,15 +422,15 @@ export default function GeofenceSetup({
           )}
         </section>
 
-        <section className="rounded-lg border border-white/10 bg-[#111318] p-5 shadow-sm">
+        <section className="rounded-lg border border-[#dce3e4] bg-white/70 p-5 shadow-sm">
           <h2 className="font-bold">Map interaction</h2>
 
-          <div className="mt-3 grid grid-cols-2 rounded-lg bg-white/[0.07] p-1">
+          <div className="mt-3 grid grid-cols-2 rounded-lg bg-[#e4eaea] p-1">
             <button
               className={`h-9 rounded-md text-sm font-bold ${
                 mapMode === "center"
-                  ? "bg-[#111318] text-violet-300 shadow-sm"
-                  : "text-slate-400"
+                  ? "bg-white/70 text-[#426b9f] shadow-sm"
+                  : "text-slate-600"
               }`}
               disabled={!center}
               onClick={() => setMapMode("center")}
@@ -442,8 +442,8 @@ export default function GeofenceSetup({
             <button
               className={`h-9 rounded-md text-sm font-bold ${
                 mapMode === "test"
-                  ? "bg-[#111318] text-violet-300 shadow-sm"
-                  : "text-slate-400"
+                  ? "bg-white/70 text-[#426b9f] shadow-sm"
+                  : "text-slate-600"
               }`}
               disabled={!center}
               onClick={() => setMapMode("test")}
@@ -457,8 +457,8 @@ export default function GeofenceSetup({
             <div
               className={`mt-4 rounded-md p-3 text-sm ${
                 testIsInside
-                  ? "bg-green-500/10 text-green-300"
-                  : "bg-red-500/10 text-red-300"
+                  ? "bg-green-500/10 text-green-700"
+                  : "bg-red-500/10 text-red-700"
               }`}
               role="status"
             >
@@ -477,7 +477,7 @@ export default function GeofenceSetup({
 
         <form
           action={saveAction}
-          className="rounded-lg border border-white/10 bg-[#111318] p-5 shadow-sm"
+          className="rounded-lg border border-[#dce3e4] bg-white/70 p-5 shadow-sm"
         >
           <div className="flex items-baseline justify-between gap-4">
             <label className="font-bold" htmlFor="radius">
@@ -485,7 +485,7 @@ export default function GeofenceSetup({
             </label>
 
             <output
-              className="font-mono text-lg font-bold text-violet-400"
+              className="font-mono text-lg font-bold text-[#527193]"
               htmlFor="radius"
             >
               {radiusMeters} m
@@ -517,25 +517,25 @@ export default function GeofenceSetup({
             value={radiusMeters}
           />
 
-          <div className="mt-1 flex justify-between text-xs text-slate-400">
+          <div className="mt-1 flex justify-between text-xs text-slate-600">
             <span>25 m</span>
             <span>300 m</span>
           </div>
 
           {center && (
-            <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4 text-xs">
+            <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-[#e1e7e8] pt-4 text-xs">
               <div>
-                <dt className="text-slate-400">Center latitude</dt>
+                <dt className="text-slate-600">Center latitude</dt>
 
-                <dd className="mt-1 font-mono font-bold text-slate-200">
+                <dd className="mt-1 font-mono font-bold text-slate-800">
                   {center.latitude.toFixed(7)}
                 </dd>
               </div>
 
               <div>
-                <dt className="text-slate-400">Center longitude</dt>
+                <dt className="text-slate-600">Center longitude</dt>
 
-                <dd className="mt-1 font-mono font-bold text-slate-200">
+                <dd className="mt-1 font-mono font-bold text-slate-800">
                   {center.longitude.toFixed(7)}
                 </dd>
               </div>
@@ -545,7 +545,7 @@ export default function GeofenceSetup({
           <label className="mt-4 grid gap-1 text-sm font-bold">
             Location name
             <input
-              className="h-10 rounded-lg border border-white/15 bg-transparent px-3 font-normal"
+              className="h-10 rounded-lg border border-[#d4dcdd] bg-transparent px-3 font-normal"
               defaultValue={initialSettings.locationName}
               name="locationName"
               placeholder="Church auditorium"
@@ -556,7 +556,7 @@ export default function GeofenceSetup({
             Maximum GPS error
             <div className="flex items-center gap-2">
               <input
-                className="h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-transparent px-3 font-normal"
+                className="h-10 min-w-0 flex-1 rounded-lg border border-[#d4dcdd] bg-transparent px-3 font-normal"
                 defaultValue={initialSettings.maximumAccuracyMeters}
                 max="1000"
                 min="1"
@@ -564,12 +564,12 @@ export default function GeofenceSetup({
                 type="number"
               />
 
-              <span className="text-sm text-slate-400">metres</span>
+              <span className="text-sm text-slate-600">metres</span>
             </div>
           </label>
 
           <button
-            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
+            className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#242929] text-white px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-700"
             disabled={saving || !center}
             type="submit"
           >
@@ -583,7 +583,7 @@ export default function GeofenceSetup({
           </button>
 
           {!center && (
-            <p className="mt-3 text-center text-xs text-slate-400">
+            <p className="mt-3 text-center text-xs text-slate-600">
               Capture the church location before saving.
             </p>
           )}
@@ -593,8 +593,8 @@ export default function GeofenceSetup({
               aria-live="polite"
               className={`mt-3 rounded-lg p-3 text-sm font-semibold ${
                 saveState.status === "success"
-                  ? "bg-emerald-400/10 text-emerald-300"
-                  : "bg-red-400/10 text-red-300"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-red-50 text-red-700"
               }`}
               role={saveState.status === "error" ? "alert" : "status"}
             >

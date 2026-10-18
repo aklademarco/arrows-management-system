@@ -7,7 +7,13 @@ import { useFormDraft } from "@/hooks/use-form-draft";
 
 const initialState: EventUpdateState = { status: "idle", message: "" };
 
-export function EventEditForm({ children, eventId }: { children: ReactNode; eventId: string; }) {
+export function EventEditForm({
+  children,
+  eventId,
+}: {
+  children: ReactNode;
+  eventId: string;
+}) {
   const [state, action, pending] = useActionState(updateEvent, initialState);
   const { formRef } = useFormDraft(`admin:edit-event:${eventId}`, {
     clear: state.status === "success",
@@ -17,12 +23,12 @@ export function EventEditForm({ children, eventId }: { children: ReactNode; even
     <form
       ref={formRef}
       action={action}
-      className="mt-8 grid gap-4 border-y border-white/10 bg-[#111318] px-5 py-6 md:grid-cols-2"
+      className="mt-8 grid gap-4 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 px-5 py-6 md:grid-cols-2"
     >
       {children}
       <div className="flex flex-wrap items-center gap-3 md:col-span-2">
         <button
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 font-bold text-white transition hover:bg-violet-500 disabled:cursor-wait disabled:opacity-70"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#242929] text-white px-5 font-bold text-white transition hover:bg-[#242929] disabled:cursor-wait disabled:opacity-70"
           disabled={pending}
           type="submit"
         >
@@ -36,8 +42,8 @@ export function EventEditForm({ children, eventId }: { children: ReactNode; even
             aria-live="polite"
             className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-4 text-sm font-bold ${
               state.status === "success"
-                ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300"
-                : "border-red-400/25 bg-red-400/10 text-red-300"
+                ? "border-emerald-400/25 bg-emerald-50 text-emerald-700"
+                : "border-red-400/25 bg-red-50 text-red-700"
             }`}
             role={state.status === "error" ? "alert" : "status"}
           >

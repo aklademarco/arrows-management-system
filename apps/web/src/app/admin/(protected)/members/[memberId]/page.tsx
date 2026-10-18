@@ -66,22 +66,22 @@ export default async function MemberProfilePage({
     .join(" ");
 
   return (
-    <main className="min-h-screen bg-[#090a0d] px-5 py-10 text-slate-100">
+    <main className="min-h-screen bg-[#e9edee] px-5 py-10 text-[#252b2d]">
       <div className="mx-auto max-w-4xl">
         <Link
-          className="inline-flex items-center gap-2 font-bold text-violet-400"
+          className="inline-flex items-center gap-2 font-bold text-[#527193]"
           href="/admin/members"
         >
           <FiArrowLeft /> Back to members
         </Link>
-        <header className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+        <header className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
           <div className="flex flex-wrap justify-between gap-4">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-400">
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#527193]">
                 Member profile
               </p>
               <h1 className="mt-2 text-3xl font-bold">{name}</h1>
-              <p className="mt-2 capitalize text-slate-400">
+              <p className="mt-2 capitalize text-slate-600">
                 {member.accountStatus.toLowerCase()} account ·{" "}
                 {member.membershipStatus.toLowerCase()} membership
               </p>
@@ -97,33 +97,69 @@ export default async function MemberProfilePage({
           </div>
         </header>
 
-        {(feedback.feedback === "success" || feedback.feedback === "error") && feedback.message ? (
+        {(feedback.feedback === "success" || feedback.feedback === "error") &&
+        feedback.message ? (
           <AdminFeedback kind={feedback.feedback} message={feedback.message} />
         ) : null}
 
-        <section className="mt-6 rounded-2xl border border-violet-400/20 bg-[#111318] p-6 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-400">Access control</p>
+        <section className="mt-6 rounded-[1.5rem] border border-violet-400/20 bg-white/70 p-6 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#527193]">
+            Access control
+          </p>
           <h2 className="mt-2 text-xl font-bold">Ministry access</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">Assign the leadership workspace appropriate to this member. These changes take effect on their next sign-in.</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Assign the leadership workspace appropriate to this member. These
+            changes take effect on their next sign-in.
+          </p>
           <form action={updateMinistryRoles} className="mt-5 grid gap-3">
             <input name="memberId" type="hidden" value={member.id} />
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-[#090a0d] p-4">
-              <input className="mt-1 size-4 accent-violet-500" defaultChecked={member.roles.includes("PASTOR")} name="roles" type="checkbox" value="PASTOR" />
-              <span><span className="block font-semibold">Pastor</span><span className="mt-1 block text-sm leading-5 text-slate-400">Church-wide leadership workspace without personal attendance, rankings, or streaks.</span></span>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#dce3e4] bg-[#e9edee] p-4">
+              <input
+                className="mt-1 size-4 accent-violet-500"
+                defaultChecked={member.roles.includes("PASTOR")}
+                name="roles"
+                type="checkbox"
+                value="PASTOR"
+              />
+              <span>
+                <span className="block font-semibold">Pastor</span>
+                <span className="mt-1 block text-sm leading-5 text-slate-600">
+                  Church-wide leadership workspace without personal attendance,
+                  rankings, or streaks.
+                </span>
+              </span>
             </label>
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-[#090a0d] p-4">
-              <input className="mt-1 size-4 accent-violet-500" defaultChecked={member.roles.includes("DEPARTMENT_LEADER")} name="roles" type="checkbox" value="DEPARTMENT_LEADER" />
-              <span><span className="block font-semibold">Department leader</span><span className="mt-1 block text-sm leading-5 text-slate-400">Enables the leader workspace. Assign an active department leadership term as well to grant team access.</span></span>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#dce3e4] bg-[#e9edee] p-4">
+              <input
+                className="mt-1 size-4 accent-violet-500"
+                defaultChecked={member.roles.includes("DEPARTMENT_LEADER")}
+                name="roles"
+                type="checkbox"
+                value="DEPARTMENT_LEADER"
+              />
+              <span>
+                <span className="block font-semibold">Department leader</span>
+                <span className="mt-1 block text-sm leading-5 text-slate-600">
+                  Enables the leader workspace. Assign an active department
+                  leadership term as well to grant team access.
+                </span>
+              </span>
             </label>
-            <AdminActionButton className="mt-2 h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500 sm:ml-auto" pendingLabel="Updating access…" type="submit">Save ministry access</AdminActionButton>
+            <AdminActionButton
+              className="mt-2 h-11 rounded-lg bg-[#242929] text-white px-5 font-bold text-white hover:bg-[#242929] sm:ml-auto"
+              pendingLabel="Updating access…"
+              type="submit"
+            >
+              Save ministry access
+            </AdminActionButton>
           </form>
         </section>
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+        <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-xl font-bold">Leaderboard points</h2>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-slate-600">
                 Award or deduct secondary points without changing attendance
                 scores.
               </p>
@@ -137,10 +173,10 @@ export default async function MemberProfilePage({
             className="mt-5 grid gap-3 md:grid-cols-[10rem_1fr_auto]"
           >
             <input name="memberId" type="hidden" value={member.id} />
-            <label className="grid gap-1.5 text-xs font-semibold text-slate-400">
+            <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
               Points
               <input
-                className="h-11 rounded-lg border border-white/15 bg-[#090a0d] px-3 text-slate-100"
+                className="h-11 rounded-lg border border-[#d4dcdd] bg-[#e9edee] px-3 text-[#252b2d]"
                 max={1000}
                 min={-1000}
                 name="points"
@@ -149,10 +185,10 @@ export default async function MemberProfilePage({
                 type="number"
               />
             </label>
-            <label className="grid gap-1.5 text-xs font-semibold text-slate-400">
+            <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
               Reason
               <input
-                className="h-11 rounded-lg border border-white/15 bg-[#090a0d] px-3 text-slate-100"
+                className="h-11 rounded-lg border border-[#d4dcdd] bg-[#e9edee] px-3 text-[#252b2d]"
                 maxLength={180}
                 minLength={3}
                 name="reason"
@@ -160,19 +196,22 @@ export default async function MemberProfilePage({
                 required
               />
             </label>
-            <AdminActionButton className="mt-auto h-11 rounded-lg bg-violet-600 px-5 font-bold text-white hover:bg-violet-500" pendingLabel="Recording…">
+            <AdminActionButton
+              className="mt-auto h-11 rounded-lg bg-[#242929] text-white px-5 font-bold text-white hover:bg-[#242929]"
+              pendingLabel="Recording…"
+            >
               Record adjustment
             </AdminActionButton>
           </form>
           {adjustments.length > 0 ? (
-            <div className="mt-5 divide-y divide-white/[0.07] border-t border-white/[0.07]">
+            <div className="mt-5 divide-y divide-[#e1e7e8] border-t border-[#e1e7e8]">
               {adjustments.map((entry) => (
                 <div
                   className="flex items-start justify-between gap-4 py-3"
                   key={entry.id}
                 >
                   <div>
-                    <p className="text-sm font-semibold text-slate-200">
+                    <p className="text-sm font-semibold text-slate-800">
                       {entry.reason}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
@@ -186,8 +225,8 @@ export default async function MemberProfilePage({
                   <span
                     className={
                       entry.points > 0
-                        ? "rounded-md bg-emerald-400/10 px-2 py-1 text-sm font-bold text-emerald-300"
-                        : "rounded-md bg-rose-400/10 px-2 py-1 text-sm font-bold text-rose-300"
+                        ? "rounded-md bg-emerald-50 px-2 py-1 text-sm font-bold text-emerald-700"
+                        : "rounded-md bg-rose-50 px-2 py-1 text-sm font-bold text-rose-700"
                     }
                   >
                     {entry.points > 0 ? "+" : ""}
@@ -197,34 +236,34 @@ export default async function MemberProfilePage({
               ))}
             </div>
           ) : (
-            <p className="mt-5 border-t border-white/[0.07] pt-4 text-sm text-slate-500">
+            <p className="mt-5 border-t border-[#e1e7e8] pt-4 text-sm text-slate-500">
               No manual point adjustments yet.
             </p>
           )}
         </section>
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+        <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
           <h2 className="text-xl font-bold">Department history</h2>
           {member.departmentMemberships.length === 0 ? (
-            <p className="mt-4 text-slate-400">No department assignments.</p>
+            <p className="mt-4 text-slate-600">No department assignments.</p>
           ) : (
             <div className="mt-4 grid gap-3">
               {member.departmentMemberships.map((membership) => (
                 <div
-                  className="flex flex-wrap justify-between gap-3 rounded-xl border border-white/10 p-4"
+                  className="flex flex-wrap justify-between gap-3 rounded-xl border border-[#dce3e4] p-4"
                   key={membership.id}
                 >
                   <div>
                     <p className="font-bold">
                       <Link
-                        className="text-violet-400 hover:underline"
+                        className="text-[#527193] hover:underline"
                         href={`/admin/members?departmentId=${membership.departmentId}`}
                       >
                         {membership.departmentName}
                       </Link>
                       {membership.isPrimary ? " · Primary" : ""}
                     </p>
-                    <p className="mt-1 text-sm text-slate-400">
+                    <p className="mt-1 text-sm text-slate-600">
                       Joined {membership.joinedAt}
                       {membership.leftAt ? ` · Left ${membership.leftAt}` : ""}
                     </p>
@@ -233,7 +272,7 @@ export default async function MemberProfilePage({
                     {membership.isActive ? "Active" : "Historical"}
                   </span>
                   {membership.isActive ? (
-                    <details className="w-full border-t border-white/[0.07] pt-3">
+                    <details className="w-full border-t border-[#e1e7e8] pt-3">
                       <summary className="cursor-pointer text-sm font-bold text-red-700">
                         End membership
                       </summary>
@@ -257,12 +296,12 @@ export default async function MemberProfilePage({
                           value={membership.id}
                         />
                         <input
-                          className="h-10 rounded-lg border border-white/15 px-3"
+                          className="h-10 rounded-lg border border-[#d4dcdd] px-3"
                           name="leftAt"
                           type="date"
                         />
                         <input
-                          className="h-10 rounded-lg border border-white/15 px-3"
+                          className="h-10 rounded-lg border border-[#d4dcdd] px-3"
                           minLength={3}
                           name="reason"
                           placeholder="Reason"
@@ -270,7 +309,7 @@ export default async function MemberProfilePage({
                         />
                         {membership.isPrimary ? (
                           <select
-                            className="h-10 rounded-lg border border-white/15 bg-[#111318] px-3"
+                            className="h-10 rounded-lg border border-[#d4dcdd] bg-white/70 px-3"
                             name="replacementPrimaryMembershipId"
                           >
                             <option value="">No replacement primary</option>
@@ -287,7 +326,10 @@ export default async function MemberProfilePage({
                               ))}
                           </select>
                         ) : null}
-                        <AdminActionButton className="h-10 rounded-lg bg-red-700 px-4 font-bold text-white" pendingLabel="Ending…">
+                        <AdminActionButton
+                          className="h-10 rounded-lg bg-red-700 px-4 font-bold text-white"
+                          pendingLabel="Ending…"
+                        >
                           End membership
                         </AdminActionButton>
                       </form>
@@ -302,7 +344,7 @@ export default async function MemberProfilePage({
         {member.departmentMemberships.some(
           (membership) => membership.isActive,
         ) ? (
-          <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+          <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
             <h2 className="text-xl font-bold">Primary department</h2>
             <form
               action={setPrimaryDepartment}
@@ -310,7 +352,7 @@ export default async function MemberProfilePage({
             >
               <input name="memberId" type="hidden" value={member.id} />
               <select
-                className="h-11 rounded-lg border border-white/15 bg-[#111318] px-3"
+                className="h-11 rounded-lg border border-[#d4dcdd] bg-white/70 px-3"
                 defaultValue={
                   member.departmentMemberships.find(
                     (membership) => membership.isActive && membership.isPrimary,
@@ -328,18 +370,21 @@ export default async function MemberProfilePage({
                   ))}
               </select>
               <input
-                className="h-11 rounded-lg border border-white/15 px-3"
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3"
                 name="effectiveOn"
                 type="date"
               />
               <input
-                className="h-11 rounded-lg border border-white/15 px-3"
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3"
                 minLength={3}
                 name="reason"
                 placeholder="Reason for change"
                 required
               />
-              <AdminActionButton className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white" pendingLabel="Updating…">
+              <AdminActionButton
+                className="h-11 rounded-lg bg-[#242929] text-white px-5 font-bold text-white"
+                pendingLabel="Updating…"
+              >
                 Update primary department
               </AdminActionButton>
             </form>
@@ -347,7 +392,7 @@ export default async function MemberProfilePage({
         ) : null}
 
         {member.accountStatus !== "ARCHIVED" ? (
-          <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+          <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
             <h2 className="text-xl font-bold">Add department membership</h2>
             <form
               action={addMemberToDepartment}
@@ -355,7 +400,7 @@ export default async function MemberProfilePage({
             >
               <input name="memberId" type="hidden" value={member.id} />
               <select
-                className="h-11 rounded-lg border border-white/15 bg-[#111318] px-3"
+                className="h-11 rounded-lg border border-[#d4dcdd] bg-white/70 px-3"
                 name="departmentId"
                 required
               >
@@ -369,7 +414,7 @@ export default async function MemberProfilePage({
                   ))}
               </select>
               <input
-                className="h-11 rounded-lg border border-white/15 px-3"
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3"
                 name="joinedAt"
                 type="date"
               />
@@ -377,14 +422,17 @@ export default async function MemberProfilePage({
                 <input name="makePrimary" type="checkbox" />
                 Make primary
               </label>
-              <AdminActionButton className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white md:col-start-4" pendingLabel="Adding…">
+              <AdminActionButton
+                className="h-11 rounded-lg bg-[#242929] text-white px-5 font-bold text-white md:col-start-4"
+                pendingLabel="Adding…"
+              >
                 Add membership
               </AdminActionButton>
             </form>
           </section>
         ) : null}
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+        <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
           <h2 className="text-xl font-bold">Edit member</h2>
           <form
             action={updateMember}
@@ -394,7 +442,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               First name
               <input
-                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                 defaultValue={member.firstName}
                 name="firstName"
                 required
@@ -403,7 +451,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Last name
               <input
-                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                 defaultValue={member.lastName}
                 name="lastName"
                 required
@@ -412,7 +460,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Other names
               <input
-                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                 defaultValue={member.otherNames ?? ""}
                 name="otherNames"
               />
@@ -420,7 +468,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Phone
               <input
-                className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                 defaultValue={member.phone ?? ""}
                 name="phone"
                 placeholder="+233240000000"
@@ -429,7 +477,7 @@ export default async function MemberProfilePage({
             <label className="grid gap-2 text-sm font-semibold">
               Membership status
               <select
-                className="h-11 rounded-lg border border-white/15 bg-[#111318] px-3 font-normal"
+                className="h-11 rounded-lg border border-[#d4dcdd] bg-white/70 px-3 font-normal"
                 defaultValue={member.membershipStatus}
                 name="membershipStatus"
               >
@@ -440,7 +488,10 @@ export default async function MemberProfilePage({
               </select>
             </label>
             <div className="flex items-end">
-              <AdminActionButton className="h-11 rounded-lg bg-violet-600 px-5 font-bold text-white" pendingLabel="Saving…">
+              <AdminActionButton
+                className="h-11 rounded-lg bg-[#242929] text-white px-5 font-bold text-white"
+                pendingLabel="Saving…"
+              >
                 Save changes
               </AdminActionButton>
             </div>
@@ -450,7 +501,7 @@ export default async function MemberProfilePage({
         {member.accountStatus === "ACTIVE" ? (
           <form
             action={suspendUser}
-            className="mt-6 flex gap-3 rounded-2xl border border-red-200 bg-[#111318] p-6"
+            className="mt-6 flex gap-3 rounded-[1.5rem] border border-red-200 bg-white/70 p-6"
           >
             <input name="userId" type="hidden" value={member.userId} />
             <input name="memberId" type="hidden" value={member.id} />
@@ -461,7 +512,10 @@ export default async function MemberProfilePage({
               placeholder="Suspension reason"
               required
             />
-            <AdminActionButton className="rounded-lg bg-red-700 px-5 font-bold text-white" pendingLabel="Suspending…">
+            <AdminActionButton
+              className="rounded-lg bg-red-700 px-5 font-bold text-white"
+              pendingLabel="Suspending…"
+            >
               Suspend
             </AdminActionButton>
           </form>
@@ -469,11 +523,14 @@ export default async function MemberProfilePage({
         {member.accountStatus === "SUSPENDED" ? (
           <form
             action={reactivateUser}
-            className="mt-6 rounded-2xl border border-green-200 bg-[#111318] p-6"
+            className="mt-6 rounded-[1.5rem] border border-green-200 bg-white/70 p-6"
           >
             <input name="userId" type="hidden" value={member.userId} />
             <input name="memberId" type="hidden" value={member.id} />
-            <AdminActionButton className="rounded-lg bg-green-700 px-5 py-3 font-bold text-white" pendingLabel="Reactivating…">
+            <AdminActionButton
+              className="rounded-lg bg-green-700 px-5 py-3 font-bold text-white"
+              pendingLabel="Reactivating…"
+            >
               Reactivate account
             </AdminActionButton>
           </form>
@@ -488,7 +545,10 @@ export default async function MemberProfilePage({
             </p>
             <form action={archiveMember} className="mt-4">
               <input name="memberId" type="hidden" value={member.id} />
-              <AdminActionButton className="rounded-lg bg-red-800 px-5 py-3 font-bold text-white hover:bg-red-900" pendingLabel="Archiving…">
+              <AdminActionButton
+                className="rounded-lg bg-red-800 px-5 py-3 font-bold text-white hover:bg-red-900"
+                pendingLabel="Archiving…"
+              >
                 Archive member
               </AdminActionButton>
             </form>

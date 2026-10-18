@@ -1,10 +1,5 @@
 import Link from "next/link";
-import {
-  FiArrowLeft,
-  FiCheckCircle,
-  FiMail,
-  FiPhone,
-} from "react-icons/fi";
+import { FiArrowLeft, FiCheckCircle, FiMail, FiPhone } from "react-icons/fi";
 import { AdminActionButton } from "@/components/admin-action-button";
 import { AdminFeedback } from "@/components/admin-feedback";
 import {
@@ -55,36 +50,36 @@ export default async function RegistrationDetailPage({
     .join(" ");
 
   return (
-    <main className="min-h-screen bg-[#090a0d] px-5 py-10 text-slate-100">
+    <main className="min-h-screen bg-[#e9edee] px-5 py-10 text-[#252b2d]">
       <div className="mx-auto max-w-4xl">
         <Link
-          className="inline-flex items-center gap-2 text-sm font-bold text-violet-400 hover:text-violet-300"
+          className="inline-flex items-center gap-2 text-sm font-bold text-[#527193] hover:text-[#426b9f]"
           href="/admin/registrations"
         >
           <FiArrowLeft aria-hidden="true" />
           Back to registrations
         </Link>
 
-        <header className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+        <header className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-400">
+              <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#527193]">
                 Registration details
               </p>
               <h1 className="mt-2 text-3xl font-bold tracking-tight">
                 {fullName}
               </h1>
-              <p className="mt-2 capitalize text-slate-400">
+              <p className="mt-2 capitalize text-slate-600">
                 {formatStatus(registration.accountStatus)}
               </p>
             </div>
             {registration.emailVerifiedAt ? (
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">
                 <FiCheckCircle aria-hidden="true" />
                 Email verified
               </span>
             ) : (
-              <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-sm font-bold text-amber-300">
+              <span className="rounded-full border border-amber-400/20 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-800">
                 Email not verified
               </span>
             )}
@@ -93,19 +88,16 @@ export default async function RegistrationDetailPage({
 
         {(feedback.feedback === "success" || feedback.feedback === "error") &&
         feedback.message ? (
-          <AdminFeedback
-            kind={feedback.feedback}
-            message={feedback.message}
-          />
+          <AdminFeedback kind={feedback.feedback} message={feedback.message} />
         ) : null}
 
         {!registration.emailVerifiedAt &&
         registration.accountStatus === "PENDING_APPROVAL" ? (
           <section className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/4 p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-amber-200">
+            <h2 className="text-xl font-bold text-amber-800">
               Email verification required
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               Send a new verification link to {registration.email}. The link
               expires after 24 hours and the account is protected by a resend
               limit.
@@ -118,7 +110,7 @@ export default async function RegistrationDetailPage({
                 value={`/admin/registrations/${registration.id}`}
               />
               <AdminActionButton
-                className="inline-flex h-11 items-center gap-2 rounded-lg bg-violet-600 px-5 font-bold text-white transition hover:bg-violet-500"
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-[#242929] text-white px-5 font-bold text-white transition hover:bg-[#242929]"
                 pendingLabel="Sending reminder…"
                 type="submit"
               >
@@ -129,25 +121,25 @@ export default async function RegistrationDetailPage({
           </section>
         ) : null}
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-[#111318] p-6 shadow-sm">
+        <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
           <h2 className="text-xl font-bold">Member information</h2>
           <dl className="mt-5 grid gap-5 sm:grid-cols-2">
             <div>
-              <dt className="text-sm font-semibold text-slate-400">Email</dt>
+              <dt className="text-sm font-semibold text-slate-600">Email</dt>
               <dd className="mt-1 flex items-center gap-2">
-                <FiMail aria-hidden="true" className="text-slate-400" />
+                <FiMail aria-hidden="true" className="text-slate-600" />
                 {registration.email}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-semibold text-slate-400">Phone</dt>
+              <dt className="text-sm font-semibold text-slate-600">Phone</dt>
               <dd className="mt-1 flex items-center gap-2">
-                <FiPhone aria-hidden="true" className="text-slate-400" />
+                <FiPhone aria-hidden="true" className="text-slate-600" />
                 {registration.phone ?? "Not provided"}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-semibold text-slate-400">
+              <dt className="text-sm font-semibold text-slate-600">
                 Requested department
               </dt>
               <dd className="mt-1">
@@ -155,7 +147,7 @@ export default async function RegistrationDetailPage({
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-semibold text-slate-400">
+              <dt className="text-sm font-semibold text-slate-600">
                 Membership status
               </dt>
               <dd className="mt-1 capitalize">
@@ -163,7 +155,7 @@ export default async function RegistrationDetailPage({
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-semibold text-slate-400">
+              <dt className="text-sm font-semibold text-slate-600">
                 Registered
               </dt>
               <dd className="mt-1">
@@ -174,7 +166,7 @@ export default async function RegistrationDetailPage({
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-semibold text-slate-400">
+              <dt className="text-sm font-semibold text-slate-600">
                 Email verified
               </dt>
               <dd className="mt-1">
@@ -191,15 +183,15 @@ export default async function RegistrationDetailPage({
 
         {registration.accountStatus === "ACTIVE" ? (
           <section className="mt-6 rounded-2xl border border-rose-400/20 bg-rose-400/4 p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-rose-300">Suspend account</h2>
-            <p className="mt-2 text-sm text-slate-400">
+            <h2 className="text-xl font-bold text-rose-700">Suspend account</h2>
+            <p className="mt-2 text-sm text-slate-600">
               Suspension immediately blocks protected access while preserving
               the member&apos;s history.
             </p>
             <form action={suspendUser} className="mt-4 flex gap-3">
               <input name="userId" type="hidden" value={registration.id} />
               <input
-                className="h-11 min-w-0 flex-1 rounded-lg border border-white/15 px-3 outline-none focus:border-red-700"
+                className="h-11 min-w-0 flex-1 rounded-lg border border-[#d4dcdd] px-3 outline-none focus:border-red-700"
                 minLength={3}
                 name="reason"
                 placeholder="Reason for suspension"
@@ -217,10 +209,10 @@ export default async function RegistrationDetailPage({
 
         {registration.accountStatus === "SUSPENDED" ? (
           <section className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/4 p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-emerald-300">
+            <h2 className="text-xl font-bold text-emerald-700">
               Reactivate account
             </h2>
-            <p className="mt-2 text-sm text-slate-400">
+            <p className="mt-2 text-sm text-slate-600">
               Reactivation restores access using the member&apos;s existing
               roles and assignments.
             </p>

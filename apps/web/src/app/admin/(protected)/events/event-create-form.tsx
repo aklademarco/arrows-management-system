@@ -19,15 +19,21 @@ export default function EventCreateForm({ children }: { children: ReactNode }) {
   });
 
   return (
-    <form ref={formRef}  action={action} className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <form
+      ref={formRef}
+      action={action}
+      className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+    >
       {children}
       <div className="flex flex-col gap-3 md:col-span-2 lg:col-span-3 lg:flex-row lg:items-center">
         <button
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-violet-600 px-5 font-bold text-white disabled:cursor-wait disabled:opacity-70 md:w-fit"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#242929] text-white px-5 font-bold text-white disabled:cursor-wait disabled:opacity-70 md:w-fit"
           disabled={pending}
           type="submit"
         >
-          {pending ? <FiLoader className="animate-spin" aria-hidden="true" /> : null}
+          {pending ? (
+            <FiLoader className="animate-spin" aria-hidden="true" />
+          ) : null}
           {pending ? "Scheduling event…" : "Schedule event"}
         </button>
         {state.status !== "idle" ? (
@@ -35,8 +41,8 @@ export default function EventCreateForm({ children }: { children: ReactNode }) {
             aria-live="polite"
             className={`inline-flex min-h-11 items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold ${
               state.status === "success"
-                ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
-                : "border-red-400/30 bg-red-400/10 text-red-300"
+                ? "border-emerald-400/30 bg-emerald-50 text-emerald-700"
+                : "border-red-400/30 bg-red-50 text-red-700"
             }`}
             role={state.status === "error" ? "alert" : "status"}
           >

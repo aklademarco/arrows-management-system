@@ -37,10 +37,10 @@ export default async function AttendanceRosterPage({
   ).length;
   const locked = roster.event.status === "CANCELLED";
   return (
-    <main className="min-h-screen bg-[#090a0d] px-5 py-8 text-slate-100">
+    <main className="min-h-screen bg-[#e9edee] px-5 py-8 text-[#252b2d]">
       <div className="mx-auto max-w-7xl">
         <Link
-          className="inline-flex items-center gap-2 font-bold text-violet-400"
+          className="inline-flex items-center gap-2 font-bold text-[#527193]"
           href={`/admin/events/${eventId}`}
         >
           <FiArrowLeft aria-hidden="true" />
@@ -48,20 +48,20 @@ export default async function AttendanceRosterPage({
         </Link>
         <header className="mt-6 flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-400">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#527193]">
               Event attendance
             </p>
             <h1 className="mt-2 text-3xl font-bold">{roster.event.name}</h1>
-            <p className="mt-2 text-slate-400">
+            <p className="mt-2 text-slate-600">
               {attended} of {roster.members.length} members have attendance
               records.
             </p>
           </div>
-          <span className="bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-400">
+          <span className="bg-[#e1eafa] px-3 py-1 text-xs font-bold text-[#527193]">
             {roster.event.status}
           </span>
         </header>
-        <section className="mt-8 divide-y divide-white/10 border-y border-white/10 bg-[#111318]">
+        <section className="mt-8 divide-y divide-[#e1e7e8] rounded-[1.5rem] border border-[#dce3e4] bg-white/70">
           {roster.members.map((member) => (
             <article
               className="grid gap-4 px-5 py-5 lg:grid-cols-[minmax(14rem,1fr)_minmax(18rem,1.4fr)]"
@@ -71,18 +71,18 @@ export default async function AttendanceRosterPage({
                 <h2 className="font-bold">
                   {member.firstName} {member.lastName}
                 </h2>
-                <p className="mt-1 text-sm text-slate-400">{member.email}</p>
+                <p className="mt-1 text-sm text-slate-600">{member.email}</p>
                 {member.attendanceId ? (
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
                     <span className="inline-flex items-center gap-2 bg-green-50 px-3 py-1 font-bold text-green-800">
                       <FiCheckCircle aria-hidden="true" />
                       {member.attendanceStatus?.replaceAll("_", " ")}
                     </span>
-                    <span className="text-slate-400">
+                    <span className="text-slate-600">
                       {member.method?.toLowerCase()}
                     </span>
                     {member.distanceMeters !== null ? (
-                      <span className="inline-flex items-center gap-1 text-slate-400">
+                      <span className="inline-flex items-center gap-1 text-slate-600">
                         <FiMapPin aria-hidden="true" />
                         {member.distanceMeters.toFixed(1)} m
                       </span>
@@ -107,7 +107,7 @@ export default async function AttendanceRosterPage({
                       value={member.attendanceId}
                     />
                     <select
-                      className="h-10 rounded-lg border border-white/15 bg-[#111318] px-3"
+                      className="h-10 rounded-lg border border-[#d4dcdd] bg-white/70 px-3"
                       defaultValue={member.attendanceStatus ?? "ON_TIME"}
                       name="status"
                     >
@@ -118,14 +118,14 @@ export default async function AttendanceRosterPage({
                       <option value="EXCUSED">Excused</option>
                     </select>
                     <input
-                      className="h-10 min-w-0 rounded-lg border border-white/15 px-3"
+                      className="h-10 min-w-0 rounded-lg border border-[#d4dcdd] px-3"
                       minLength={3}
                       name="reviewNote"
                       placeholder="Reason for correction"
                       required
                     />
                     <button
-                      className="h-10 rounded-lg border border-violet-500 px-4 font-bold text-violet-400"
+                      className="h-10 rounded-lg border border-violet-500 px-4 font-bold text-[#527193]"
                       type="submit"
                     >
                       Correct
@@ -143,7 +143,7 @@ export default async function AttendanceRosterPage({
                       value={member.memberId}
                     />
                     <select
-                      className="h-10 rounded-lg border border-white/15 bg-[#111318] px-3"
+                      className="h-10 rounded-lg border border-[#d4dcdd] bg-white/70 px-3"
                       name="status"
                     >
                       <option value="ON_TIME">On time</option>
@@ -151,14 +151,14 @@ export default async function AttendanceRosterPage({
                       <option value="LATE">Late</option>
                     </select>
                     <input
-                      className="h-10 min-w-0 rounded-lg border border-white/15 px-3"
+                      className="h-10 min-w-0 rounded-lg border border-[#d4dcdd] px-3"
                       minLength={3}
                       name="reason"
                       placeholder="Manual attendance reason"
                       required
                     />
                     <button
-                      className="inline-flex h-10 items-center gap-2 rounded-lg bg-violet-600 px-4 font-bold text-white"
+                      className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#242929] text-white px-4 font-bold text-white"
                       type="submit"
                     >
                       <FiUserCheck aria-hidden="true" />
@@ -167,7 +167,7 @@ export default async function AttendanceRosterPage({
                   </form>
                 )
               ) : (
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-600">
                   Cancelled event records are read-only.
                 </p>
               )}

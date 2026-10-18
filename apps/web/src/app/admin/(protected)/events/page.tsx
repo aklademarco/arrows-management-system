@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { FiArrowLeft, FiCalendar, FiFilter, FiMapPin, FiX } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiCalendar,
+  FiFilter,
+  FiMapPin,
+  FiX,
+} from "react-icons/fi";
 import { getAdminResource } from "../registrations/admin-api";
 import EventCreateForm from "./event-create-form";
 
@@ -32,7 +38,11 @@ type GeofenceSettings = {
   maximumAccuracyMeters: number;
 };
 
-export default async function EventsPage({ searchParams }: { searchParams: Promise<{ status?: string; from?: string; to?: string }> }) {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; from?: string; to?: string }>;
+}) {
   const parameters = await searchParams;
   const query = new URLSearchParams();
   if (parameters.status) query.set("status", parameters.status);
@@ -46,37 +56,40 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   const hasFilters = query.size > 0;
 
   return (
-    <main className="min-h-screen bg-[#090a0d] px-5 py-8 text-slate-100">
+    <main className="min-h-screen bg-[#e9edee] px-5 py-8 text-[#252b2d]">
       <div className="mx-auto max-w-7xl">
         <Link
-          className="inline-flex items-center gap-2 font-bold text-violet-400"
+          className="inline-flex items-center gap-2 font-bold text-[#527193]"
           href="/admin/dashboard"
         >
           <FiArrowLeft aria-hidden="true" />
           Back to dashboard
         </Link>
         <header className="mt-6">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-violet-400">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-[#527193]">
             Attendance operations
           </p>
           <h1 className="mt-2 text-3xl font-bold">Events</h1>
-          <p className="mt-2 text-slate-400">
+          <p className="mt-2 text-slate-600">
             Schedule an event and define when eligible members may check in.
           </p>
         </header>
 
-        <section className="mt-8 rounded-xl border border-violet-400/20 bg-violet-400/[0.06] p-5">
+        <section className="mt-8 rounded-xl border border-violet-400/20 bg-[#e1eafa] p-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-400">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#527193]">
                 Automatic schedule
               </p>
-              <h2 className="mt-1 text-xl font-bold">Default Sunday services</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                A specially scheduled event replaces the default for that Sunday.
+              <h2 className="mt-1 text-xl font-bold">
+                Default Sunday services
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                A specially scheduled event replaces the default for that
+                Sunday.
               </p>
             </div>
-            <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
               Active all year
             </span>
           </div>
@@ -85,14 +98,17 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               const hours = Math.floor(service.durationMinutes / 60);
               const minutes = service.durationMinutes % 60;
               return (
-                <article className="rounded-xl border border-white/10 bg-[#111318] p-4" key={service.id}>
-                  <h3 className="font-bold text-white">{service.name}</h3>
-                  <p className="mt-2 text-sm text-slate-300">
+                <article
+                  className="rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-4"
+                  key={service.id}
+                >
+                  <h3 className="font-bold text-slate-900">{service.name}</h3>
+                  <p className="mt-2 text-sm text-slate-700">
                     {service.recurrenceRule === "FIRST_SUNDAY"
                       ? "Every first Sunday"
                       : "Every other Sunday"}
                   </p>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="mt-1 text-sm text-slate-600">
                     Starts {service.startsAtLocal} · {hours}h {minutes}m
                   </p>
                 </article>
@@ -101,14 +117,14 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           </div>
         </section>
 
-        <section className="mt-8 border-y border-white/10 bg-[#111318] py-6">
+        <section className="mt-8 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 py-6">
           <div className="max-w-5xl px-5">
             <h2 className="text-xl font-bold">Schedule event</h2>
             <EventCreateForm>
               <label className="grid gap-1 text-sm font-bold">
                 Event name
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   name="name"
                   required
                 />
@@ -116,7 +132,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Event type
                 <select
-                  className="h-11 rounded-lg border border-white/15 bg-[#111318] px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] bg-white/70 px-3 font-normal"
                   name="eventType"
                 >
                   <option value="YOUTH_SERVICE">Youth service</option>
@@ -127,7 +143,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Location
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   defaultValue={geofenceSettings.locationName}
                   name="locationName"
                 />
@@ -135,7 +151,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Starts
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   name="startsAt"
                   type="datetime-local"
                   required
@@ -144,7 +160,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Ends
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   name="endsAt"
                   type="datetime-local"
                   required
@@ -153,7 +169,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Attendance opens
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   name="attendanceOpensAt"
                   type="datetime-local"
                   required
@@ -162,7 +178,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Early until
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   name="earlyUntil"
                   type="datetime-local"
                 />
@@ -170,7 +186,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Late after
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   name="lateAfter"
                   type="datetime-local"
                   required
@@ -179,18 +195,26 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Attendance closes
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   name="attendanceClosesAt"
                   type="datetime-local"
                   required
                 />
               </label>
-              <input name="latitude" type="hidden" value={geofenceSettings.latitude} />
-              <input name="longitude" type="hidden" value={geofenceSettings.longitude} />
+              <input
+                name="latitude"
+                type="hidden"
+                value={geofenceSettings.latitude}
+              />
+              <input
+                name="longitude"
+                type="hidden"
+                value={geofenceSettings.longitude}
+              />
               <label className="grid gap-1 text-sm font-bold">
                 Boundary radius (m)
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   defaultValue={geofenceSettings.geofenceRadiusMeters}
                   min="1"
                   name="geofenceRadiusMeters"
@@ -201,7 +225,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold">
                 Maximum GPS error (m)
                 <input
-                  className="h-11 rounded-lg border border-white/15 px-3 font-normal"
+                  className="h-11 rounded-lg border border-[#d4dcdd] px-3 font-normal"
                   defaultValue={geofenceSettings.maximumAccuracyMeters}
                   min="1"
                   name="maximumAccuracyMeters"
@@ -212,7 +236,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
               <label className="grid gap-1 text-sm font-bold md:col-span-2 lg:col-span-3">
                 Description
                 <textarea
-                  className="min-h-24 rounded-lg border border-white/15 p-3 font-normal"
+                  className="min-h-24 rounded-lg border border-[#d4dcdd] p-3 font-normal"
                   name="description"
                 />
               </label>
@@ -222,52 +246,104 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
 
         <section className="mt-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <div><h2 className="text-xl font-bold">Event directory</h2><p className="mt-1 text-sm text-slate-400">{events.length} matching event{events.length === 1 ? "" : "s"}</p></div>
+            <div>
+              <h2 className="text-xl font-bold">Event directory</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {events.length} matching event{events.length === 1 ? "" : "s"}
+              </p>
+            </div>
           </div>
-          <form className="mt-4 grid gap-3 rounded-xl border border-white/10 bg-[#111318] p-4 md:grid-cols-[13rem_1fr_1fr_auto_auto]">
-            <select className="h-11 rounded-lg border border-white/15 px-3" defaultValue={parameters.status ?? ""} name="status">
+          <form className="mt-4 grid gap-3 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-4 md:grid-cols-[13rem_1fr_1fr_auto_auto]">
+            <select
+              className="h-11 rounded-lg border border-[#d4dcdd] px-3"
+              defaultValue={parameters.status ?? ""}
+              name="status"
+            >
               <option value="">All statuses</option>
-              <option value="DRAFT">Draft</option><option value="SCHEDULED">Scheduled</option><option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option>
+              <option value="DRAFT">Draft</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="ACTIVE">Active</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
-            <label className="grid gap-1 text-xs font-semibold text-slate-400"><span>From</span><input className="h-11 rounded-lg border border-white/15 px-3" defaultValue={parameters.from} name="from" type="date" /></label>
-            <label className="grid gap-1 text-xs font-semibold text-slate-400"><span>To</span><input className="h-11 rounded-lg border border-white/15 px-3" defaultValue={parameters.to} name="to" type="date" /></label>
-            <button className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-lg bg-slate-100 px-4 font-bold text-slate-950 hover:bg-white"><FiFilter /> Filter</button>
-            {hasFilters ? <Link className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-lg border border-white/10 px-4 text-sm font-semibold text-slate-300 hover:border-white/20" href="/admin/events"><FiX /> Clear</Link> : null}
-          </form>
-          {events.length === 0 ? <div className="mt-4 grid min-h-48 place-items-center rounded-xl border border-dashed border-white/15 bg-[#111318] text-center"><div><FiCalendar className="mx-auto text-4xl text-violet-400" /><p className="mt-3 font-bold">No events match these filters</p></div></div> : <div className="mt-4 divide-y divide-white/10 border-y border-white/10 bg-[#111318]">
-            {events.map((event) => (
-              <article
-                className="grid gap-3 px-5 py-5 md:grid-cols-[1fr_auto]"
-                key={event.id}
+            <label className="grid gap-1 text-xs font-semibold text-slate-600">
+              <span>From</span>
+              <input
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3"
+                defaultValue={parameters.from}
+                name="from"
+                type="date"
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-semibold text-slate-600">
+              <span>To</span>
+              <input
+                className="h-11 rounded-lg border border-[#d4dcdd] px-3"
+                defaultValue={parameters.to}
+                name="to"
+                type="date"
+              />
+            </label>
+            <button className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-lg bg-slate-100 px-4 font-bold text-slate-950 hover:bg-white">
+              <FiFilter /> Filter
+            </button>
+            {hasFilters ? (
+              <Link
+                className="inline-flex h-11 items-center justify-center gap-2 self-end rounded-lg border border-[#dce3e4] px-4 text-sm font-semibold text-slate-700 hover:border-[#bcc9cc]"
+                href="/admin/events"
               >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <FiCalendar className="text-violet-400" aria-hidden="true" />
-                    <h3 className="font-bold">{event.name}</h3>
+                <FiX /> Clear
+              </Link>
+            ) : null}
+          </form>
+          {events.length === 0 ? (
+            <div className="mt-4 grid min-h-48 place-items-center rounded-xl border border-dashed border-[#d4dcdd] bg-white/70 text-center">
+              <div>
+                <FiCalendar className="mx-auto text-4xl text-[#527193]" />
+                <p className="mt-3 font-bold">No events match these filters</p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 divide-y divide-[#e1e7e8] rounded-[1.5rem] border border-[#dce3e4] bg-white/70">
+              {events.map((event) => (
+                <article
+                  className="grid gap-3 px-5 py-5 md:grid-cols-[1fr_auto]"
+                  key={event.id}
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <FiCalendar
+                        className="text-[#527193]"
+                        aria-hidden="true"
+                      />
+                      <h3 className="font-bold">{event.name}</h3>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {new Intl.DateTimeFormat("en-GH", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }).format(new Date(event.startsAt))}
+                    </p>
+                    <p className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                      <FiMapPin aria-hidden="true" />
+                      {event.locationName ?? "No location"}
+                    </p>
+                    <Link
+                      className="mt-3 inline-flex text-sm font-bold text-[#527193]"
+                      href={`/admin/events/${event.id}`}
+                    >
+                      Manage event
+                    </Link>
                   </div>
-                  <p className="mt-2 text-sm text-slate-400">
-                    {new Intl.DateTimeFormat("en-GH", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(event.startsAt))}
-                  </p>
-                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-400">
-                    <FiMapPin aria-hidden="true" />
-                    {event.locationName ?? "No location"}
-                  </p>
-                  <Link
-                    className="mt-3 inline-flex text-sm font-bold text-violet-400"
-                    href={`/admin/events/${event.id}`}
+                  <span
+                    className={`h-fit rounded-full border px-3 py-1 text-xs font-bold ${event.status === "CANCELLED" ? "border-rose-400/20 bg-rose-50 text-rose-700" : event.status === "COMPLETED" ? "border-emerald-400/20 bg-emerald-50 text-emerald-700" : event.status === "ACTIVE" ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-700" : "border-violet-400/20 bg-[#e1eafa] text-[#426b9f]"}`}
                   >
-                    Manage event
-                  </Link>
-                </div>
-                <span className={`h-fit rounded-full border px-3 py-1 text-xs font-bold ${event.status === "CANCELLED" ? "border-rose-400/20 bg-rose-400/10 text-rose-300" : event.status === "COMPLETED" ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : event.status === "ACTIVE" ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300" : "border-violet-400/20 bg-violet-400/10 text-violet-300"}`}>
-                  {event.status}
-                </span>
-              </article>
-            ))}
-          </div>}
+                    {event.status}
+                  </span>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </main>
