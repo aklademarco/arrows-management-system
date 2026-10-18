@@ -53,7 +53,9 @@ body {
 }
 
 .admin-shell {
-  color-scheme: dark;
+  color-scheme: light;
+  color: #252b2d;
+  background: #e9edee;
 }
 
 .leader-shell {
@@ -578,29 +580,43 @@ html[data-theme="dark"] .auth-shell :is(input, select, textarea)::placeholder {
   color: #8f8799;
 }
 
-.admin-shell
-  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+/* Shared administration controls, independent of member/pastor themes. */
+.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
 .admin-shell select,
 .admin-shell textarea {
-  background-color: #0d0f13;
-  color: #e2e8f0;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  background-color: #fff;
+  color: #252b2d;
+  border-color: #cdd7d9;
+  border-radius: 0.8rem;
 }
-
 .admin-shell input::placeholder,
-.admin-shell textarea::placeholder {
-  color: #64748b;
+.admin-shell textarea::placeholder { color: #68787c; }
+.admin-shell select option { background: #fff; color: #252b2d; }
+.admin-shell :is(input, select, textarea):disabled { color: #68787c; opacity: 0.7; }
+.admin-shell :is(input, select, textarea):focus-visible { outline: 2px solid #527193; outline-offset: 2px; }
+.admin-shell :is(button, a, summary):focus-visible { outline: 2px solid #527193; outline-offset: 3px; }
+.admin-shell main:not(.admin-journey) { padding: 1.5rem 1rem 2.5rem; }
+.admin-shell main > div { min-width: 0; }
+.admin-shell :is(form, fieldset, label, article, section, dl, dd) { min-width: 0; }
+.admin-shell :is(h1, h2, h3, p, dd) { overflow-wrap: anywhere; }
+.admin-shell h1 { font-weight: 600; letter-spacing: -0.04em; }
+.admin-shell button { min-height: 44px; }
+.admin-shell .grid > * { min-width: 0; }
+.admin-shell pre { max-width: 100%; overflow-x: auto; }
+@media (min-width: 640px) {
+  .admin-shell main:not(.admin-journey) { padding: 1.5rem 1.5rem 2.5rem; }
 }
-
-.admin-shell select option {
-  background-color: #111318;
-  color: #e2e8f0;
+@media (min-width: 1024px) {
+  .admin-shell main:not(.admin-journey) { padding-left: 1rem; padding-right: 2rem; }
 }
-
-.admin-shell input:disabled,
-.admin-shell select:disabled,
-.admin-shell textarea:disabled {
-  color: #64748b;
-  opacity: 0.75;
+@media (max-width: 639px) {
+  .admin-shell h1 { font-size: 1.75rem; }
+  .admin-shell :is(form, label) input:not([type="checkbox"]):not([type="radio"]),
+  .admin-shell :is(select, textarea) { font-size: 16px; }
+  .admin-shell nav:not([aria-label="Care queue filters"]) { gap: 0.75rem; flex-wrap: wrap; }
 }
 
 .member-primary-action {
@@ -667,5 +683,22 @@ html[data-theme="dark"] .auth-shell :is(input, select, textarea)::placeholder {
 @media (prefers-reduced-motion: reduce) {
   .check-in-photo {
     animation: none;
+  }
+}
+
+/* The administration overview uses the soft, connected journey workspace. */
+.admin-journey { color: #252b2d; background: #e9edee; }
+.journey-tone-blue { background: #e1eafa; color: #426b9f; }
+.journey-tone-green { background: #e1ece4; color: #426e53; }
+.journey-tone-peach { background: #f5e7dc; color: #93613d; }
+.journey-tone-rose { background: #f3e1df; color: #975951; }
+@media (min-width: 1280px) {
+  .journey-stage:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: -1.25rem;
+    top: calc(50% + 5px);
+    width: 1.25rem;
+    border-top: 1px solid #91acd4;
   }
 }

@@ -22,13 +22,13 @@ export function DutyAssignmentForm({
     <form action={action} className="mt-3 flex flex-wrap items-end gap-2">
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="itemId" value={itemId} />
-      <label className="grid gap-1 text-xs text-slate-300">
+      <label className="grid gap-1 text-xs text-slate-700">
         Assigned member
         <select
           name="memberId"
           defaultValue={memberId ?? ""}
           disabled={pending}
-          className="min-h-11 max-w-60 rounded-lg border border-slate-600 bg-slate-900 px-2 text-sm text-white"
+          className="min-h-11 max-w-60 rounded-lg border border-slate-600 bg-white px-2 text-sm text-slate-900"
         >
           <option value="">Unassigned</option>
           {memberId && !members.some((member) => member.id === memberId) && (
@@ -46,14 +46,14 @@ export function DutyAssignmentForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-11 rounded-lg bg-violet-600 px-3 text-xs font-bold disabled:opacity-50"
+        className="min-h-11 rounded-lg bg-[#242929] text-white px-3 text-xs font-bold disabled:opacity-50"
       >
         {pending ? "Saving…" : "Save assignment"}
       </button>
       {state.message && (
         <p
           role="status"
-          className={`w-full text-xs ${state.success ? "text-emerald-300" : "text-red-300"}`}
+          className={`w-full text-xs ${state.success ? "text-emerald-700" : "text-red-700"}`}
         >
           {state.message}
         </p>

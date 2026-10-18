@@ -29,9 +29,7 @@ function RecenterMap({ center }: Pick<GeofenceMapProps, "center">) {
   return null;
 }
 
-function CenterSelector({
-  onMapClick,
-}: Pick<GeofenceMapProps, "onMapClick">) {
+function CenterSelector({ onMapClick }: Pick<GeofenceMapProps, "onMapClick">) {
   useMapEvents({
     click(event) {
       onMapClick({
@@ -69,32 +67,55 @@ export default function GeofenceMap({
       />
       <Circle
         center={position}
-        pathOptions={{ color: "#166534", fillColor: "#22c55e", fillOpacity: 0.14 }}
+        pathOptions={{
+          color: "#166534",
+          fillColor: "#22c55e",
+          fillOpacity: 0.14,
+        }}
         radius={radiusMeters}
       />
       {reading && readingPosition ? (
         <>
           <Circle
             center={readingPosition}
-            pathOptions={{ color: "#0369a1", fillColor: "#38bdf8", fillOpacity: 0.18 }}
+            pathOptions={{
+              color: "#0369a1",
+              fillColor: "#38bdf8",
+              fillOpacity: 0.18,
+            }}
             radius={reading.accuracyMeters}
           />
           <CircleMarker
             center={readingPosition}
-            pathOptions={{ color: "white", fillColor: "#0369a1", fillOpacity: 1, weight: 3 }}
+            pathOptions={{
+              color: "white",
+              fillColor: "#0369a1",
+              fillOpacity: 1,
+              weight: 3,
+            }}
             radius={7}
           />
         </>
       ) : null}
       <CircleMarker
         center={position}
-        pathOptions={{ color: "white", fillColor: "#166534", fillOpacity: 1, weight: 3 }}
+        pathOptions={{
+          color: "white",
+          fillColor: "#166534",
+          fillOpacity: 1,
+          weight: 3,
+        }}
         radius={8}
       />
       {testPoint ? (
         <CircleMarker
           center={[testPoint.latitude, testPoint.longitude]}
-          pathOptions={{ color: "white", fillColor: "#c2410c", fillOpacity: 1, weight: 3 }}
+          pathOptions={{
+            color: "white",
+            fillColor: "#c2410c",
+            fillOpacity: 1,
+            weight: 3,
+          }}
           radius={7}
         />
       ) : null}

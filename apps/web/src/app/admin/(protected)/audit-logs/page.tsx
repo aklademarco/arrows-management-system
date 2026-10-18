@@ -41,10 +41,10 @@ export default async function AuditLogsPage({
     if (parameters[key]) query.set(key, parameters[key]);
   const result = await getAdminResource<AuditPage>(`/audit-logs?${query}`);
   return (
-    <main className="admin-grid-background min-h-[calc(100vh-3.5rem)] bg-[#090a0d] px-4 py-7 text-slate-100 sm:px-6 lg:px-10 lg:py-9">
+    <main className="admin-grid-background min-h-[calc(100vh-3.5rem)] bg-[#e9edee] px-4 py-7 text-[#252b2d] sm:px-6 lg:px-10 lg:py-9">
       <div className="mx-auto max-w-7xl">
         <header>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
             <span>Arrows ACMS</span>
             <span>/</span>
             <span>Security</span>
@@ -52,65 +52,65 @@ export default async function AuditLogsPage({
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
             Audit logs
           </h1>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-slate-600">
             An immutable timeline of important administrative and security
             actions.
           </p>
         </header>
-        <form className="mt-7 grid gap-3 rounded-xl border border-white/10 bg-[#111318] p-4 lg:grid-cols-[1.2fr_1fr_1fr_1fr_auto]">
+        <form className="mt-7 grid gap-3 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-4 lg:grid-cols-[1.2fr_1fr_1fr_1fr_auto]">
           <input
-            className="h-10 rounded-lg border border-white/10 bg-[#090a0d] px-3 text-sm"
+            className="h-10 rounded-lg border border-[#dce3e4] bg-[#e9edee] px-3 text-sm"
             defaultValue={parameters.action}
             name="action"
             placeholder="Action contains…"
           />
           <input
-            className="h-10 rounded-lg border border-white/10 bg-[#090a0d] px-3 text-sm"
+            className="h-10 rounded-lg border border-[#dce3e4] bg-[#e9edee] px-3 text-sm"
             defaultValue={parameters.entityType}
             name="entityType"
             placeholder="Entity type…"
           />
           <input
             aria-label="From date"
-            className="h-10 rounded-lg border border-white/10 bg-[#090a0d] px-3 text-sm [color-scheme:dark]"
+            className="h-10 rounded-lg border border-[#dce3e4] bg-[#e9edee] px-3 text-sm [color-scheme:dark]"
             defaultValue={parameters.from}
             name="from"
             type="date"
           />
           <input
             aria-label="To date"
-            className="h-10 rounded-lg border border-white/10 bg-[#090a0d] px-3 text-sm [color-scheme:dark]"
+            className="h-10 rounded-lg border border-[#dce3e4] bg-[#e9edee] px-3 text-sm [color-scheme:dark]"
             defaultValue={parameters.to}
             name="to"
             type="date"
           />
-          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-violet-500 px-5 text-sm font-semibold">
+          <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#242929] text-white px-5 text-sm font-semibold">
             <FiFilter /> Filter
           </button>
         </form>
-        <section className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-[#111318]">
-          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <section className="mt-6 overflow-hidden rounded-[1.5rem] border border-[#dce3e4] bg-white/70">
+          <div className="flex flex-wrap items-center justify-between border-b border-[#dce3e4] px-5 py-4">
             <div>
               <h2 className="font-semibold">Security timeline</h2>
-              <p className="mt-0.5 text-xs text-slate-400">
+              <p className="mt-0.5 text-xs text-slate-600">
                 {result.total} recorded actions
               </p>
             </div>
-            <FiShield className="text-violet-300" />
+            <FiShield className="text-[#426b9f]" />
           </div>
           {result.items.length === 0 ? (
-            <div className="grid min-h-52 place-items-center text-sm text-slate-400">
+            <div className="grid min-h-52 place-items-center text-sm text-slate-600">
               No audit actions match these filters.
             </div>
           ) : (
-            <div className="divide-y divide-white/[0.07]">
+            <div className="divide-y divide-[#e1e7e8]">
               {result.items.map((item) => (
                 <article
                   className="grid gap-4 px-5 py-4 lg:grid-cols-[12rem_1fr_13rem]"
                   key={item.id}
                 >
                   <div>
-                    <p className="text-xs font-semibold text-slate-300">
+                    <p className="text-xs font-semibold text-slate-700">
                       {new Intl.DateTimeFormat("en-GH", {
                         dateStyle: "medium",
                         timeStyle: "medium",
@@ -123,10 +123,10 @@ export default async function AuditLogsPage({
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-violet-400/10 px-2 py-1 text-xs font-semibold text-violet-300">
+                      <span className="rounded-md bg-[#e1eafa] px-2 py-1 text-xs font-semibold text-[#426b9f]">
                         {item.action}
                       </span>
-                      <span className="text-xs font-semibold text-slate-400">
+                      <span className="text-xs font-semibold text-slate-600">
                         {item.entityType}
                       </span>
                     </div>
@@ -146,14 +146,14 @@ export default async function AuditLogsPage({
           )}
         </section>
         {result.totalPages > 1 ? (
-          <nav className="mt-5 flex items-center justify-between text-sm">
+          <nav className="mt-5 flex flex-wrap items-center justify-between text-sm">
             <PageLink
               disabled={result.page <= 1}
               label="← Previous"
               page={result.page - 1}
               parameters={parameters}
             />
-            <span className="text-slate-400">
+            <span className="text-slate-600">
               Page {result.page} of {result.totalPages}
             </span>
             <PageLink
@@ -173,10 +173,10 @@ function AuditDetails({ item }: { item: AuditItem }) {
   if (!item.previousData && !item.newData && !item.metadata) return null;
   return (
     <details className="mt-3">
-      <summary className="cursor-pointer text-xs font-semibold text-slate-400 hover:text-slate-200">
+      <summary className="cursor-pointer text-xs font-semibold text-slate-600 hover:text-slate-800">
         View recorded changes
       </summary>
-      <pre className="mt-2 max-h-72 overflow-auto rounded-lg bg-[#090a0d] p-3 text-[11px] leading-5 text-slate-400">
+      <pre className="mt-2 max-h-72 overflow-auto rounded-lg bg-[#e9edee] p-3 text-[11px] leading-5 text-slate-600">
         {JSON.stringify(
           {
             previous: item.previousData,
@@ -209,7 +209,7 @@ function PageLink({
   query.set("page", String(page));
   return (
     <a
-      className="font-semibold text-violet-300 hover:text-violet-200"
+      className="font-semibold text-[#426b9f] hover:text-[#426b9f]"
       href={`?${query}`}
     >
       {label}

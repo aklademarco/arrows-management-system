@@ -31,7 +31,7 @@ const memberNavigation = [
   { href: "/member/profile", label: "Profile", icon: FiUser },
 ];
 
-const adminNavigation = [
+export const adminNavigation = [
   { href: "/admin/dashboard", label: "Overview", icon: FiGrid },
   { href: "/admin/members", label: "Members", icon: FiUsers },
   { href: "/admin/registrations", label: "Approvals", icon: FiUserCheck },
