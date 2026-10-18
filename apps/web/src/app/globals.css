@@ -10,6 +10,31 @@
   --acms-cyan: #27c4d8;
 }
 
+@theme {
+  --color-night: #070b18;
+  --color-ink: #f6f4ef;
+  --color-muted: #c9ccd8;
+  --color-accent: #6d7dff;
+  --color-glow: #3de0c0;
+
+  --animate-slide: slide-fade 24s infinite;
+  --animate-bar: bar-fill 24s infinite;
+
+  @keyframes slide-fade {
+    0%   { opacity: 0; transform: scale(1.04); }
+    5%   { opacity: 1; }
+    25%  { opacity: 1; }
+    30%  { opacity: 0; transform: scale(1.12); }
+    100% { opacity: 0; }
+  }
+  @keyframes bar-fill {
+    0%      { transform: scaleX(0); }
+    25%     { transform: scaleX(1); }
+    25.01%, 100% { transform: scaleX(0); }
+  }
+}
+
+
 html[data-theme="dark"] {
   --background: #0e1621;
   --foreground: #ebf1f7;
