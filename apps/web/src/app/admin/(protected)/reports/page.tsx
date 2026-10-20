@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import { getAdminResource } from "../registrations/admin-api";
 
+type ReportEvent = { id: string; name: string; startsAt: string };
 type Department = { id: string; name: string; isActive: boolean };
 type AttendanceReport = {
   from: string;
@@ -29,6 +30,12 @@ type AttendanceReport = {
     eventId: string;
     eventName: string;
     startsAt: string;
+    late: number;
+    lateMembers: {
+      memberId: string;
+      displayName: string;
+      checkedInAt: string | null;
+    }[];
     total: number;
     attended: number;
     absent: number;
@@ -84,12 +91,20 @@ type AttendanceReport = {
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; departmentId?: string }>;
+  searchParams: Promise<{ eventId?: string; departmentId?: string }>;
 }) {
   const parameters = await searchParams;
   const query = new URLSearchParams();
-  if (parameters.from) query.set("from", parameters.from);
-  if (parameters.to) query.set("to", parameters.to);
+  const availableEvents = (
+    await getAdminResource<ReportEvent[]>("/events")
+  ).sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+  const now = new Date().getTime();
+  const selectedEventId =
+    parameters.eventId ||
+    availableEvents.find((event) => Date.parse(event.startsAt) <= now)
+      ?.id ||
+    availableEvents[0]?.id;
+  if (selectedEventId) query.set("eventId", selectedEventId);
   if (parameters.departmentId)
     query.set("departmentId", parameters.departmentId);
   const exportHref = `/admin/reports/export?${query}`;
@@ -138,7 +153,7 @@ export default async function ReportsPage({
               Attendance reports
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Measure participation and punctuality across a selected period or
+              View attendance and late arrivals for a selected event and
               department.
             </p>
           </div>
@@ -149,24 +164,28 @@ export default async function ReportsPage({
             <FiDownload /> Export CSV
           </a>
         </header>
-        <form className="mt-7 grid gap-3 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-4 lg:grid-cols-[1fr_1fr_1.4fr_auto]">
-          <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
-            From
-            <input
-              className="h-10 rounded-lg border border-[#dce3e4] bg-[#e9edee] px-3 text-sm text-[#252b2d] [color-scheme:dark]"
-              defaultValue={report.from}
-              name="from"
-              type="date"
-            />
-          </label>
-          <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
-            To
-            <input
-              className="h-10 rounded-lg border border-[#dce3e4] bg-[#e9edee] px-3 text-sm text-[#252b2d] [color-scheme:dark]"
-              defaultValue={report.to}
-              name="to"
-              type="date"
-            />
+        <form className="mt-7 grid gap-3 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-4 lg:grid-cols-[2fr_1fr_auto]">
+          <label className="grid min-w-0 gap-1.5 text-xs font-semibold text-slate-600">
+            Event
+            <select
+              name="eventId"
+              defaultValue={selectedEventId ?? ""}
+              className="min-h-11 min-w-0 rounded-lg border border-[#dce3e4] bg-white px-3 text-base"
+            >
+              {availableEvents.length === 0 && (
+                <option value="">No events available</option>
+              )}
+              {availableEvents.map((event) => (
+                <option key={event.id} value={event.id}>
+                  {event.name} ·{" "}
+                  {new Intl.DateTimeFormat("en-GH", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                    timeZone: "Africa/Accra",
+                  }).format(new Date(event.startsAt))}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="grid gap-1.5 text-xs font-semibold text-slate-600">
             Department
@@ -215,9 +234,7 @@ export default async function ReportsPage({
           <div className="flex flex-wrap items-center justify-between border-b border-[#dce3e4] px-5 py-4">
             <div>
               <h2 className="font-semibold">Attendance by event</h2>
-              <p className="mt-0.5 text-xs text-slate-600">
-                {report.from} to {report.to}
-              </p>
+              <p className="mt-0.5 text-xs text-slate-600">Selected event</p>
             </div>
             <FiBarChart2 className="text-slate-600" />
           </div>
@@ -227,7 +244,7 @@ export default async function ReportsPage({
                 <FiUsers className="mx-auto text-3xl text-slate-600" />
                 <h3 className="mt-3 font-semibold">No attendance records</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  Try another date range or department.
+                  Try another event or department.
                 </p>
               </div>
             </div>
@@ -235,7 +252,7 @@ export default async function ReportsPage({
             <div className="divide-y divide-[#e1e7e8]">
               {report.events.map((event) => (
                 <article
-                  className="grid gap-4 px-5 py-4 xl:grid-cols-[minmax(0,1fr)_repeat(4,minmax(5rem,auto))] sm:items-center"
+                  className="grid gap-4 px-5 py-4 xl:grid-cols-[minmax(0,1fr)_repeat(5,minmax(5rem,auto))] sm:items-center"
                   key={event.eventId}
                 >
                   <div>
@@ -250,12 +267,58 @@ export default async function ReportsPage({
                   </div>
                   <Metric label="Records" value={event.total} />
                   <Metric label="Attended" value={event.attended} />
+                  <Metric label="Late" value={event.late} />
                   <Metric label="Absent" value={event.absent} />
                   <Metric label="Excused" value={event.excused} />
                 </article>
               ))}
             </div>
           )}
+        </section>
+        <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-5">
+          <h2 className="font-semibold">Late arrivals by event</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Members recorded as late, grouped by their event.
+          </p>
+          {report.events.length === 0 && (
+            <p className="mt-4 text-sm text-slate-600">
+              No attendance records for this event.
+            </p>
+          )}
+          {report.events.map((event) => (
+            <article
+              key={event.eventId}
+              className="mt-5 rounded-xl border border-[#dce3e4] p-4"
+            >
+              <h3 className="font-semibold">
+                {event.eventName} · {event.late} late
+              </h3>
+              <p className="mt-1 text-xs text-slate-600">
+                {new Intl.DateTimeFormat("en-GH", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                  timeZone: "Africa/Accra",
+                }).format(new Date(event.startsAt))}
+              </p>
+              {event.lateMembers.length === 0 ? (
+                <p className="mt-3 text-sm text-slate-600">
+                  No late arrivals recorded.
+                </p>
+              ) : (
+                <ul className="mt-3 divide-y divide-[#e1e7e8]">
+                  {event.lateMembers.map((member) => (
+                    <li
+                      key={member.memberId}
+                      className="flex flex-wrap justify-between gap-2 py-3 text-sm"
+                    >
+                      <span>{member.displayName}</span>
+                      <span className="font-semibold text-amber-700">Late</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </article>
+          ))}
         </section>
         <section className="mt-6 overflow-hidden rounded-[1.5rem] border border-[#dce3e4] bg-white/70">
           <div className="flex flex-wrap items-center justify-between border-b border-[#dce3e4] px-5 py-4">
@@ -380,7 +443,7 @@ export default async function ReportsPage({
           <ReportList
             title="Repeated absences"
             description="Two or more unexcused absences"
-            empty="No repeated absences in this period."
+            empty="No repeated absences for this event."
           >
             {report.repeatedAbsences.map((member) => (
               <div
@@ -402,7 +465,7 @@ export default async function ReportsPage({
           <ReportList
             title="Manual attendance"
             description="Administrator-entered records"
-            empty="No manual attendance in this period."
+            empty="No manual attendance for this event."
           >
             {report.manualAttendance.map((record) => (
               <div className="px-5 py-4" key={record.attendanceId}>

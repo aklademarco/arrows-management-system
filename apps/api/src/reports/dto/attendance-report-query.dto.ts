@@ -11,5 +11,9 @@ export class AttendanceReportQueryDto {
 
   @IsOptional()
   @IsUUID()
+  eventId?: string;
+
+  @IsOptional()
+  @IsUUID()
   departmentId?: string;
 }
