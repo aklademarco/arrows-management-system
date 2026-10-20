@@ -1,12 +1,7 @@
 import Link from "next/link";
-import {
-  FiArrowLeft,
-  FiCheckCircle,
-  FiMapPin,
-  FiUserCheck,
-} from "react-icons/fi";
+import { FiArrowLeft, FiCheckCircle, FiMapPin } from "react-icons/fi";
 import { getAdminResource } from "../../../registrations/admin-api";
-import { correctAttendance, markManualAttendance } from "./actions";
+import { AttendanceForm } from "./attendance-form";
 
 type Member = {
   memberId: string;
@@ -25,15 +20,23 @@ type Roster = {
 
 export default async function AttendanceRosterPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ eventId: string }>;
+  searchParams: Promise<{ search?: string }>;
 }) {
   const { eventId } = await params;
   const roster = await getAdminResource<Roster>(
     `/attendance/events/${eventId}`,
   );
-  const attended = roster.members.filter(
-    (member) => member.attendanceId,
+  const { search = "" } = await searchParams;
+  const members = roster.members.filter((member) =>
+    `${member.firstName} ${member.lastName} ${member.email}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase()),
+  );
+  const attended = roster.members.filter((member) =>
+    ["EARLY", "ON_TIME", "LATE"].includes(member.attendanceStatus ?? ""),
   ).length;
   const locked = roster.event.status === "CANCELLED";
   return (
@@ -41,10 +44,10 @@ export default async function AttendanceRosterPage({
       <div className="mx-auto max-w-7xl">
         <Link
           className="inline-flex items-center gap-2 font-bold text-[#527193]"
-          href={`/admin/events/${eventId}`}
+          href="/admin/attendance"
         >
           <FiArrowLeft aria-hidden="true" />
-          Back to event
+          Choose another event
         </Link>
         <header className="mt-6 flex flex-wrap items-end justify-between gap-5">
           <div>
@@ -53,16 +56,38 @@ export default async function AttendanceRosterPage({
             </p>
             <h1 className="mt-2 text-3xl font-bold">{roster.event.name}</h1>
             <p className="mt-2 text-slate-600">
-              {attended} of {roster.members.length} members have attendance
-              records.
+              {attended} of {roster.members.length} members are present.
             </p>
           </div>
           <span className="bg-[#e1eafa] px-3 py-1 text-xs font-bold text-[#527193]">
             {roster.event.status}
           </span>
         </header>
+        <form className="mt-6 flex flex-wrap items-end gap-3">
+          <label className="grid flex-1 gap-2 text-sm font-semibold">
+            Find a member
+            <input
+              name="search"
+              defaultValue={search}
+              placeholder="Search name or email"
+              className="min-h-11 min-w-0 rounded-xl border border-[#d4dcdd] bg-white px-4 text-base"
+            />
+          </label>
+          <button className="min-h-11 rounded-full bg-[#242929] px-6 font-semibold text-white">
+            Search
+          </button>
+          <Link
+            href={`/admin/events/${eventId}/attendance`}
+            className="inline-flex min-h-11 items-center px-3 font-semibold"
+          >
+            Clear
+          </Link>
+        </form>
         <section className="mt-8 divide-y divide-[#e1e7e8] rounded-[1.5rem] border border-[#dce3e4] bg-white/70">
-          {roster.members.map((member) => (
+          {members.length === 0 && (
+            <p className="p-5 text-slate-600">No members match this search.</p>
+          )}
+          {members.map((member) => (
             <article
               className="grid gap-4 px-5 py-5 lg:grid-cols-[minmax(14rem,1fr)_minmax(18rem,1.4fr)]"
               key={member.memberId}
@@ -71,10 +96,12 @@ export default async function AttendanceRosterPage({
                 <h2 className="font-bold">
                   {member.firstName} {member.lastName}
                 </h2>
-                <p className="mt-1 text-sm text-slate-600">{member.email}</p>
+                <p className="mt-1 break-all text-sm text-slate-600">
+                  {member.email}
+                </p>
                 {member.attendanceId ? (
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                    <span className="inline-flex items-center gap-2 bg-green-50 px-3 py-1 font-bold text-green-800">
+                    <span className="inline-flex items-center gap-2 bg-slate-100 px-3 py-1 font-bold text-slate-800">
                       <FiCheckCircle aria-hidden="true" />
                       {member.attendanceStatus?.replaceAll("_", " ")}
                     </span>
@@ -94,82 +121,24 @@ export default async function AttendanceRosterPage({
                   </p>
                 )}
               </div>
-              {!locked ? (
-                member.attendanceId ? (
-                  <form
-                    action={correctAttendance}
-                    className="grid gap-2 sm:grid-cols-[10rem_1fr_auto]"
-                  >
-                    <input name="eventId" type="hidden" value={eventId} />
-                    <input
-                      name="attendanceId"
-                      type="hidden"
-                      value={member.attendanceId}
-                    />
-                    <select
-                      className="h-10 rounded-lg border border-[#d4dcdd] bg-white/70 px-3"
-                      defaultValue={member.attendanceStatus ?? "ON_TIME"}
-                      name="status"
-                    >
-                      <option value="EARLY">Early</option>
-                      <option value="ON_TIME">On time</option>
-                      <option value="LATE">Late</option>
-                      <option value="ABSENT">Absent</option>
-                      <option value="EXCUSED">Excused</option>
-                    </select>
-                    <input
-                      className="h-10 min-w-0 rounded-lg border border-[#d4dcdd] px-3"
-                      minLength={3}
-                      name="reviewNote"
-                      placeholder="Reason for correction"
-                      required
-                    />
-                    <button
-                      className="h-10 rounded-lg border border-violet-500 px-4 font-bold text-[#527193]"
-                      type="submit"
-                    >
-                      Correct
-                    </button>
-                  </form>
-                ) : (
-                  <form
-                    action={markManualAttendance}
-                    className="grid gap-2 sm:grid-cols-[10rem_1fr_auto]"
-                  >
-                    <input name="eventId" type="hidden" value={eventId} />
-                    <input
-                      name="memberId"
-                      type="hidden"
-                      value={member.memberId}
-                    />
-                    <select
-                      className="h-10 rounded-lg border border-[#d4dcdd] bg-white/70 px-3"
-                      name="status"
-                    >
-                      <option value="ON_TIME">On time</option>
-                      <option value="EARLY">Early</option>
-                      <option value="LATE">Late</option>
-                    </select>
-                    <input
-                      className="h-10 min-w-0 rounded-lg border border-[#d4dcdd] px-3"
-                      minLength={3}
-                      name="reason"
-                      placeholder="Manual attendance reason"
-                      required
-                    />
-                    <button
-                      className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#242929] text-white px-4 font-bold text-white"
-                      type="submit"
-                    >
-                      <FiUserCheck aria-hidden="true" />
-                      Mark
-                    </button>
-                  </form>
-                )
-              ) : (
+              {locked ? (
                 <p className="text-sm text-slate-600">
                   Cancelled event records are read-only.
                 </p>
+              ) : !member.attendanceId &&
+                roster.event.status === "COMPLETED" ? (
+                <p className="text-sm text-slate-600">
+                  This event is finalized. Only existing attendance records can
+                  be corrected.
+                </p>
+              ) : (
+                <AttendanceForm
+                  eventId={eventId}
+                  memberId={member.memberId}
+                  attendanceId={member.attendanceId}
+                  status={member.attendanceStatus}
+                  memberName={`${member.firstName} ${member.lastName}`}
+                />
               )}
             </article>
           ))}
