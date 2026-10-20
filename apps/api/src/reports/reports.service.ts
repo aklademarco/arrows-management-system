@@ -87,6 +87,7 @@ export class ReportsService {
       startsAt: range.start,
       endsAt: range.end,
       departmentId: query.departmentId,
+      eventId: query.eventId,
     };
 
     const [rows, departmentRows, pendingRegistrations] = await Promise.all([
@@ -115,6 +116,12 @@ export class ReportsService {
         eventId: string;
         eventName: string;
         startsAt: string;
+        late: number;
+        lateMembers: {
+          memberId: string;
+          displayName: string;
+          checkedInAt: string | null;
+        }[];
         total: number;
         attended: number;
         absent: number;
@@ -137,10 +144,14 @@ export class ReportsService {
     >();
 
     for (const row of rows) {
-      const item = events.get(row.eventId) ?? {
+      const item: NonNullable<ReturnType<typeof events.get>> = events.get(
+        row.eventId,
+      ) ?? {
         eventId: row.eventId,
         eventName: row.eventName,
         startsAt: row.eventStartsAt.toISOString(),
+        late: 0,
+        lateMembers: [],
         total: 0,
         attended: 0,
         absent: 0,
@@ -151,6 +162,14 @@ export class ReportsService {
 
       if (attendedStatuses.has(row.status)) {
         item.attended += 1;
+        if ((row.punctualityStatus ?? row.status) === 'LATE') {
+          item.late += 1;
+          item.lateMembers.push({
+            memberId: row.memberId,
+            displayName: `${row.firstName} ${row.lastName}`,
+            checkedInAt: row.checkedInAt?.toISOString() ?? null,
+          });
+        }
       } else if (row.status === 'ABSENT') {
         item.absent += 1;
       } else if (row.status === 'EXCUSED') {
@@ -236,6 +255,7 @@ export class ReportsService {
     }
 
     return {
+      eventId: query.eventId ?? null,
       from: range.from,
       to: range.to,
       departmentId: query.departmentId ?? null,
@@ -367,6 +387,7 @@ export class ReportsService {
         'Member',
         'Records',
         'Attended',
+        'Late',
         'Absent',
         'Excused',
         'Attendance rate',
@@ -378,6 +399,7 @@ export class ReportsService {
         member.displayName,
         member.records,
         member.attended,
+        member.attended - member.punctual,
         member.absent,
         member.excused,
         member.attendanceRate,
@@ -387,7 +409,9 @@ export class ReportsService {
     ];
 
     return {
-      filename: `attendance-${report.from}-to-${report.to}.csv`,
+      filename: report.eventId
+        ? `attendance-event-${report.eventId}.csv`
+        : `attendance-${report.from}-to-${report.to}.csv`,
 
       content: lines.map((line) => line.map(escape).join(',')).join('\n'),
     };

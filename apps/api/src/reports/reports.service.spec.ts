@@ -158,6 +158,66 @@ describe('ReportsService', () => {
     });
   });
 
+  it('keeps late arrivals separate for distinct events with the same name and date', async () => {
+    const row = {
+      eventName: 'Sunday service',
+      eventStartsAt: new Date('2026-08-02T09:00:00Z'),
+      firstName: 'Ama',
+      lastName: 'Mensah',
+      memberId: 'm1',
+      status: 'LATE',
+      method: 'MANUAL',
+      punctualityStatus: null,
+    };
+    const repository = {
+      attendance: jest.fn().mockResolvedValue([
+        { ...row, eventId: 'one', attendanceId: 'a' },
+        { ...row, eventId: 'two', attendanceId: 'b' },
+        {
+          ...row,
+          eventId: 'two',
+          attendanceId: 'c',
+          memberId: 'm2',
+          status: 'ABSENT',
+          punctualityStatus: 'LATE',
+        },
+      ]),
+      departmentAttendance: jest.fn().mockResolvedValue([]),
+      pendingRegistrations: jest.fn().mockResolvedValue([]),
+    };
+    const report = await new ReportsService(
+      repository as unknown as ReportsRepository,
+    ).attendanceSummary({}, admin);
+    expect(report.events).toHaveLength(2);
+    for (const event of report.events) {
+      expect(event.late).toBe(1);
+      expect(event.lateMembers).toEqual([
+        { memberId: 'm1', displayName: 'Ama Mensah', checkedInAt: null },
+      ]);
+    }
+  });
+
+  it('passes the selected event and church to both queries and exports that event', async () => {
+    const repository = {
+      attendance: jest.fn().mockResolvedValue([]),
+      departmentAttendance: jest.fn().mockResolvedValue([]),
+      pendingRegistrations: jest.fn().mockResolvedValue([]),
+    };
+    const service = new ReportsService(
+      repository as unknown as ReportsRepository,
+    );
+    const result = await service.attendanceCsv({ eventId: 'event-one' }, admin);
+    for (const query of [
+      repository.attendance,
+      repository.departmentAttendance,
+    ]) {
+      expect(query).toHaveBeenCalledWith(
+        expect.objectContaining({ eventId: 'event-one', churchId: 'church' }),
+      );
+    }
+    expect(result.filename).toBe('attendance-event-event-one.csv');
+  });
+
   it('rejects report ranges longer than one year', async () => {
     const repository = {
       attendance: jest.fn(),

@@ -20,11 +20,16 @@ export class ReportsRepository {
     startsAt: Date;
     endsAt: Date;
     departmentId?: string;
+    eventId?: string;
   }) {
     const filters = [
       eq(events.churchId, input.churchId),
-      gte(events.startsAt, input.startsAt),
-      lt(events.startsAt, input.endsAt),
+      ...(input.eventId
+        ? [eq(events.id, input.eventId)]
+        : [
+            gte(events.startsAt, input.startsAt),
+            lt(events.startsAt, input.endsAt),
+          ]),
     ];
     if (input.departmentId) {
       filters.push(
@@ -61,11 +66,16 @@ export class ReportsRepository {
     startsAt: Date;
     endsAt: Date;
     departmentId?: string;
+    eventId?: string;
   }) {
     const filters = [
       eq(events.churchId, input.churchId),
-      gte(events.startsAt, input.startsAt),
-      lt(events.startsAt, input.endsAt),
+      ...(input.eventId
+        ? [eq(events.id, input.eventId)]
+        : [
+            gte(events.startsAt, input.startsAt),
+            lt(events.startsAt, input.endsAt),
+          ]),
       sql`${departmentMembers.joinedAt} <= (${events.startsAt} at time zone 'Africa/Accra')::date`,
       sql`(${departmentMembers.leftAt} is null or ${departmentMembers.leftAt} > (${events.startsAt} at time zone 'Africa/Accra')::date)`,
     ];

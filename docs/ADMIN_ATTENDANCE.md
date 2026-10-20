@@ -26,3 +26,17 @@ input validation, and duplicate conflicts. Before release, verify with an admin
 account on desktop and mobile: select a scheduled event, save attendance for an
 eligible member, reload to confirm persistence, then correct an absent record on
 a completed event. Confirm the audit log records the administrator and reason.
+
+## Reports by event
+
+Admin Reports uses an event selector, defaulting to the most recent event that
+has started. Each option includes its date and time to distinguish recurring
+services. Select an event and optionally a department, then apply the filters.
+The report shows late counts and late members grouped by event ID, so separate
+services on the same date are not combined. CSV exports respect the event and
+department selection and include a Late column.
+
+The report API accepts an optional UUID `eventId` on both attendance-summary and
+attendance.csv. When provided, it selects that event instead of applying date
+bounds, while retaining church and department access restrictions. Existing
+clients using date ranges continue to work.
