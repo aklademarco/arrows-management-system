@@ -37,6 +37,7 @@ export const adminNavigation = [
   { href: "/admin/registrations", label: "Approvals", icon: FiUserCheck },
   { href: "/admin/departments", label: "Departments", icon: FiGrid },
   { href: "/admin/events", label: "Events", icon: FiCalendar },
+  { href: "/admin/attendance", label: "Attendance", icon: FiUserCheck },
   { href: "/admin/liturgies", label: "Liturgies", icon: FiList },
   { href: "/admin/ministry-work", label: "Shared work", icon: FiShare2 },
   { href: "/admin/absences", label: "Absences", icon: FiFileText },

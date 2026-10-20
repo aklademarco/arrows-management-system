@@ -197,7 +197,13 @@ export default async function AdminDashboardPage() {
               A little more connected. A little better cared for.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/admin/attendance"
+              className="inline-flex min-h-11 items-center rounded-full border border-[#c6d2d5] bg-white px-5 text-xs font-semibold"
+            >
+              Mark attendance
+            </Link>
             <span className="hidden text-xs text-[#687173] sm:block">
               {date.format(new Date())}
             </span>

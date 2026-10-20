@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { z } from "zod";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 async function mutate(
   path: string,
@@ -36,30 +37,56 @@ async function mutate(
   revalidatePath("/member");
 }
 
-export async function markManualAttendance(formData: FormData) {
-  const eventId = String(formData.get("eventId"));
-  await mutate(
-    "/attendance/manual",
-    "POST",
-    {
-      eventId,
-      memberId: String(formData.get("memberId")),
-      status: String(formData.get("status")),
-      reason: String(formData.get("reason") ?? "").trim(),
-    },
-    eventId,
-  );
-}
+export type AttendanceActionState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
 
-export async function correctAttendance(formData: FormData) {
-  const eventId = String(formData.get("eventId"));
-  await mutate(
-    `/attendance/${String(formData.get("attendanceId"))}`,
-    "PATCH",
-    {
-      status: String(formData.get("status")),
-      reviewNote: String(formData.get("reviewNote") ?? "").trim(),
-    },
-    eventId,
-  );
+export async function saveAttendance(
+  _previous: AttendanceActionState,
+  formData: FormData,
+): Promise<AttendanceActionState> {
+  const schema = z.object({
+    eventId: z.uuid(),
+    memberId: z.uuid(),
+    attendanceId: z.union([z.uuid(), z.literal("")]),
+    status: z.enum(["EARLY", "ON_TIME", "LATE", "ABSENT", "EXCUSED"]),
+    reason: z.string().trim().min(3).max(1000),
+  });
+  const parsed = schema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success)
+    return {
+      status: "error",
+      message:
+        "Choose an attendance status and enter a reason of 3–1000 characters.",
+    };
+  const { eventId, memberId, attendanceId, status, reason } = parsed.data;
+  if (!attendanceId && (status === "ABSENT" || status === "EXCUSED")) {
+    return {
+      status: "error",
+      message: "Manual check-in requires a present status.",
+    };
+  }
+  try {
+    await mutate(
+      attendanceId ? `/attendance/${attendanceId}` : "/attendance/manual",
+      attendanceId ? "PATCH" : "POST",
+      attendanceId
+        ? { status, reviewNote: reason }
+        : { eventId, memberId, status, reason },
+      eventId,
+    );
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/reports");
+    return { status: "success", message: "Attendance saved." };
+  } catch (error) {
+    unstable_rethrow(error);
+    return {
+      status: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to save attendance. Please try again.",
+    };
+  }
 }
