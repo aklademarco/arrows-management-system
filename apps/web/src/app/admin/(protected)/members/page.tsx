@@ -74,7 +74,7 @@ export default async function MembersPage({
               <div className="inline-flex items-center gap-1.5">
                 <Link
                   aria-label={`Edit ${name}`}
-                  className="inline-flex h-7 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 text-[13px] font-medium text-slate-700 transition hover:bg-slate-50"
+                  className="inline-flex h-6 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                   href={`/admin/members/${member.id}#edit-member`}
                 >
                   <FiEdit2 aria-hidden />

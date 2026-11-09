@@ -104,7 +104,7 @@ function Empty() {
 function HeaderCell({ icon: Icon, label }: { icon: IconType; label: string }) {
   return (
     <th
-      className="border-b border-r border-slate-200 px-3 py-2.5 font-medium last:border-r-0"
+      className="whitespace-nowrap border-b border-r border-slate-200 px-2.5 py-2 font-medium last:border-r-0"
       scope="col"
     >
       <span className="inline-flex items-center gap-1.5">
@@ -163,13 +163,13 @@ function FilterChip({
 function MemberAvatar({ member, name }: { member: MemberRecord; name: string }) {
   const initials = `${member.firstName[0] ?? ""}${member.lastName[0] ?? ""}`;
   return (
-    <span className="relative grid size-7 shrink-0 place-items-center overflow-hidden rounded-full bg-purple-100 text-[11px] font-bold uppercase text-purple-700">
+    <span className="relative grid size-6 shrink-0 place-items-center overflow-hidden rounded-full bg-purple-100 text-[10px] font-bold uppercase text-purple-700">
       {member.profilePhotoUrl ? (
         <Image
           alt={`${name} profile picture`}
           className="object-cover"
           fill
-          sizes="28px"
+          sizes="24px"
           src={member.profilePhotoUrl}
           unoptimized
         />
@@ -315,7 +315,7 @@ export function MemberRecordsTable({
       </form>
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
-        <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-left text-[13px]">
+        <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-left text-xs">
           <caption className="sr-only">
             {title}. The Excel export includes every matching member.
           </caption>
@@ -350,7 +350,7 @@ export function MemberRecordsTable({
                   .filter(Boolean)
                   .join(" ");
                 const cell =
-                  "border-b border-r border-slate-100 px-3 py-2 align-middle last:border-r-0 group-last:border-b-0";
+                  "border-b border-r border-slate-100 px-2.5 py-1.5 align-middle last:border-r-0 group-last:border-b-0";
                 return (
                   <tr className="group hover:bg-slate-50/70" key={member.id}>
                     <th className={`${cell} font-normal`} scope="row">
@@ -364,7 +364,7 @@ export function MemberRecordsTable({
                     </th>
                     <td className={cell}>
                       <a
-                        className="break-all text-slate-700 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-700"
+                        className="whitespace-nowrap text-slate-700 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-700"
                         href={`mailto:${member.email}`}
                       >
                         {member.email}
@@ -378,7 +378,7 @@ export function MemberRecordsTable({
                         <>
                           <div>{member.homeAddress ?? <Empty />}</div>
                           {member.closestLandmark ? (
-                            <div className="text-xs text-slate-500">
+                            <div className="text-[11px] text-slate-500">
                               Near {member.closestLandmark}
                             </div>
                           ) : null}
@@ -424,7 +424,7 @@ export function MemberRecordsTable({
                         {humanize(member.membershipStatus)}
                       </span>
                       {member.accountStatus !== "ACTIVE" ? (
-                        <span className="ml-1.5 text-xs text-slate-500">
+                        <span className="ml-1.5 text-[11px] text-slate-500">
                           Account {member.accountStatus.toLowerCase()}
                         </span>
                       ) : null}
