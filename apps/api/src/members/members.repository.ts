@@ -33,6 +33,7 @@ import {
   users,
 } from '../database/schema';
 import { ListMembersDto } from './dto/list-members.dto';
+import { MemberFiltersDto } from './dto/member-filters.dto';
 import { ListDirectoryDto } from './dto/list-directory.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
@@ -188,6 +189,106 @@ export class MembersRepository {
     churchId: string,
     restrictToDepartmentIds?: string[],
   ) {
+    const where = this.memberRecordFilters(
+      query,
+      churchId,
+      restrictToDepartmentIds,
+    );
+    const [items, [{ total }]] = await Promise.all([
+      this.selectMemberRecords()
+        .where(where)
+        .orderBy(asc(memberProfiles.lastName), asc(memberProfiles.firstName))
+        .limit(query.limit)
+        .offset((query.page - 1) * query.limit),
+      this.database
+        .select({ total: count() })
+        .from(memberProfiles)
+        .innerJoin(users, eq(users.id, memberProfiles.userId))
+        .where(where),
+    ]);
+
+    return {
+      items: await this.withDepartments(items),
+      total,
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit),
+    };
+  }
+
+  /**
+   * Loads every member record matching the filters, for spreadsheet export.
+   * Reads at most `maxRows` rows; the caller decides what to do when the
+   * result is truncated.
+   */
+  async listForExport(
+    filters: MemberFiltersDto,
+    churchId: string,
+    restrictToDepartmentIds: string[] | undefined,
+    maxRows: number,
+  ) {
+    const items = await this.selectMemberRecords()
+      .where(
+        this.memberRecordFilters(filters, churchId, restrictToDepartmentIds),
+      )
+      .orderBy(asc(memberProfiles.lastName), asc(memberProfiles.firstName))
+      .limit(maxRows);
+    return this.withDepartments(items);
+  }
+
+  async recordMemberExport(input: {
+    churchId: string;
+    actorUserId: string;
+    rowCount: number;
+    filters: MemberFiltersDto;
+    restrictedToDepartmentIds?: string[];
+  }) {
+    await this.database.insert(auditLogs).values({
+      churchId: input.churchId,
+      actorUserId: input.actorUserId,
+      action: 'MEMBERS_EXPORTED',
+      entityType: 'MEMBER_PROFILE',
+      metadata: {
+        format: 'XLSX',
+        rowCount: input.rowCount,
+        filters: {
+          search: input.filters.search ?? null,
+          departmentId: input.filters.departmentId ?? null,
+          membershipStatus: input.filters.membershipStatus ?? null,
+          accountStatus: input.filters.accountStatus ?? null,
+        },
+        restrictedToDepartmentIds: input.restrictedToDepartmentIds ?? null,
+      },
+    });
+  }
+
+  private selectMemberRecords() {
+    return this.database
+      .select({
+        id: memberProfiles.id,
+        userId: users.id,
+        firstName: memberProfiles.firstName,
+        lastName: memberProfiles.lastName,
+        otherNames: memberProfiles.otherNames,
+        email: users.email,
+        phone: users.phone,
+        dateOfBirth: memberProfiles.dateOfBirth,
+        homeAddress: memberProfiles.homeAddress,
+        closestLandmark: memberProfiles.closestLandmark,
+        profilePhotoUrl: memberProfiles.profilePhotoUrl,
+        accountStatus: users.accountStatus,
+        membershipStatus: memberProfiles.membershipStatus,
+        createdAt: memberProfiles.createdAt,
+      })
+      .from(memberProfiles)
+      .innerJoin(users, eq(users.id, memberProfiles.userId));
+  }
+
+  private memberRecordFilters(
+    query: MemberFiltersDto,
+    churchId: string,
+    restrictToDepartmentIds?: string[],
+  ) {
     const filters = [eq(users.churchId, churchId)];
     if (restrictToDepartmentIds) {
       const scopedMemberIds = this.database
@@ -239,35 +340,10 @@ export class MembersRepository {
         );
       filters.push(inArray(memberProfiles.id, memberIds));
     }
+    return and(...filters);
+  }
 
-    const where = and(...filters);
-    const [items, [{ total }]] = await Promise.all([
-      this.database
-        .select({
-          id: memberProfiles.id,
-          userId: users.id,
-          firstName: memberProfiles.firstName,
-          lastName: memberProfiles.lastName,
-          otherNames: memberProfiles.otherNames,
-          email: users.email,
-          phone: users.phone,
-          accountStatus: users.accountStatus,
-          membershipStatus: memberProfiles.membershipStatus,
-          createdAt: memberProfiles.createdAt,
-        })
-        .from(memberProfiles)
-        .innerJoin(users, eq(users.id, memberProfiles.userId))
-        .where(where)
-        .orderBy(asc(memberProfiles.lastName), asc(memberProfiles.firstName))
-        .limit(query.limit)
-        .offset((query.page - 1) * query.limit),
-      this.database
-        .select({ total: count() })
-        .from(memberProfiles)
-        .innerJoin(users, eq(users.id, memberProfiles.userId))
-        .where(where),
-    ]);
-
+  private async withDepartments<T extends { id: string }>(items: T[]) {
     const ids = items.map((member) => member.id);
     const memberships =
       ids.length === 0
@@ -299,24 +375,19 @@ export class MembersRepository {
                 inArray(departmentMembers.memberId, ids),
                 isNull(departmentMembers.leftAt),
               ),
-            );
+            )
+            .orderBy(asc(departments.name));
 
-    return {
-      items: items.map((member) => ({
-        ...member,
-        departments: memberships
-          .filter((membership) => membership.memberId === member.id)
-          .map((membership) => ({
-            id: membership.departmentId,
-            name: membership.departmentName,
-            isPrimary: membership.primaryAssignmentId !== null,
-          })),
-      })),
-      total,
-      page: query.page,
-      limit: query.limit,
-      totalPages: Math.ceil(total / query.limit),
-    };
+    return items.map((member) => ({
+      ...member,
+      departments: memberships
+        .filter((membership) => membership.memberId === member.id)
+        .map((membership) => ({
+          id: membership.departmentId,
+          name: membership.departmentName,
+          isPrimary: membership.primaryAssignmentId !== null,
+        })),
+    }));
   }
 
   async directory(query: ListDirectoryDto, churchId: string) {

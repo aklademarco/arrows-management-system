@@ -2,7 +2,8 @@ import 'reflect-metadata';
 import { ListMembersDto } from './dto/list-members.dto';
 import { ListDirectoryDto } from './dto/list-directory.dto';
 import { MembersRepository } from './members.repository';
-import { MembersService } from './members.service';
+import { MAX_MEMBER_EXPORT_ROWS, MembersService } from './members.service';
+import { MemberFiltersDto } from './dto/member-filters.dto';
 
 describe('MembersService', () => {
   it('changes the primary assignment without changing memberships', async () => {
@@ -361,5 +362,110 @@ describe('MembersService', () => {
     });
 
     expect(directoryProfile).toHaveBeenCalledWith('member-id', 'church-id');
+  });
+
+  describe('exportMembers', () => {
+    const exportRow = {
+      id: 'member-id',
+      firstName: 'Ama',
+      lastName: 'Mensah',
+      otherNames: null,
+      email: 'ama@example.com',
+      phone: null,
+      dateOfBirth: null,
+      homeAddress: '12 Palm Street',
+      closestLandmark: 'Shell station',
+      accountStatus: 'ACTIVE',
+      membershipStatus: 'ACTIVE',
+      createdAt: new Date('2026-01-15T10:00:00Z'),
+      departments: [],
+    };
+
+    it('exports the whole church for a pastor and audits it', async () => {
+      const listForExport = jest.fn().mockResolvedValue([exportRow]);
+      const recordMemberExport = jest.fn().mockResolvedValue(undefined);
+      const service = new MembersService({
+        listForExport,
+        recordMemberExport,
+      } as unknown as MembersRepository);
+      const filters = new MemberFiltersDto();
+      filters.membershipStatus = 'ACTIVE';
+
+      const file = await service.exportMembers(filters, {
+        ...admin,
+        roles: ['PASTOR'],
+      });
+
+      expect(listForExport).toHaveBeenCalledWith(
+        filters,
+        'church-id',
+        undefined,
+        MAX_MEMBER_EXPORT_ROWS + 1,
+      );
+      expect(recordMemberExport).toHaveBeenCalledWith({
+        churchId: 'church-id',
+        actorUserId: 'admin-id',
+        rowCount: 1,
+        filters,
+        restrictedToDepartmentIds: undefined,
+      });
+      expect(file.filename).toMatch(/^members-\d{4}-\d{2}-\d{2}\.xlsx$/);
+      // xlsx files are zip archives, which start with "PK".
+      expect(file.content.subarray(0, 2).toString()).toBe('PK');
+    });
+
+    it('limits a department leader to the departments they lead', async () => {
+      const listForExport = jest.fn().mockResolvedValue([]);
+      const recordMemberExport = jest.fn().mockResolvedValue(undefined);
+      const findLedDepartmentIds = jest.fn().mockResolvedValue(['dept-a']);
+      const service = new MembersService({
+        listForExport,
+        recordMemberExport,
+        findLedDepartmentIds,
+      } as unknown as MembersRepository);
+      const filters = new MemberFiltersDto();
+
+      await service.exportMembers(filters, leader);
+
+      expect(listForExport).toHaveBeenCalledWith(
+        filters,
+        'church-id',
+        ['dept-a'],
+        MAX_MEMBER_EXPORT_ROWS + 1,
+      );
+      expect(recordMemberExport).toHaveBeenCalledWith(
+        expect.objectContaining({ restrictedToDepartmentIds: ['dept-a'] }),
+      );
+    });
+
+    it('denies the export to a viewer who leads nothing', async () => {
+      const listForExport = jest.fn();
+      const service = new MembersService({
+        listForExport,
+        findLedDepartmentIds: jest.fn().mockResolvedValue([]),
+      } as unknown as MembersRepository);
+
+      await expect(
+        service.exportMembers(new MemberFiltersDto(), leader),
+      ).rejects.toThrow('You do not have access to the member directory.');
+      expect(listForExport).not.toHaveBeenCalled();
+    });
+
+    it('rejects exports above the row limit without auditing', async () => {
+      const recordMemberExport = jest.fn();
+      const service = new MembersService({
+        listForExport: jest
+          .fn()
+          .mockResolvedValue(
+            Array.from({ length: MAX_MEMBER_EXPORT_ROWS + 1 }, () => exportRow),
+          ),
+        recordMemberExport,
+      } as unknown as MembersRepository);
+
+      await expect(
+        service.exportMembers(new MemberFiltersDto(), admin),
+      ).rejects.toThrow('Narrow the filters');
+      expect(recordMemberExport).not.toHaveBeenCalled();
+    });
   });
 });

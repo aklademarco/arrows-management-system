@@ -6,11 +6,16 @@ import {
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import { ListMembersDto } from './dto/list-members.dto';
 import { ListDirectoryDto } from './dto/list-directory.dto';
+import { MemberFiltersDto } from './dto/member-filters.dto';
 import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { MembersRepository } from './members.repository';
+import { buildMembersWorkbook } from './members-spreadsheet';
 
 const CHURCH_WIDE_READ_ROLES = ['SUPER_ADMIN', 'ADMIN', 'PASTOR'];
+
+/** Upper bound for one spreadsheet export; larger requests must be filtered. */
+export const MAX_MEMBER_EXPORT_ROWS = 5000;
 
 @Injectable()
 export class MembersService {
@@ -23,6 +28,41 @@ export class MembersService {
       viewer.churchId,
       restrictToDepartmentIds,
     );
+  }
+
+  /**
+   * Builds an Excel workbook of member records. Uses the same read scope as
+   * the member list: church-wide for pastors and admins, led departments
+   * only for department leaders.
+   */
+  async exportMembers(
+    filters: MemberFiltersDto,
+    viewer: AuthenticatedPrincipal,
+  ) {
+    const restrictToDepartmentIds = await this.resolveReadScope(viewer);
+    const rows = await this.repository.listForExport(
+      filters,
+      viewer.churchId,
+      restrictToDepartmentIds,
+      MAX_MEMBER_EXPORT_ROWS + 1,
+    );
+    if (rows.length > MAX_MEMBER_EXPORT_ROWS) {
+      throw new BadRequestException(
+        `The export is limited to ${MAX_MEMBER_EXPORT_ROWS} members. Narrow the filters and try again.`,
+      );
+    }
+
+    const content = await buildMembersWorkbook(rows);
+    await this.repository.recordMemberExport({
+      churchId: viewer.churchId,
+      actorUserId: viewer.id,
+      rowCount: rows.length,
+      filters,
+      restrictedToDepartmentIds: restrictToDepartmentIds,
+    });
+
+    const today = new Date().toISOString().slice(0, 10);
+    return { filename: `members-${today}.xlsx`, content };
   }
 
   directory(query: ListDirectoryDto, viewer: AuthenticatedPrincipal) {

@@ -8,11 +8,16 @@ import {
   ParseUUIDPipe,
   Body,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
+import { RATE_LIMITS } from '../common/security/rate-limits';
 import { AdminUser } from '../auth/admin-user.decorator';
 import { AdminGuard, type AdminPrincipal } from '../auth/admin.guard';
 import { ListMembersDto } from './dto/list-members.dto';
+import { MemberFiltersDto } from './dto/member-filters.dto';
 import { ListDirectoryDto } from './dto/list-directory.dto';
 import { MembersService } from './members.service';
 import {
@@ -79,6 +84,22 @@ export class MembersController {
       message: 'Members retrieved.',
       data: await this.service.list(query, viewer),
     };
+  }
+
+  @Get('export.xlsx')
+  @UseGuards(AuthenticatedGuard)
+  @Throttle({ default: RATE_LIMITS.reports })
+  async exportSpreadsheet(
+    @Query() filters: MemberFiltersDto,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
+    @Res() response: Response,
+  ) {
+    const file = await this.service.exportMembers(filters, viewer);
+    response
+      .type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .attachment(file.filename)
+      .setHeader('Cache-Control', 'no-store')
+      .send(file.content);
   }
 
   @Get('directory')

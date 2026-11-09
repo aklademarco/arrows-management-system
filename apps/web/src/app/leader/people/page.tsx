@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FiChevronRight, FiSearch, FiUsers } from "react-icons/fi";
+import { FiChevronRight, FiSearch, FiTable, FiUsers } from "react-icons/fi";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getLeaderResource } from "../leader-api";
 
@@ -52,6 +52,13 @@ export default async function LeaderPeoplePage({
           <p className="mt-2 text-sm font-medium text-slate-500">
             View your team and select a person to send a private in-app message.
           </p>
+          <Link
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-extrabold text-[#6b21a8] ring-1 ring-purple-100 hover:bg-purple-50"
+            href="/leader/members"
+          >
+            <FiTable aria-hidden />
+            Member records &amp; Excel download
+          </Link>
         </header>
         <form className="mt-7" method="get" role="search">
           <label className="relative block w-full">

@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { FiChevronLeft, FiChevronRight, FiSearch } from "react-icons/fi";
+import {
+  FiChevronLeft,
+  FiChevronRight,
+  FiSearch,
+  FiTable,
+} from "react-icons/fi";
 
 import { MemberDirectoryGrid } from "@/components/members/member-directory-grid";
 import type { DirectoryMember } from "@/components/members/member-directory-card";
@@ -99,6 +104,14 @@ export default async function PastorMembersPage({
                 {members.total === 1 ? "" : "s"}
               </p>
             </div>
+
+            <Link
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"
+              href="/pastor/members/records"
+            >
+              <FiTable aria-hidden />
+              View records table
+            </Link>
           </div>
         </header>
 
