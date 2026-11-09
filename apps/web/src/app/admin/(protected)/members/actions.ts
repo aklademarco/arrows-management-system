@@ -146,6 +146,14 @@ export async function updateMinistryRoles(formData: FormData) {
 
 export async function archiveMember(formData: FormData) {
   const memberId = memberIdSchema.parse(formData.get("memberId"));
+  // Only a fixed value is accepted so this cannot become an open redirect.
+  const fromList = formData.get("returnTo") === "list";
+  const feedback = (kind: "success" | "error", message: string): never => {
+    if (!fromList) memberFeedback(memberId, kind, message);
+    redirect(
+      `/admin/members?feedback=${kind}&message=${encodeURIComponent(message)}`,
+    );
+  };
   const token = (await cookies()).get("acms_admin_session")?.value;
   if (!token) redirect("/admin/login");
   const apiUrl = process.env.API_URL ?? "http://localhost:4000/api/v1";
@@ -158,16 +166,14 @@ export async function archiveMember(formData: FormData) {
     redirect("/admin/login");
   }
   if (!response.ok) {
-    const body = (await response.json()) as { message?: string };
-    memberFeedback(
-      memberId,
-      "error",
-      body.message ?? "The member could not be archived.",
-    );
+    const body = (await response.json().catch(() => null)) as {
+      message?: string;
+    } | null;
+    feedback("error", body?.message ?? "The member could not be archived.");
   }
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/${memberId}`);
-  memberFeedback(memberId, "success", "Member archived successfully.");
+  feedback("success", "Member archived successfully.");
 }
 
 export async function addMemberToDepartment(formData: FormData) {

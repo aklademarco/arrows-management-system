@@ -432,7 +432,10 @@ export default async function MemberProfilePage({
           </section>
         ) : null}
 
-        <section className="mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm">
+        <section
+          className="mt-6 scroll-mt-6 rounded-[1.5rem] border border-[#dce3e4] bg-white/70 p-6 shadow-sm"
+          id="edit-member"
+        >
           <h2 className="text-xl font-bold">Edit member</h2>
           <form
             action={updateMember}

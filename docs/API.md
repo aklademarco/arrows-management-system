@@ -671,6 +671,32 @@ accountStatus=ACTIVE
 
 Department leaders receive only members who share at least one actively led department. If `departmentId` is supplied, it must be actively led. Leader responses must omit account-security and unrelated-department fields.
 
+Each item includes contact and location fields for the records table: `email`, `phone`, `dateOfBirth`, `homeAddress`, `closestLandmark`, `membershipStatus`, `accountStatus`, `createdAt`, and current `departments` (with `isPrimary`).
+
+## 7.1.1 Export Members to Excel
+
+```http
+GET /members/export.xlsx
+```
+
+**Roles:** `SUPER_ADMIN`, `ADMIN`, `PASTOR` (whole church), `DEPARTMENT_LEADER` (members of actively led departments only)
+
+### Query Parameters
+
+```text
+search=marco
+departmentId=<uuid>
+membershipStatus=ACTIVE
+accountStatus=ACTIVE
+```
+
+Uses the same filters and read scope as `GET /members`, without pagination. Returns an `.xlsx` attachment named `members-YYYY-MM-DD.xlsx` with one row per member: names, email, phone, date of birth, home address, closest landmark, primary department, all current departments, membership status, account status, and join date.
+
+- Limited to 5,000 rows; larger results return `400` and must be narrowed with filters.
+- Rate-limited with the `reports` limit (20 requests per 5 minutes).
+- Every successful export writes a `MEMBERS_EXPORTED` audit log with the row count and filters.
+- Cell values are written as text, never as formulas, so member-entered text cannot execute in Excel.
+
 ---
 
 ## 7.2 Get Member
