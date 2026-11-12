@@ -46,6 +46,11 @@ export const RATE_LIMITS = {
     ttl: minutes(5),
   },
 
+  announcementWrite: {
+    limit: 30,
+    ttl: minutes(15),
+  },
+
   pastoralCareRequest: {
     limit: 5,
     ttl: hours(1),

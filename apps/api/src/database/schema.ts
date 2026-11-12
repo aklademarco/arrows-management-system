@@ -161,6 +161,11 @@ export const pastoralCareRequestStatus = pgEnum(
   ['NEW', 'IN_REVIEW', 'RESOLVED'],
 );
 
+export const announcementKind = pgEnum('announcement_kind', [
+  'ANNOUNCEMENT',
+  'EVENT',
+]);
+
 export const reviewDecision = pgEnum('review_decision', [
   'APPROVED',
   'REJECTED',
@@ -1441,6 +1446,68 @@ export const eventReminderRuns = pgTable(
       table.eventId,
       table.startsAt,
       table.hoursBefore,
+    ),
+  ],
+);
+
+/** Church announcements and events that do not track attendance. */
+export const announcements = pgTable(
+  'announcements',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    kind: announcementKind('kind').notNull(),
+    title: varchar('title', { length: 180 }).notNull(),
+    theme: varchar('theme', { length: 180 }),
+    description: varchar('description', { length: 2000 }),
+    locationName: varchar('location_name', { length: 200 }),
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    flyerUrl: text('flyer_url'),
+    flyerPublicId: varchar('flyer_public_id', { length: 255 }),
+    createdBy: uuid('created_by')
+      .notNull()
+      .references(() => users.id),
+    updatedBy: uuid('updated_by')
+      .notNull()
+      .references(() => users.id),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    archivedBy: uuid('archived_by').references(() => users.id),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('announcements_church_starts_idx')
+      .on(table.churchId, table.startsAt)
+      .where(sql`${table.archivedAt} is null`),
+    index('announcements_church_created_idx')
+      .on(table.churchId, table.createdAt)
+      .where(sql`${table.archivedAt} is null`),
+    check(
+      'announcements_title_not_blank',
+      sql`char_length(btrim(${table.title})) > 0`,
+    ),
+    check(
+      'announcements_event_has_date',
+      sql`${table.kind} <> 'EVENT' or ${table.startsAt} is not null`,
+    ),
+    check(
+      'announcements_ends_after_start',
+      sql`${table.endsAt} is null or (${table.startsAt} is not null and ${table.endsAt} >= ${table.startsAt})`,
+    ),
+    check(
+      'announcements_flyer_complete',
+      sql`(${table.flyerUrl} is null) = (${table.flyerPublicId} is null)`,
+    ),
+    check(
+      'announcements_archive_consistent',
+      sql`(${table.archivedAt} is null) = (${table.archivedBy} is null)`,
     ),
   ],
 );

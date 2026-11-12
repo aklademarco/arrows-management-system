@@ -12,6 +12,7 @@ import {
   FiMessageCircle,
   FiMoreHorizontal,
   FiUsers,
+  FiVolume2,
 } from "react-icons/fi";
 
 const primaryItems = [
@@ -42,6 +43,11 @@ const primaryItems = [
 ];
 
 const secondaryItems = [
+  {
+    href: "/pastor/announcements",
+    label: "Announcements",
+    icon: FiVolume2,
+  },
   { href: "/pastor/notifications", label: "Notifications", icon: FiMessageCircle },
   {
     href: "/pastor/reports",

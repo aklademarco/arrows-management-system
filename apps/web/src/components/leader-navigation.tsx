@@ -9,6 +9,7 @@ import {
   FiMessageCircle,
   FiMusic,
   FiUsers,
+  FiVolume2,
 } from "react-icons/fi";
 
 const items = [
@@ -37,6 +38,12 @@ const items = [
     mobileLabel: "Ministry",
     icon: FiMusic,
   },
+  {
+    href: "/leader/announcements",
+    label: "Announcements",
+    mobileLabel: "News",
+    icon: FiVolume2,
+  },
   { href: "/leader/inbox", label: "Inbox", mobileLabel: "Inbox", icon: FiBell },
 ];
 
@@ -48,7 +55,7 @@ export function LeaderNavigation({ mobile = false }: { mobile?: boolean }) {
       aria-label="Leadership workspace"
       className={
         mobile
-          ? "pointer-events-auto leader-mobile-nav mx-auto grid w-full max-w-xl grid-cols-6 rounded-[1.6rem] border border-white/20 p-1.5 backdrop-blur-xl"
+          ? "pointer-events-auto leader-mobile-nav mx-auto grid w-full max-w-xl grid-cols-7 rounded-[1.6rem] border border-white/20 p-1.5 backdrop-blur-xl"
           : "grid w-full gap-2"
       }
     >

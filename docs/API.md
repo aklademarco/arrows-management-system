@@ -1740,7 +1740,77 @@ An audit log entry is required.
 
 ---
 
-# 16. Authorization Matrix
+# 16. Announcements API
+
+Church announcements and events that do **not** track attendance (no check-in, geofence, or points). Each post is an `EVENT` or an `ANNOUNCEMENT` with a title, optional theme, short description, location, start/end time, and an optional flyer image.
+
+**Read:** every signed-in user of the church.
+**Post:** `SUPER_ADMIN`, `ADMIN`, `PASTOR`, `DEPARTMENT_LEADER`.
+**Edit / archive:** admins and pastors for any post; department leaders for their own posts only.
+
+Posts are never deleted; archiving hides them and is audited. Create, update, and archive each write an audit log (`ANNOUNCEMENT_CREATED`, `ANNOUNCEMENT_UPDATED`, `ANNOUNCEMENT_ARCHIVED`). Writes share the `announcementWrite` rate limit (30 requests per 15 minutes).
+
+## 16.1 List Announcements
+
+```http
+GET /announcements?scope=upcoming&kind=EVENT&page=1&limit=12
+```
+
+- `scope=upcoming` (default): posts that have not finished yet (`coalesce(endsAt, startsAt) >= now`) plus undated announcements. Soonest first, undated last.
+- `scope=past`: dated posts that have finished, most recent first.
+- `kind`: optional `EVENT` or `ANNOUNCEMENT`. `limit` is at most 50.
+
+The response includes `canPublish` for the viewer, and each item includes `canManage`, `authorName`, and `flyerUrl`.
+
+## 16.2 Get Announcement
+
+```http
+GET /announcements/:announcementId
+```
+
+## 16.3 Create Announcement
+
+```http
+POST /announcements
+```
+
+```json
+{
+  "kind": "EVENT",
+  "title": "Youth Night",
+  "theme": "Rooted in Christ",
+  "description": "An evening of worship and fellowship.",
+  "locationName": "Main auditorium",
+  "startsAt": "2026-12-05T18:00:00.000Z",
+  "endsAt": "2026-12-05T21:00:00.000Z",
+  "flyerUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/acms/announcement-flyers/flyer-<uuid>.webp",
+  "flyerPublicId": "acms/announcement-flyers/flyer-<uuid>"
+}
+```
+
+Rules:
+
+- Events require `startsAt`; announcements may omit it.
+- `endsAt` requires `startsAt` and must not be before it.
+- `flyerUrl` and `flyerPublicId` go together. The URL must belong to the configured Cloudinary account, the public ID must be in `acms/announcement-flyers/`, and the URL must contain the public ID. The web app uploads the image (signed, server-side) only after confirming the user may post.
+
+## 16.4 Update Announcement
+
+```http
+PATCH /announcements/:announcementId
+```
+
+Partial update. Omitted fields are unchanged; `null` clears an optional field (theme, description, location, times, flyer). `kind` and `title` cannot be cleared. The merged result is validated with the same rules as create.
+
+## 16.5 Archive Announcement
+
+```http
+POST /announcements/:announcementId/archive
+```
+
+---
+
+# 17. Authorization Matrix
 
 | Endpoint Group | Member | Department Leader | Attendance Officer | Admin | Super Admin |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -1764,7 +1834,7 @@ An audit log entry is required.
 
 ---
 
-# 17. Validation Rules
+# 18. Validation Rules
 
 ## Registration
 
@@ -1797,7 +1867,7 @@ An audit log entry is required.
 
 ---
 
-# 18. Idempotency and Concurrency
+# 19. Idempotency and Concurrency
 
 ## Attendance
 
@@ -1835,7 +1905,7 @@ Cancellation shall lock the event row and update the event, attendance points, p
 
 ---
 
-# 19. Rate Limiting
+# 20. Rate Limiting
 
 Recommended limits:
 
@@ -1854,7 +1924,7 @@ Final limits may be adjusted after testing.
 
 ---
 
-# 20. Swagger/OpenAPI
+# 21. Swagger/OpenAPI
 
 The NestJS backend shall expose interactive API documentation.
 
@@ -1878,7 +1948,7 @@ Production Swagger access may be restricted.
 
 ---
 
-# 21. API Versioning
+# 22. API Versioning
 
 The first API version shall use:
 
@@ -1892,7 +1962,7 @@ Non-breaking fields may be added without creating a new API version.
 
 ---
 
-# 22. Open API Decisions
+# 23. Open API Decisions
 
 - Whether access tokens use headers or secure cookies.
 - Whether pending users receive limited access tokens.
@@ -1903,7 +1973,7 @@ Non-breaking fields may be added without creating a new API version.
 
 ---
 
-# 23. Next Deliverables
+# 24. Next Deliverables
 
 The next planning documents should be:
 
