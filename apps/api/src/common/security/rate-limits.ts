@@ -51,6 +51,16 @@ export const RATE_LIMITS = {
     ttl: minutes(15),
   },
 
+  feedInteraction: {
+    limit: 60,
+    ttl: minutes(5),
+  },
+
+  feedReport: {
+    limit: 10,
+    ttl: hours(1),
+  },
+
   pastoralCareRequest: {
     limit: 5,
     ttl: hours(1),

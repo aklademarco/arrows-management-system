@@ -7,6 +7,8 @@ import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { ListAnnouncementsDto } from './dto/list-announcements.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
+import { PublisherAccessService } from './publisher-access.service';
+import type { MembersRepository } from '../members/members.repository';
 
 const viewer = (id: string, roles: string[]) => ({
   id,
@@ -61,6 +63,7 @@ function firstCall(mock: jest.Mock) {
 
 function setup(
   overrides: Partial<Record<keyof AnnouncementsRepository, jest.Mock>> = {},
+  ledDepartmentIds: string[] = ['dept-a'],
 ) {
   const repository = {
     list: jest.fn().mockResolvedValue({ items: [stored], total: 1 }),
@@ -70,10 +73,15 @@ function setup(
     archive: jest.fn().mockResolvedValue(undefined),
     ...overrides,
   };
+  const members = {
+    findLedDepartmentIds: jest.fn().mockResolvedValue(ledDepartmentIds),
+  };
   return {
     repository,
+    members,
     service: new AnnouncementsService(
       repository as unknown as AnnouncementsRepository,
+      new PublisherAccessService(members as unknown as MembersRepository),
     ),
   };
 }
@@ -131,6 +139,18 @@ describe('AnnouncementsService', () => {
         });
       },
     );
+
+    it('rejects a leader without an active leadership assignment', async () => {
+      const { service, repository, members } = setup({}, []);
+      await expect(service.create(createDto(), leader)).rejects.toThrow(
+        'with an active assignment',
+      );
+      expect(members.findLedDepartmentIds).toHaveBeenCalledWith(
+        'leader-id',
+        'church-id',
+      );
+      expect(repository.create).not.toHaveBeenCalled();
+    });
 
     it('rejects ordinary members', async () => {
       const { service, repository } = setup();

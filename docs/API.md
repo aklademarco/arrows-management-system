@@ -1745,7 +1745,9 @@ An audit log entry is required.
 Church announcements and events that do **not** track attendance (no check-in, geofence, or points). Each post is an `EVENT` or an `ANNOUNCEMENT` with a title, optional theme, short description, location, start/end time, and an optional flyer image.
 
 **Read:** every signed-in user of the church.
-**Post:** `SUPER_ADMIN`, `ADMIN`, `PASTOR`, `DEPARTMENT_LEADER`.
+**Post:** `SUPER_ADMIN`, `ADMIN`, `PASTOR`, and `DEPARTMENT_LEADER` with a current, unrevoked leadership assignment.
+
+`EVENT` posts appear on each portal's **Church events** page; `ANNOUNCEMENT` posts appear in the **church feed** (section 16.6).
 **Edit / archive:** admins and pastors for any post; department leaders for their own posts only.
 
 Posts are never deleted; archiving hides them and is audited. Create, update, and archive each write an audit log (`ANNOUNCEMENT_CREATED`, `ANNOUNCEMENT_UPDATED`, `ANNOUNCEMENT_ARCHIVED`). Writes share the `announcementWrite` rate limit (30 requests per 15 minutes).
@@ -1807,6 +1809,36 @@ Partial update. Omitted fields are unchanged; `null` clears an optional field (t
 ```http
 POST /announcements/:announcementId/archive
 ```
+
+## 16.6 Church Feed
+
+The feed lists live `ANNOUNCEMENT` posts with reactions and comments. Posts are created, edited, and archived through the endpoints above; `/feed` covers reading and interaction. Archived posts, hidden comments, and deleted comments return `404`, including by direct URL.
+
+**Read, react, comment, report:** every signed-in user of the church.
+**Moderate (pin, close comments, hide, dismiss reports):** `SUPER_ADMIN`, `ADMIN`, `PASTOR`.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/feed?page=1&limit=10` | Pinned first, then newest. `limit` ≤ 30. Returns `canPublish` and `canModerate`. |
+| `GET` | `/feed/:postId` | One post, with `canModerate`. |
+| `PUT` | `/feed/:postId/reaction` | Body `{ "reaction": "LIKE" \| "AMEN" \| "LOVE" }`. One reaction per member; repeating or changing it is safe. |
+| `DELETE` | `/feed/:postId/reaction` | Removes the viewer's reaction. |
+| `GET` | `/feed/:postId/comments?page=1&limit=30` | Visible comments, oldest first. `limit` ≤ 50. Each has `isOwn` and `editedAt`; author user IDs are not returned. |
+| `POST` | `/feed/:postId/comments` | Body `{ "body": "..." }`, 1–1000 characters. Rejected when comments are closed. |
+| `PATCH` | `/feed/:postId/comments/:commentId` | Author only; sets `editedAt`. Rejected when comments are closed. |
+| `DELETE` | `/feed/:postId/comments/:commentId` | Author only. Soft delete (`deleted_at`). |
+| `POST` | `/feed/:postId/comments/:commentId/report` | Body `{ "reason": "..." }`, 3–300 characters. One report per member per comment; members cannot report their own comments. |
+| `PUT` | `/feed/:postId/pinned` | Moderators. Body `{ "pinned": true }`. Pinning notifies every other active member once per post (`FEED_PINNED_NOTICE`). |
+| `PUT` | `/feed/:postId/comments-closed` | Moderators. Body `{ "closed": true }`. |
+| `GET` | `/feed/moderation/reports` | Moderators. Comments with open reports, most reported first. |
+| `POST` | `/feed/moderation/comments/:commentId/hide` | Moderators. Body `{ "reason": "..." }`. Hides the comment and marks its open reports `HIDDEN`. |
+| `POST` | `/feed/moderation/comments/:commentId/dismiss-reports` | Moderators. Keeps the comment and marks its open reports `DISMISSED`. |
+
+Audit entries: `FEED_POST_PINNED`, `FEED_POST_UNPINNED`, `FEED_COMMENTS_CLOSED`, `FEED_COMMENTS_OPENED`, `FEED_COMMENT_HIDDEN` (with the reason), `FEED_COMMENT_REPORTS_DISMISSED`.
+
+Notifications are grouped so members are not flooded: a post author receives at most one `FEED_COMMENT` notice per post per hour, never for their own comments, and nobody is notified about other people's comments. Notice links use `/feed/:postId`, which the web app routes to the reader's portal.
+
+Rate limits: reactions and comment writes share `feedInteraction` (60 per 5 minutes); reports use `feedReport` (10 per hour).
 
 ---
 

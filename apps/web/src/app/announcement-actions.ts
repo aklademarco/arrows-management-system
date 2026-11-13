@@ -12,6 +12,7 @@ import {
 } from "@/lib/announcements";
 import { churchWallTimeToIso } from "@/lib/church-time";
 import { uploadImageToCloudinary } from "@/lib/cloudinary-upload";
+import { feedBasePath } from "@/lib/feed";
 
 const FLYER_FOLDER = "acms/announcement-flyers";
 
@@ -35,8 +36,13 @@ const optionalWallTime = z
     return iso;
   });
 
+/** Where to return after a save; mapped to a path here, never taken from the client. */
+const destinationSchema = z.enum(["events", "feed"]).default("events");
+type Destination = z.infer<typeof destinationSchema>;
+
 const saveSchema = z.object({
   portal: z.enum(PUBLISHING_PORTALS),
+  destination: destinationSchema,
   id: z.uuid().optional(),
   kind: z.enum(["ANNOUNCEMENT", "EVENT"]),
   title: z.string().trim().min(1, "Add a title.").max(180),
@@ -73,19 +79,25 @@ async function apiErrorMessage(response: Response, fallback: string) {
 }
 
 function revalidateBoards() {
-  for (const { basePath } of Object.values(ANNOUNCEMENT_PORTALS)) {
-    revalidatePath(basePath);
+  for (const portal of Object.keys(ANNOUNCEMENT_PORTALS) as Array<
+    keyof typeof ANNOUNCEMENT_PORTALS
+  >) {
+    revalidatePath(ANNOUNCEMENT_PORTALS[portal].basePath);
+    revalidatePath(feedBasePath(portal));
   }
 }
 
 function backToBoard(
   portal: PublishingPortal,
+  destination: Destination,
   kind: "success" | "error",
   message: string,
 ): never {
-  redirect(
-    `${ANNOUNCEMENT_PORTALS[portal].basePath}?feedback=${kind}&message=${encodeURIComponent(message)}`,
-  );
+  const path =
+    destination === "feed"
+      ? feedBasePath(portal)
+      : ANNOUNCEMENT_PORTALS[portal].basePath;
+  redirect(`${path}?feedback=${kind}&message=${encodeURIComponent(message)}`);
 }
 
 /**
@@ -165,6 +177,7 @@ export async function saveAnnouncement(
   revalidateBoards();
   backToBoard(
     data.portal,
+    data.destination,
     "success",
     data.id ? "Post updated." : `${data.kind === "EVENT" ? "Event" : "Announcement"} published.`,
   );
@@ -173,6 +186,9 @@ export async function saveAnnouncement(
 export async function archiveAnnouncement(formData: FormData) {
   const portal = z.enum(PUBLISHING_PORTALS).parse(formData.get("portal"));
   const id = z.uuid().parse(formData.get("id"));
+  const destination = destinationSchema.parse(
+    formData.get("destination") ?? undefined,
+  );
   const token = await sessionToken(portal);
 
   const response = await fetch(`${apiUrl()}/announcements/${id}/archive`, {
@@ -184,10 +200,11 @@ export async function archiveAnnouncement(formData: FormData) {
   if (!response.ok) {
     backToBoard(
       portal,
+      destination,
       "error",
       await apiErrorMessage(response, "The post could not be archived."),
     );
   }
   revalidateBoards();
-  backToBoard(portal, "success", "Post archived.");
+  backToBoard(portal, destination, "success", "Post archived.");
 }

@@ -11,11 +11,10 @@ import {
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { ListAnnouncementsDto } from './dto/list-announcements.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
-
-/** Roles that may post announcements. */
-const PUBLISHER_ROLES = ['SUPER_ADMIN', 'ADMIN', 'PASTOR', 'DEPARTMENT_LEADER'];
-/** Roles that may edit or archive anyone's announcement. */
-const MODERATOR_ROLES = ['SUPER_ADMIN', 'ADMIN', 'PASTOR'];
+import {
+  PublisherAccessService,
+  type PublisherAccess,
+} from './publisher-access.service';
 
 export const ANNOUNCEMENT_FLYER_FOLDER = 'acms/announcement-flyers';
 
@@ -23,10 +22,6 @@ type StoredAnnouncement = AnnouncementValues & {
   id: string;
   createdBy: string;
 };
-
-function hasAnyRole(viewer: AuthenticatedPrincipal, roles: string[]) {
-  return viewer.roles.some((role) => roles.includes(role));
-}
 
 /** Trims text; blank text becomes null. Undefined stays undefined. */
 function cleanText(value: string | null | undefined) {
@@ -42,27 +37,37 @@ function toDate(value: string | null | undefined) {
 
 @Injectable()
 export class AnnouncementsService {
-  constructor(private readonly repository: AnnouncementsRepository) {}
+  constructor(
+    private readonly repository: AnnouncementsRepository,
+    private readonly access: PublisherAccessService,
+  ) {}
 
   /** Every signed-in member can read the church's announcements. */
   async list(query: ListAnnouncementsDto, viewer: AuthenticatedPrincipal) {
-    const page = await this.repository.list(query, viewer.churchId, new Date());
+    const [page, access] = await Promise.all([
+      this.repository.list(query, viewer.churchId, new Date()),
+      this.access.resolve(viewer),
+    ]);
     return {
       ...page,
-      canPublish: hasAnyRole(viewer, PUBLISHER_ROLES),
-      items: page.items.map((item) => this.present(item, viewer)),
+      canPublish: access.canPublish,
+      items: page.items.map((item) => this.present(item, viewer, access)),
     };
   }
 
   async findById(id: string, viewer: AuthenticatedPrincipal) {
-    const item = await this.repository.findById(id, viewer.churchId);
-    return this.present(item, viewer);
+    const [item, access] = await Promise.all([
+      this.repository.findById(id, viewer.churchId),
+      this.access.resolve(viewer),
+    ]);
+    return this.present(item, viewer, access);
   }
 
   async create(body: CreateAnnouncementDto, viewer: AuthenticatedPrincipal) {
-    if (!hasAnyRole(viewer, PUBLISHER_ROLES)) {
+    const access = await this.access.resolve(viewer);
+    if (!access.canPublish) {
       throw new ForbiddenException(
-        'Only administrators, pastors, and department leaders can post announcements.',
+        'Only administrators, pastors, and department leaders with an active assignment can post.',
       );
     }
     const values = this.validate({
@@ -81,7 +86,7 @@ export class AnnouncementsService {
       actorUserId: viewer.id,
       values,
     });
-    return this.present(created, viewer);
+    return this.present(created, viewer, access);
   }
 
   async update(
@@ -93,7 +98,7 @@ export class AnnouncementsService {
       throw new BadRequestException('Provide at least one field to update.');
     }
     const existing = await this.repository.findById(id, viewer.churchId);
-    this.assertCanManage(existing, viewer);
+    const access = await this.assertCanManage(existing, viewer);
 
     const previous = this.valuesOf(existing);
     const pick = <K extends keyof AnnouncementValues>(
@@ -123,12 +128,12 @@ export class AnnouncementsService {
       previous,
       values,
     });
-    return this.present(updated, viewer);
+    return this.present(updated, viewer, access);
   }
 
   async archive(id: string, viewer: AuthenticatedPrincipal) {
     const existing = await this.repository.findById(id, viewer.churchId);
-    this.assertCanManage(existing, viewer);
+    await this.assertCanManage(existing, viewer);
     await this.repository.archive({
       id,
       churchId: viewer.churchId,
@@ -136,31 +141,25 @@ export class AnnouncementsService {
     });
   }
 
-  /** Leaders manage their own posts; admins and pastors manage all. */
-  private canManage(
+  private async assertCanManage(
     item: { createdBy: string },
     viewer: AuthenticatedPrincipal,
   ) {
-    if (hasAnyRole(viewer, MODERATOR_ROLES)) return true;
-    return hasAnyRole(viewer, PUBLISHER_ROLES) && item.createdBy === viewer.id;
-  }
-
-  private assertCanManage(
-    item: { createdBy: string },
-    viewer: AuthenticatedPrincipal,
-  ) {
-    if (!this.canManage(item, viewer)) {
+    const access = await this.access.resolve(viewer);
+    if (!this.access.canManage(item, viewer, access)) {
       throw new ForbiddenException(
         'You can only change announcements you posted.',
       );
     }
+    return access;
   }
 
   private present<T extends { createdBy: string }>(
     item: T,
     viewer: AuthenticatedPrincipal,
+    access: PublisherAccess,
   ) {
-    return { ...item, canManage: this.canManage(item, viewer) };
+    return { ...item, canManage: this.access.canManage(item, viewer, access) };
   }
 
   private valuesOf(item: StoredAnnouncement): AnnouncementValues {

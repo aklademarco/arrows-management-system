@@ -33,9 +33,9 @@ type NavigationItem = {
 const memberNavigation: NavigationItem[] = [
   { href: "/member", label: "Home", icon: FiHome },
   {
-    href: "/member/announcements",
-    label: "Announcements",
-    mobileLabel: "News",
+    href: "/member/feed",
+    label: "Feed",
+    mobileLabel: "Feed",
     icon: FiVolume2,
   },
   { href: "/member/attendance", label: "Activity", icon: FiCalendar },
@@ -51,8 +51,8 @@ export const adminNavigation = [
   { href: "/admin/dashboard", label: "Overview", icon: FiGrid },
   { href: "/admin/members", label: "Members", icon: FiUsers },
   {
-    href: "/admin/announcements",
-    label: "Announcements",
+    href: "/admin/feed",
+    label: "Feed",
     icon: FiVolume2,
   },
   { href: "/admin/registrations", label: "Approvals", icon: FiUserCheck },

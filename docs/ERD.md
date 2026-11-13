@@ -761,6 +761,60 @@ Sensitive values such as password hashes, tokens, and secrets must never be writ
 
 ---
 
+## 5.19 `announcements`
+
+Church events and feed posts that do not track attendance. `kind` is `EVENT` (Church events page) or `ANNOUNCEMENT` (church feed).
+
+| Column | Notes |
+|---|---|
+| `id` | UUID primary key |
+| `church_id` | FK `churches` |
+| `kind` | `announcement_kind`: `EVENT`, `ANNOUNCEMENT` |
+| `title`, `theme`, `description`, `location_name` | Text; only `title` is required |
+| `starts_at`, `ends_at` | Required for events; `ends_at >= starts_at` |
+| `flyer_url`, `flyer_public_id` | Cloudinary image; set together or not at all |
+| `pinned_at`, `pinned_by` | Moderator pin; set together |
+| `comments_closed_at`, `comments_closed_by` | Moderator lock; set together |
+| `created_by`, `updated_by`, `archived_at`, `archived_by` | FK `users`; archived posts are hidden, never deleted |
+
+Indexes: `announcements_feed_idx (church_id, kind, pinned_at, created_at) WHERE archived_at IS NULL`.
+
+## 5.20 `announcement_reactions`
+
+| Column | Notes |
+|---|---|
+| `id` | UUID primary key |
+| `church_id`, `announcement_id`, `user_id` | FKs |
+| `reaction` | `feed_reaction`: `LIKE`, `AMEN`, `LOVE` |
+| `created_at`, `updated_at` | |
+
+`UNIQUE (announcement_id, user_id)`: one reaction per member per post. Removing a reaction deletes the row; reactions are low-value and are not audited.
+
+## 5.21 `announcement_comments`
+
+| Column | Notes |
+|---|---|
+| `id` | UUID primary key |
+| `church_id`, `announcement_id`, `author_user_id` | FKs |
+| `body` | 1–1000 characters |
+| `edited_at` | Set when the author edits |
+| `deleted_at`, `deleted_by` | Author soft delete |
+| `hidden_at`, `hidden_by`, `hidden_reason` | Moderator hide; set together |
+
+Comments are flat (no replies). The thread index covers `(announcement_id, created_at)` where neither deleted nor hidden.
+
+## 5.22 `announcement_comment_reports`
+
+| Column | Notes |
+|---|---|
+| `id` | UUID primary key |
+| `church_id`, `comment_id`, `reporter_user_id` | FKs |
+| `reason` | 3–300 characters |
+| `status` | `comment_report_status`: `OPEN`, `HIDDEN`, `DISMISSED` |
+| `resolved_by`, `resolved_at` | Set together when status leaves `OPEN` |
+
+`UNIQUE (comment_id, reporter_user_id)`; a queue index covers open reports per church.
+
 # 6. Main Relationships
 
 ## Church and Users

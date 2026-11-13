@@ -5,6 +5,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiInbox,
+  FiMessageSquare,
   FiPlus,
 } from "react-icons/fi";
 
@@ -17,6 +18,7 @@ import {
   type AnnouncementView,
   type PublishingPortal,
 } from "@/lib/announcements";
+import { feedBasePath } from "@/lib/feed";
 
 import { AnnouncementCard } from "./announcement-card";
 import { AnnouncementForm } from "./announcement-form";
@@ -38,12 +40,6 @@ function isPublishingPortal(
   return (PUBLISHING_PORTALS as readonly string[]).includes(portal);
 }
 
-const KIND_FILTERS = [
-  { value: undefined, label: "All" },
-  { value: "EVENT", label: "Events" },
-  { value: "ANNOUNCEMENT", label: "Announcements" },
-] as const;
-
 export function AnnouncementsBoard({
   portal,
   page,
@@ -60,7 +56,6 @@ export function AnnouncementsBoard({
     const next = { ...view, page: 1, ...changes };
     const query = new URLSearchParams();
     if (next.scope === "past") query.set("scope", "past");
-    if (next.kind) query.set("kind", next.kind);
     if (next.page > 1) query.set("page", String(next.page));
     const text = query.toString();
     return text ? `${basePath}?${text}` : basePath;
@@ -68,8 +63,6 @@ export function AnnouncementsBoard({
 
   const tabClass = (active: boolean) =>
     `inline-flex h-9 items-center border-b-2 px-1 text-sm font-medium transition ${active ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-800"}`;
-  const chipClass = (active: boolean) =>
-    `inline-flex h-8 items-center rounded-full border px-3 text-[13px] font-medium transition ${active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`;
 
   return (
     <div className="text-slate-900">
@@ -77,7 +70,7 @@ export function AnnouncementsBoard({
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Announcements &amp; events
+              Church events
             </h1>
             <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
               {page.total}
@@ -85,19 +78,28 @@ export function AnnouncementsBoard({
           </div>
           <p className="mt-1 text-sm text-slate-500">
             {view.scope === "past"
-              ? "Events and announcements that have already happened."
+              ? "Church events that have already happened."
               : "What's coming up at church. No check-in needed."}
           </p>
         </div>
-        {canPublish && !composing && !editing ? (
+        <div className="flex flex-wrap gap-2">
           <Link
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
-            href={`${basePath}?compose=1`}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            href={feedBasePath(portal)}
           >
-            <FiPlus aria-hidden />
-            New post
+            <FiMessageSquare aria-hidden />
+            Church feed
           </Link>
-        ) : null}
+          {canPublish && !composing && !editing ? (
+            <Link
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700"
+              href={`${basePath}?compose=1`}
+            >
+              <FiPlus aria-hidden />
+              New event
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       {feedback ? (
@@ -120,13 +122,14 @@ export function AnnouncementsBoard({
             basePath={basePath}
             initial={editing ?? undefined}
             key={editing?.id ?? "new"}
+            lockedKind={editing?.kind ?? "EVENT"}
             portal={manage.portal}
           />
         </div>
       ) : null}
 
       <nav
-        aria-label="Announcement views"
+        aria-label="Event views"
         className="mt-6 flex flex-wrap items-end justify-between gap-3 border-b border-slate-200"
       >
         <div className="flex gap-5">
@@ -145,18 +148,6 @@ export function AnnouncementsBoard({
             Past
           </Link>
         </div>
-        <div className="flex flex-wrap gap-2 pb-2">
-          {KIND_FILTERS.map((filter) => (
-            <Link
-              aria-current={view.kind === filter.value ? "true" : undefined}
-              className={chipClass(view.kind === filter.value)}
-              href={href({ kind: filter.value })}
-              key={filter.label}
-            >
-              {filter.label}
-            </Link>
-          ))}
-        </div>
       </nav>
 
       {page.items.length === 0 ? (
@@ -165,19 +156,19 @@ export function AnnouncementsBoard({
             <FiInbox aria-hidden className="mx-auto text-4xl text-slate-300" />
             <h2 className="mt-3 text-base font-semibold">
               {view.scope === "past"
-                ? "Nothing in the past yet"
-                : "Nothing coming up yet"}
+                ? "No past events yet"
+                : "No upcoming events yet"}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               {canPublish
-                ? "Post an event or announcement for the church."
-                : "Check back soon for church events and news."}
+                ? "Post an event for the church."
+                : "Check back soon for church events."}
             </p>
           </div>
         </section>
       ) : (
         <section
-          aria-label={view.scope === "past" ? "Past posts" : "Upcoming posts"}
+          aria-label={view.scope === "past" ? "Past events" : "Upcoming events"}
           className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
         >
           {page.items.map((item) => (
@@ -188,7 +179,7 @@ export function AnnouncementsBoard({
 
       {page.totalPages > 1 ? (
         <nav
-          aria-label="Announcement pages"
+          aria-label="Event pages"
           className="mt-8 flex items-center justify-between text-sm"
         >
           {page.page > 1 ? (

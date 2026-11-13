@@ -32,7 +32,8 @@ export async function loadAnnouncementBoard(
   fetchResource: FetchResource,
   parameters: AnnouncementBoardSearchParams,
 ) {
-  const view = parseAnnouncementView(parameters);
+  // This board lists church events; announcements live in the feed.
+  const view = { ...parseAnnouncementView(parameters), kind: "EVENT" as const };
   const editId =
     parameters.edit && UUID_PATTERN.test(parameters.edit)
       ? parameters.edit

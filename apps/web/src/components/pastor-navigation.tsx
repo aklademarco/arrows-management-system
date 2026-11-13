@@ -44,8 +44,8 @@ const primaryItems = [
 
 const secondaryItems = [
   {
-    href: "/pastor/announcements",
-    label: "Announcements",
+    href: "/pastor/feed",
+    label: "Feed",
     icon: FiVolume2,
   },
   { href: "/pastor/notifications", label: "Notifications", icon: FiMessageCircle },

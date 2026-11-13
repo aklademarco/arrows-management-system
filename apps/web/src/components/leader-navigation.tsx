@@ -39,9 +39,9 @@ const items = [
     icon: FiMusic,
   },
   {
-    href: "/leader/announcements",
-    label: "Announcements",
-    mobileLabel: "News",
+    href: "/leader/feed",
+    label: "Feed",
+    mobileLabel: "Feed",
     icon: FiVolume2,
   },
   { href: "/leader/inbox", label: "Inbox", mobileLabel: "Inbox", icon: FiBell },

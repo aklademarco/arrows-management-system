@@ -21,6 +21,10 @@ type AnnouncementFormProps = {
   basePath: string;
   /** The post being edited; omitted when creating. */
   initial?: Announcement;
+  /** Fixes the post type and hides the picker. */
+  lockedKind?: AnnouncementKind;
+  /** Which page the save returns to. */
+  destination?: "events" | "feed";
 };
 
 const inputClass =
@@ -31,8 +35,12 @@ export function AnnouncementForm({
   portal,
   basePath,
   initial,
+  lockedKind,
+  destination = "events",
 }: AnnouncementFormProps) {
-  const [kind, setKind] = useState<AnnouncementKind>(initial?.kind ?? "EVENT");
+  const [kind, setKind] = useState<AnnouncementKind>(
+    lockedKind ?? initial?.kind ?? "EVENT",
+  );
   const [descriptionLength, setDescriptionLength] = useState(
     initial?.description?.length ?? 0,
   );
@@ -83,6 +91,7 @@ export function AnnouncementForm({
           }
           const result = await saveAnnouncement({
             portal,
+            destination,
             id: initial?.id,
             kind,
             title: text("title"),
@@ -102,11 +111,18 @@ export function AnnouncementForm({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">
-            {initial ? "Edit post" : "New post"}
+            {initial
+              ? "Edit post"
+              : lockedKind === "ANNOUNCEMENT"
+                ? "New feed post"
+                : lockedKind === "EVENT"
+                  ? "New church event"
+                  : "New post"}
           </h2>
           <p className="mt-0.5 text-sm text-slate-500">
-            Members see this on their announcements page. No attendance is
-            taken.
+            {kind === "ANNOUNCEMENT"
+              ? "Members see this in the church feed and can react and comment."
+              : "Members see this under church events. No attendance is taken."}
           </p>
         </div>
         <Link
@@ -119,7 +135,7 @@ export function AnnouncementForm({
         </Link>
       </div>
 
-      <fieldset className="mt-5">
+      <fieldset className={lockedKind ? "hidden" : "mt-5"}>
         <legend className="text-sm font-medium text-slate-700">Type</legend>
         <div className="mt-1.5 inline-flex rounded-lg bg-slate-100 p-1">
           {(

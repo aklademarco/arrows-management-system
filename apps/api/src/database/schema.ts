@@ -8,6 +8,7 @@ import {
   pgTable,
   time,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   varchar,
@@ -164,6 +165,14 @@ export const pastoralCareRequestStatus = pgEnum(
 export const announcementKind = pgEnum('announcement_kind', [
   'ANNOUNCEMENT',
   'EVENT',
+]);
+
+export const feedReaction = pgEnum('feed_reaction', ['LIKE', 'AMEN', 'LOVE']);
+
+export const commentReportStatus = pgEnum('comment_report_status', [
+  'OPEN',
+  'HIDDEN',
+  'DISMISSED',
 ]);
 
 export const reviewDecision = pgEnum('review_decision', [
@@ -1475,6 +1484,10 @@ export const announcements = pgTable(
       .references(() => users.id),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
     archivedBy: uuid('archived_by').references(() => users.id),
+    pinnedAt: timestamp('pinned_at', { withTimezone: true }),
+    pinnedBy: uuid('pinned_by').references(() => users.id),
+    commentsClosedAt: timestamp('comments_closed_at', { withTimezone: true }),
+    commentsClosedBy: uuid('comments_closed_by').references(() => users.id),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1483,6 +1496,17 @@ export const announcements = pgTable(
       .defaultNow(),
   },
   (table) => [
+    index('announcements_feed_idx')
+      .on(table.churchId, table.kind, table.pinnedAt, table.createdAt)
+      .where(sql`${table.archivedAt} is null`),
+    check(
+      'announcements_pin_consistent',
+      sql`(${table.pinnedAt} is null) = (${table.pinnedBy} is null)`,
+    ),
+    check(
+      'announcements_comments_closed_consistent',
+      sql`(${table.commentsClosedAt} is null) = (${table.commentsClosedBy} is null)`,
+    ),
     index('announcements_church_starts_idx')
       .on(table.churchId, table.startsAt)
       .where(sql`${table.archivedAt} is null`),
@@ -1508,6 +1532,129 @@ export const announcements = pgTable(
     check(
       'announcements_archive_consistent',
       sql`(${table.archivedAt} is null) = (${table.archivedBy} is null)`,
+    ),
+  ],
+);
+
+/** One active reaction per member per post. */
+export const announcementReactions = pgTable(
+  'announcement_reactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    announcementId: uuid('announcement_id')
+      .notNull()
+      .references(() => announcements.id),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    reaction: feedReaction('reaction').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique('announcement_reactions_one_per_member').on(
+      table.announcementId,
+      table.userId,
+    ),
+    index('announcement_reactions_post_idx').on(
+      table.announcementId,
+      table.reaction,
+    ),
+  ],
+);
+
+/** Flat comments on feed posts. Authors soft-delete; moderators hide. */
+export const announcementComments = pgTable(
+  'announcement_comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    announcementId: uuid('announcement_id')
+      .notNull()
+      .references(() => announcements.id),
+    authorUserId: uuid('author_user_id')
+      .notNull()
+      .references(() => users.id),
+    body: varchar('body', { length: 1000 }).notNull(),
+    editedAt: timestamp('edited_at', { withTimezone: true }),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    deletedBy: uuid('deleted_by').references(() => users.id),
+    hiddenAt: timestamp('hidden_at', { withTimezone: true }),
+    hiddenBy: uuid('hidden_by').references(() => users.id),
+    hiddenReason: varchar('hidden_reason', { length: 300 }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('announcement_comments_thread_idx')
+      .on(table.announcementId, table.createdAt)
+      .where(sql`${table.deletedAt} is null and ${table.hiddenAt} is null`),
+    check(
+      'announcement_comments_body_not_blank',
+      sql`char_length(btrim(${table.body})) > 0`,
+    ),
+    check(
+      'announcement_comments_deleted_consistent',
+      sql`(${table.deletedAt} is null) = (${table.deletedBy} is null)`,
+    ),
+    check(
+      'announcement_comments_hidden_consistent',
+      sql`(${table.hiddenAt} is null and ${table.hiddenBy} is null and ${table.hiddenReason} is null) or (${table.hiddenAt} is not null and ${table.hiddenBy} is not null and ${table.hiddenReason} is not null)`,
+    ),
+  ],
+);
+
+export const announcementCommentReports = pgTable(
+  'announcement_comment_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    churchId: uuid('church_id')
+      .notNull()
+      .references(() => churches.id),
+    commentId: uuid('comment_id')
+      .notNull()
+      .references(() => announcementComments.id),
+    reporterUserId: uuid('reporter_user_id')
+      .notNull()
+      .references(() => users.id),
+    reason: varchar('reason', { length: 300 }).notNull(),
+    status: commentReportStatus('status').notNull().default('OPEN'),
+    resolvedBy: uuid('resolved_by').references(() => users.id),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique('announcement_comment_reports_once_per_member').on(
+      table.commentId,
+      table.reporterUserId,
+    ),
+    index('announcement_comment_reports_queue_idx').on(
+      table.churchId,
+      table.status,
+      table.createdAt,
+    ),
+    check(
+      'announcement_comment_reports_reason_not_blank',
+      sql`char_length(btrim(${table.reason})) > 0`,
+    ),
+    check(
+      'announcement_comment_reports_resolution_consistent',
+      sql`(${table.status} = 'OPEN' and ${table.resolvedBy} is null and ${table.resolvedAt} is null) or (${table.status} <> 'OPEN' and ${table.resolvedBy} is not null and ${table.resolvedAt} is not null)`,
     ),
   ],
 );

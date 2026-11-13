@@ -10,10 +10,13 @@ export function ArchiveAnnouncementButton({
   id,
   title,
   portal,
+  destination = "events",
 }: {
   id: string;
   title: string;
   portal: PublishingPortal;
+  /** Which page to return to afterwards. */
+  destination?: "events" | "feed";
 }) {
   return (
     <form
@@ -25,6 +28,7 @@ export function ArchiveAnnouncementButton({
     >
       <input name="id" type="hidden" value={id} />
       <input name="portal" type="hidden" value={portal} />
+      <input name="destination" type="hidden" value={destination} />
       <AdminActionButton
         aria-label={`Archive ${title}`}
         className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
