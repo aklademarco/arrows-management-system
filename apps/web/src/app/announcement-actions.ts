@@ -12,7 +12,7 @@ import {
 } from "@/lib/announcements";
 import { churchWallTimeToIso } from "@/lib/church-time";
 import { uploadImageToCloudinary } from "@/lib/cloudinary-upload";
-import { feedBasePath } from "@/lib/feed";
+import { feedBasePath, feedListPath } from "@/lib/feed";
 
 const FLYER_FOLDER = "acms/announcement-flyers";
 
@@ -95,7 +95,7 @@ function backToBoard(
 ): never {
   const path =
     destination === "feed"
-      ? feedBasePath(portal)
+      ? feedListPath(portal)
       : ANNOUNCEMENT_PORTALS[portal].basePath;
   redirect(`${path}?feedback=${kind}&message=${encodeURIComponent(message)}`);
 }
@@ -179,7 +179,13 @@ export async function saveAnnouncement(
     data.portal,
     data.destination,
     "success",
-    data.id ? "Post updated." : `${data.kind === "EVENT" ? "Event" : "Announcement"} published.`,
+    data.destination === "feed"
+      ? data.id
+        ? "Your post has been updated."
+        : "Your post has been shared."
+      : data.id
+        ? "Post updated."
+        : "Event published.",
   );
 }
 

@@ -1,4 +1,8 @@
-import { ANNOUNCEMENT_PORTALS, type AnnouncementPortal } from "./announcements";
+import {
+  ANNOUNCEMENT_PORTALS,
+  type AnnouncementPortal,
+  type PublishingPortal,
+} from "./announcements";
 import { CHURCH_TIME_ZONE } from "./church-time";
 
 export const FEED_REACTIONS = [
@@ -76,6 +80,76 @@ export function feedBasePath(portal: AnnouncementPortal) {
   );
 }
 
+/**
+ * Publishing portals open a menu at /feed and read posts at /feed/browse.
+ * Members cannot post, so their /feed is the list itself.
+ */
+export function feedListPath(portal: AnnouncementPortal) {
+  const base = feedBasePath(portal);
+  return portal === "member" ? base : `${base}/browse`;
+}
+
+/** The Instagram-style composer; pass an ID to edit that post. */
+export function feedComposePath(portal: PublishingPortal, editId?: string) {
+  return `${feedBasePath(portal)}/new${editId ? `?edit=${editId}` : ""}`;
+}
+
+/** Shared destinations for the navigation sheet and the standalone feed menu. */
+export function feedMenuOptions(
+  portal: PublishingPortal,
+  {
+    canPublish,
+    canModerate,
+    totalPosts = 0,
+    openReports = 0,
+  }: {
+    canPublish: boolean;
+    canModerate: boolean;
+    totalPosts?: number;
+    openReports?: number;
+  },
+) {
+  const options: {
+    href: string;
+    icon: "feed" | "create" | "events" | "reports";
+    title: string;
+    detail: string;
+    badge?: string;
+    primary?: boolean;
+  }[] = [
+    {
+      href: feedListPath(portal),
+      icon: "feed",
+      title: "View feed",
+      detail: "See posts, reactions, and comments",
+      badge: totalPosts ? String(totalPosts) : undefined,
+    },
+  ];
+  if (canPublish)
+    options.push({
+      href: feedComposePath(portal),
+      icon: "create",
+      title: "Create post",
+      detail: "Share a photo, notice, or update",
+      primary: true,
+    });
+  options.push({
+    href: ANNOUNCEMENT_PORTALS[portal].basePath,
+    icon: "events",
+    title: "Church events",
+    detail: "Upcoming programmes and flyers",
+  });
+  if (canModerate && portal !== "leader")
+    options.push({
+      href: `${feedBasePath(portal)}/reports`,
+      icon: "reports",
+      title: "Reported comments",
+      detail: "Review reports from the church",
+      badge: openReports ? String(openReports) : undefined,
+    });
+  return options;
+}
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -112,7 +186,10 @@ export const IDLE_FEED_STATE = {
 
 /** Reddit-style age: "just now", "5m ago", "3h ago", "2d ago", then a date. */
 export function formatAge(value: string, now: number = Date.now()) {
-  const seconds = Math.max(0, Math.round((now - new Date(value).getTime()) / 1000));
+  const seconds = Math.max(
+    0,
+    Math.round((now - new Date(value).getTime()) / 1000),
+  );
   if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;

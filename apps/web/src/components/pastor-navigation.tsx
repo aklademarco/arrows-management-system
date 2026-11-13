@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { FeedNavigationLink } from "./feed/feed-navigation-link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
@@ -48,7 +48,11 @@ const secondaryItems = [
     label: "Feed",
     icon: FiVolume2,
   },
-  { href: "/pastor/notifications", label: "Notifications", icon: FiMessageCircle },
+  {
+    href: "/pastor/notifications",
+    label: "Notifications",
+    icon: FiMessageCircle,
+  },
   {
     href: "/pastor/reports",
     label: "Reports",
@@ -83,7 +87,8 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
           const active = isActive(pathname, href);
 
           return (
-            <Link
+            <FeedNavigationLink
+              portal="pastor"
               aria-current={active ? "page" : undefined}
               className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition ${
                 active
@@ -96,7 +101,7 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
               <Icon aria-hidden="true" className="shrink-0 text-lg" />
 
               <span>{label}</span>
-            </Link>
+            </FeedNavigationLink>
           );
         })}
       </nav>
@@ -128,7 +133,8 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
                 const active = isActive(pathname, href);
 
                 return (
-                  <Link
+                  <FeedNavigationLink
+                    portal="pastor"
                     className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition ${
                       active
                         ? "bg-purple-100 text-purple-700"
@@ -149,7 +155,7 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
                     </span>
 
                     {label}
-                  </Link>
+                  </FeedNavigationLink>
                 );
               })}
             </div>
@@ -165,7 +171,8 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
           const active = isActive(pathname, href);
 
           return (
-            <Link
+            <FeedNavigationLink
+              portal="pastor"
               aria-current={active ? "page" : undefined}
               className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold transition ${
                 active ? "text-purple-700" : "text-slate-500"
@@ -177,7 +184,7 @@ export function PastorNavigation({ mobile = false }: { mobile?: boolean }) {
               <Icon aria-hidden="true" className="text-xl" />
 
               <span>{mobileLabel}</span>
-            </Link>
+            </FeedNavigationLink>
           );
         })}
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useCallback, useState } from "react";
+import { useActionState, useState } from "react";
+import { FiMoreHorizontal } from "react-icons/fi";
 
 import {
   deleteComment,
@@ -19,13 +20,12 @@ import {
 
 import { ActionMessage } from "./action-message";
 import { Avatar } from "./avatar";
-import { ReasonForm } from "./reason-form";
+import { HIDE_REASONS, REPORT_REASONS, ReasonPicker } from "./reason-picker";
+import { Sheet, SheetHeader, sheetOption } from "./sheet";
 
-type Mode = "view" | "edit" | "report" | "hide";
+type SheetView = "closed" | "menu" | "delete" | "report" | "hide";
 
-const linkButton =
-  "inline-flex h-7 items-center rounded-full px-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-900";
-
+/** One comment: "name text", with a "…" sheet for its options. */
 export function CommentItem({
   portal,
   postId,
@@ -39,164 +39,174 @@ export function CommentItem({
   commentsClosed: boolean;
   canModerate: boolean;
 }) {
-  const [mode, setMode] = useState<Mode>("view");
-  const [reported, setReported] = useState(false);
-  const [editState, editAction, editing] = useActionState(
+  const [sheet, setSheet] = useState<SheetView>("closed");
+  const [editing, setEditing] = useState(false);
+  const closeSheet = () => setSheet("closed");
+  const [editState, editAction, saving] = useActionState(
     async (previous: FeedActionState, formData: FormData) => {
       const result = await editComment(previous, formData);
-      if (result.status === "success") setMode("view");
+      if (result.status === "success") setEditing(false);
       return result;
     },
     IDLE_FEED_STATE,
   );
   const [deleteState, deleteAction, deleting] = useActionState(
-    deleteComment,
+    async (previous: FeedActionState, formData: FormData) => {
+      const result = await deleteComment(previous, formData);
+      if (result.status === "success") setSheet("closed");
+      return result;
+    },
     IDLE_FEED_STATE,
   );
-  const close = useCallback(() => setMode("view"), []);
-  const markReported = useCallback(() => {
-    setReported(true);
-    setMode("view");
-  }, []);
 
   const ids = { portal, postId, commentId: comment.id };
+  const hiddenIds = Object.entries(ids).map(([name, value]) => (
+    <input key={name} name={name} type="hidden" value={value} />
+  ));
   const author = comment.authorName ?? "Church member";
+  const canEdit = comment.isOwn && !commentsClosed;
 
   return (
-    <li className="flex gap-2.5 pt-4">
-      {/* Avatar with a thread rail beneath it, as in Reddit threads. */}
-      <div className="flex flex-col items-center">
-        <Avatar name={comment.authorName} photoUrl={comment.authorPhotoUrl} size="sm" />
-        <span aria-hidden className="mt-1 w-px flex-1 bg-slate-200" />
-      </div>
-      <div className="min-w-0 flex-1 pb-1">
-        <p className="flex flex-wrap items-center gap-x-1.5 text-xs">
-          <span className="font-semibold text-slate-900">{author}</span>
-          <span aria-hidden className="text-slate-400">•</span>
-          <time
-            className="text-slate-500"
-            dateTime={comment.createdAt}
-            suppressHydrationWarning
-            title={formatPostedAt(comment.createdAt)}
-          >
-            {formatAge(comment.createdAt)}
-          </time>
-          {comment.editedAt ? (
-            <span className="text-slate-400">• edited</span>
-          ) : null}
-        </p>
-
-        {mode === "edit" ? (
-          <form action={editAction} className="mt-2 grid gap-2">
-            {Object.entries(ids).map(([name, value]) => (
-              <input key={name} name={name} type="hidden" value={value} />
-            ))}
+    <li className="group flex gap-3 border-b border-slate-200 px-4 py-3 transition hover:bg-slate-50/70">
+      <Avatar name={comment.authorName} photoUrl={comment.authorPhotoUrl} />
+      <div className="min-w-0 flex-1">
+        {editing ? (
+          <form action={editAction}>
+            {hiddenIds}
             <label className="sr-only" htmlFor={`edit-${comment.id}`}>
               Edit your comment
             </label>
             <textarea
               autoFocus
-              className="min-h-20 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm leading-6 outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+              className="field-sizing-content w-full resize-none rounded-xl bg-slate-100 px-3 py-2 text-sm leading-5 outline-none focus:ring-2 focus:ring-black"
               defaultValue={comment.body}
               id={`edit-${comment.id}`}
               maxLength={1000}
               name="body"
               required
             />
-            <div className="flex items-center gap-2">
+            <div className="mt-1 flex items-center gap-4 text-xs font-semibold">
               <button
-                className="inline-flex h-8 items-center rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
-                disabled={editing}
-                type="submit"
-              >
-                {editing ? "Saving…" : "Save"}
-              </button>
-              <button
-                className="inline-flex h-8 items-center rounded-lg px-3 text-xs font-medium text-slate-600 hover:bg-slate-100"
-                onClick={close}
+                className="text-slate-500 hover:text-slate-900"
+                onClick={() => setEditing(false)}
                 type="button"
               >
                 Cancel
+              </button>
+              <button className="text-black hover:text-slate-500 disabled:opacity-50" disabled={saving} type="submit">
+                {saving ? "Saving…" : "Done"}
               </button>
               <ActionMessage state={editState} />
             </div>
           </form>
         ) : (
-          <p className="mt-1 whitespace-pre-line break-words text-sm leading-6 text-slate-700">
-            {comment.body}
-          </p>
-        )}
-
-        {mode === "view" ? (
-          <div className="-ml-2 mt-0.5 flex flex-wrap items-center gap-0.5">
-            {comment.isOwn ? (
-              <>
-                {commentsClosed ? null : (
-                  <button className={linkButton} onClick={() => setMode("edit")} type="button">
-                    Edit
-                  </button>
-                )}
-                <form
-                  action={deleteAction}
-                  onSubmit={(event) => {
-                    if (!window.confirm("Remove your comment?")) event.preventDefault();
-                  }}
+          <>
+            <div className="flex items-start gap-1">
+              <p className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1 text-[15px] leading-5">
+                <span className="truncate font-bold">{author}</span>
+                <span aria-hidden className="text-slate-500">
+                  ·
+                </span>
+                <time
+                  className="text-slate-500"
+                  dateTime={comment.createdAt}
+                  suppressHydrationWarning
+                  title={formatPostedAt(comment.createdAt)}
                 >
-                  {Object.entries(ids).map(([name, value]) => (
-                    <input key={name} name={name} type="hidden" value={value} />
-                  ))}
-                  <button className={linkButton} disabled={deleting} type="submit">
-                    {deleting ? "Removing…" : "Remove"}
-                  </button>
-                </form>
-              </>
-            ) : reported ? (
-              <span className="text-xs text-emerald-700" role="status">
-                Reported. Thank you.
-              </span>
+                  {formatAge(comment.createdAt).replace(" ago", "")}
+                </time>
+                {comment.editedAt ? (
+                  <span className="text-[13px] text-slate-500">· Edited</span>
+                ) : null}
+              </p>
+              <button
+                aria-haspopup="dialog"
+                aria-label={`Options for ${author}'s comment`}
+                className="-mr-2 -mt-1.5 grid size-9 shrink-0 place-items-center rounded-full text-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-black [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-visible:opacity-100"
+                onClick={() => setSheet("menu")}
+                type="button"
+              >
+                <FiMoreHorizontal aria-hidden />
+              </button>
+            </div>
+            <p className="mt-0.5 whitespace-pre-line break-words text-[15px] leading-5 text-slate-900">
+              {comment.body}
+            </p>
+          </>
+        )}
+      </div>
+
+      <Sheet label="Comment options" onClose={closeSheet} open={sheet !== "closed"}>
+        {sheet === "delete" ? (
+          <form action={deleteAction}>
+            <SheetHeader detail="It will be removed from this post." title="Delete comment?" />
+            {deleteState.status === "error" ? (
+              <p className="bg-red-50 px-4 py-2.5 text-center text-sm text-red-700" role="alert">
+                {deleteState.message}
+              </p>
+            ) : null}
+            {hiddenIds}
+            <button className={sheetOption("danger")} disabled={deleting} type="submit">
+              {deleting ? "Deleting…" : "Delete"}
+            </button>
+            <button className={sheetOption()} onClick={closeSheet} type="button">
+              Cancel
+            </button>
+          </form>
+        ) : sheet === "report" ? (
+          <ReasonPicker
+            action={reportComment}
+            detail="Your report is private. A pastor or administrator will review it."
+            doneDetail="A pastor or administrator will review this comment."
+            doneTitle="Thanks for letting us know"
+            fields={ids}
+            onClose={closeSheet}
+            reasons={REPORT_REASONS}
+            title="Why are you reporting this comment?"
+          />
+        ) : sheet === "hide" ? (
+          <ReasonPicker
+            action={hideComment}
+            detail="The comment disappears for everyone. Your reason is kept in the audit log."
+            fields={{ portal, commentId: comment.id }}
+            onClose={closeSheet}
+            reasons={HIDE_REASONS}
+            title="Why hide this comment?"
+          />
+        ) : (
+          <div>
+            {comment.isOwn ? (
+              <button className={sheetOption("danger")} onClick={() => setSheet("delete")} type="button">
+                Delete
+              </button>
             ) : (
-              <button className={linkButton} onClick={() => setMode("report")} type="button">
+              <button className={sheetOption("danger")} onClick={() => setSheet("report")} type="button">
                 Report
               </button>
             )}
             {canModerate && !comment.isOwn ? (
-              <button
-                className={`${linkButton} hover:text-red-700`}
-                onClick={() => setMode("hide")}
-                type="button"
-              >
-                Hide
+              <button className={sheetOption("danger")} onClick={() => setSheet("hide")} type="button">
+                Hide comment
               </button>
             ) : null}
-            <ActionMessage state={deleteState} />
+            {canEdit ? (
+              <button
+                className={sheetOption()}
+                onClick={() => {
+                  setEditing(true);
+                  closeSheet();
+                }}
+                type="button"
+              >
+                Edit
+              </button>
+            ) : null}
+            <button className={sheetOption()} onClick={closeSheet} type="button">
+              Cancel
+            </button>
           </div>
-        ) : null}
-
-        {mode === "report" ? (
-          <ReasonForm
-            action={reportComment}
-            fields={ids}
-            label={`Why are you reporting ${author}'s comment?`}
-            onCancel={close}
-            onDone={markReported}
-            pendingLabel="Sending…"
-            placeholder="For example: unkind or inappropriate"
-            submitLabel="Send report"
-          />
-        ) : null}
-        {mode === "hide" ? (
-          <ReasonForm
-            action={hideComment}
-            fields={{ portal, commentId: comment.id }}
-            label="Reason for hiding (kept in the audit log)"
-            onCancel={close}
-            pendingLabel="Hiding…"
-            placeholder="For example: abusive language"
-            submitLabel="Hide comment"
-            tone="danger"
-          />
-        ) : null}
-      </div>
+        )}
+      </Sheet>
     </li>
   );
 }

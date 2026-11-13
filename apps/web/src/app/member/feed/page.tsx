@@ -1,7 +1,7 @@
 import { FeedView } from "@/components/feed/feed-view";
 import { loadFeed, type FeedSearchParams } from "@/lib/feed-data";
 
-export default async function MemberFeedPage({
+export default async function MemberFeedListPage({
   searchParams,
 }: {
   searchParams: Promise<FeedSearchParams>;

@@ -1,15 +1,11 @@
-import { FeedView } from "@/components/feed/feed-view";
-import { loadFeed, type FeedSearchParams } from "@/lib/feed-data";
+import { FeedHub } from "@/components/feed/feed-hub";
+import { loadFeedHub } from "@/lib/feed-data";
 
-export default async function LeaderFeedPage({
-  searchParams,
-}: {
-  searchParams: Promise<FeedSearchParams>;
-}) {
-  const data = await loadFeed("leader", await searchParams);
+export default async function LeaderFeedMenuPage() {
+  const hub = await loadFeedHub("leader");
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
-      <FeedView portal="leader" {...data} />
+      <FeedHub portal="leader" {...hub} />
     </main>
   );
 }

@@ -5,6 +5,7 @@ import {
   ANNOUNCEMENT_PORTALS,
   type Announcement,
   type AnnouncementPortal,
+  type PublishingPortal,
 } from "./announcements";
 import {
   isUuid,
@@ -17,8 +18,6 @@ import {
 
 export type FeedSearchParams = {
   page?: string;
-  compose?: string;
-  edit?: string;
   feedback?: string;
   message?: string;
 };
@@ -29,7 +28,10 @@ export type FeedFeedback = { kind: "success" | "error"; message: string };
  * Reads the feed API with a portal's session. Missing, hidden, archived, or
  * forbidden content all render as "not found" so nothing leaks by URL.
  */
-async function feedFetch<T>(portal: AnnouncementPortal, path: string): Promise<T> {
+async function feedFetch<T>(
+  portal: AnnouncementPortal,
+  path: string,
+): Promise<T> {
   const { cookie, loginPath } = ANNOUNCEMENT_PORTALS[portal];
   const token = (await cookies()).get(cookie)?.value;
   if (!token) redirect(loginPath);
@@ -59,19 +61,42 @@ export async function loadFeed(
   parameters: FeedSearchParams,
 ) {
   const page = positivePage(parameters.page);
-  const editId = isUuid(parameters.edit) ? parameters.edit : undefined;
-  const [feed, editing] = await Promise.all([
-    feedFetch<FeedPage>(portal, `/feed?page=${page}&limit=10`),
-    editId
-      ? feedFetch<Announcement>(portal, `/announcements/${editId}`)
-      : Promise.resolve(null),
-  ]);
+  const feed = await feedFetch<FeedPage>(portal, `/feed?page=${page}&limit=10`);
+  return { feed, feedback: readFeedback(parameters) };
+}
+
+/** What the feed menu offers this viewer, with counts for its badges. */
+export async function loadFeedHub(portal: PublishingPortal) {
+  const feed = await feedFetch<FeedPage>(portal, "/feed?limit=1");
+  const reports =
+    feed.canModerate && (portal === "admin" || portal === "pastor")
+      ? await feedFetch<ReportedComment[]>(portal, "/feed/moderation/reports")
+      : [];
   return {
-    feed,
-    editing: editing?.canManage ? editing : null,
-    composing: parameters.compose === "1",
-    feedback: readFeedback(parameters),
+    totalPosts: feed.total,
+    canPublish: feed.canPublish,
+    canModerate: feed.canModerate,
+    openReports: reports.length,
   };
+}
+
+/** Checks the viewer may post, and loads the post being edited. */
+export async function loadComposer(
+  portal: PublishingPortal,
+  parameters: { edit?: string },
+) {
+  if (parameters.edit !== undefined) {
+    if (!isUuid(parameters.edit)) notFound();
+    const post = await feedFetch<Announcement>(
+      portal,
+      `/announcements/${parameters.edit}`,
+    );
+    if (!post.canManage || post.kind !== "ANNOUNCEMENT") notFound();
+    return { editing: post };
+  }
+  const feed = await feedFetch<FeedPage>(portal, "/feed?limit=1");
+  if (!feed.canPublish) notFound();
+  return { editing: null };
 }
 
 export async function loadFeedPost(
@@ -83,7 +108,10 @@ export async function loadFeedPost(
   const page = positivePage(parameters.page);
   const [post, comments] = await Promise.all([
     feedFetch<FeedPost>(portal, `/feed/${postId}`),
-    feedFetch<CommentPage>(portal, `/feed/${postId}/comments?page=${page}&limit=50`),
+    feedFetch<CommentPage>(
+      portal,
+      `/feed/${postId}/comments?page=${page}&limit=50`,
+    ),
   ]);
   return { post, comments };
 }

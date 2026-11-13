@@ -8,7 +8,8 @@ import { dismissCommentReports, hideComment } from "@/app/feed-actions";
 import { formatPostedAt, IDLE_FEED_STATE, type ReportedComment } from "@/lib/feed";
 
 import { ActionMessage } from "./action-message";
-import { ReasonForm } from "./reason-form";
+import { HIDE_REASONS, ReasonPicker } from "./reason-picker";
+import { Sheet } from "./sheet";
 
 function ReportRow({
   portal,
@@ -59,19 +60,17 @@ function ReportRow({
           ))}
         </ul>
       </div>
-      {hiding ? (
-        <ReasonForm
+      <Sheet label="Hide comment" onClose={() => setHiding(false)} open={hiding}>
+        <ReasonPicker
           action={hideComment}
+          detail="The comment disappears for everyone. Your reason is kept in the audit log."
           fields={{ portal, commentId: report.commentId }}
-          label="Reason for hiding (kept in the audit log)"
-          onCancel={() => setHiding(false)}
-          pendingLabel="Hiding…"
-          placeholder="For example: abusive language"
-          submitLabel="Hide comment"
-          tone="danger"
+          onClose={() => setHiding(false)}
+          reasons={HIDE_REASONS}
+          title="Why hide this comment?"
         />
-      ) : (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+      </Sheet>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
             className="inline-flex h-8 items-center gap-1.5 rounded-full bg-red-600 px-3 text-xs font-semibold text-white hover:bg-red-700"
             onClick={() => setHiding(true)}
@@ -93,8 +92,7 @@ function ReportRow({
             </button>
           </form>
           <ActionMessage state={dismissState} />
-        </div>
-      )}
+      </div>
     </li>
   );
 }

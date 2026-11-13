@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { FeedNavigationLink } from "./feed/feed-navigation-link";
 import { usePathname } from "next/navigation";
 import {
   FiBell,
@@ -65,7 +65,8 @@ export function LeaderNavigation({ mobile = false }: { mobile?: boolean }) {
 
         if (mobile) {
           return (
-            <Link
+            <FeedNavigationLink
+              portal="leader"
               aria-current={active ? "page" : undefined}
               aria-label={label}
               className={`relative flex min-h-[3.8rem] min-w-0 flex-col items-center justify-center gap-1 rounded-[1.15rem] px-0.5 text-white transition active:scale-95 ${
@@ -88,12 +89,13 @@ export function LeaderNavigation({ mobile = false }: { mobile?: boolean }) {
               >
                 {mobileLabel}
               </span>
-            </Link>
+            </FeedNavigationLink>
           );
         }
 
         return (
-          <Link
+          <FeedNavigationLink
+            portal="leader"
             aria-current={active ? "page" : undefined}
             aria-label={label}
             className={`group relative grid size-12 place-items-center justify-self-center rounded-2xl text-xl text-white transition duration-200 hover:-translate-y-0.5 hover:bg-white/15 focus-visible:bg-white/15 ${
@@ -114,7 +116,7 @@ export function LeaderNavigation({ mobile = false }: { mobile?: boolean }) {
             <span className="pointer-events-none absolute left-[calc(100%+0.7rem)] z-50 whitespace-nowrap rounded-xl bg-[#240046] px-3 py-2 text-xs font-bold text-white opacity-0 shadow-xl transition group-hover:translate-x-0.5 group-hover:opacity-100 group-focus-visible:translate-x-0.5 group-focus-visible:opacity-100">
               {label}
             </span>
-          </Link>
+          </FeedNavigationLink>
         );
       })}
     </nav>

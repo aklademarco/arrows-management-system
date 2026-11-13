@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { FeedNavigationLink } from "./feed/feed-navigation-link";
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { FiShield } from "react-icons/fi";
@@ -50,7 +50,8 @@ export function AdminDashboardNavigation({
       {links.map(({ href, label, icon: Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
-          <Link
+          <FeedNavigationLink
+            portal="admin"
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
@@ -59,7 +60,7 @@ export function AdminDashboardNavigation({
             className={`${rail ? "grid size-11 shrink-0 place-items-center rounded-full text-lg" : "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-xs font-medium"} transition ${active ? "bg-[#202222] text-white shadow-sm" : "text-[#626969] hover:bg-white hover:text-black"}`}
           >
             {rail ? <Icon aria-hidden="true" /> : label}
-          </Link>
+          </FeedNavigationLink>
         );
       })}
     </nav>

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { FeedNavigationLink } from "./feed/feed-navigation-link";
 import { usePathname } from "next/navigation";
 import {
   FiCalendar,
@@ -106,7 +106,8 @@ export function PortalNavigation({
           pathname === href ||
           (href !== `/${portal}` && pathname.startsWith(`${href}/`));
         return (
-          <Link
+          <FeedNavigationLink
+            portal={portal}
             aria-current={active ? "page" : undefined}
             className={
               mobile
@@ -121,7 +122,7 @@ export function PortalNavigation({
               className={mobile ? "text-xl" : "text-lg"}
             />
             {mobile ? (mobileLabel ?? label) : label}
-          </Link>
+          </FeedNavigationLink>
         );
       })}
     </nav>
