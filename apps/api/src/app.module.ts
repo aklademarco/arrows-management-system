@@ -20,6 +20,7 @@ import { PastoralCareModule } from './pastoral-care/pastoral-care.module';
 import { MinistryContentModule } from './ministry-content/ministry-content.module';
 import { LeadershipMessagesModule } from './leadership-messages/leadership-messages.module';
 import { LiturgiesModule } from './liturgies/liturgies.module';
+import { AnnouncementsModule } from './announcements/announcements.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './common/security/app-throttler.guard';
@@ -53,6 +54,7 @@ import { RATE_LIMITS } from './common/security/rate-limits';
     MinistryContentModule,
     LeadershipMessagesModule,
     LiturgiesModule,
+    AnnouncementsModule,
   ],
   controllers: [AppController],
   providers: [

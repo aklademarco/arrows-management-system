@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { FeedNavigationLink } from "./feed/feed-navigation-link";
 import { usePathname } from "next/navigation";
 import {
   FiCalendar,
@@ -18,10 +18,26 @@ import {
   FiHeart,
   FiList,
   FiShare2,
+  FiVolume2,
 } from "react-icons/fi";
+import type { IconType } from "react-icons";
 
-const memberNavigation = [
+type NavigationItem = {
+  href: string;
+  label: string;
+  /** Shorter label for the mobile bottom bar. */
+  mobileLabel?: string;
+  icon: IconType;
+};
+
+const memberNavigation: NavigationItem[] = [
   { href: "/member", label: "Home", icon: FiHome },
+  {
+    href: "/member/feed",
+    label: "Feed",
+    mobileLabel: "Feed",
+    icon: FiVolume2,
+  },
   { href: "/member/attendance", label: "Activity", icon: FiCalendar },
   { href: "/member/directory", label: "People", icon: FiUsers },
   { href: "/member/absences", label: "Absences", icon: FiFileText },
@@ -34,6 +50,11 @@ const memberNavigation = [
 export const adminNavigation = [
   { href: "/admin/dashboard", label: "Overview", icon: FiGrid },
   { href: "/admin/members", label: "Members", icon: FiUsers },
+  {
+    href: "/admin/feed",
+    label: "Feed",
+    icon: FiVolume2,
+  },
   { href: "/admin/registrations", label: "Approvals", icon: FiUserCheck },
   { href: "/admin/departments", label: "Departments", icon: FiGrid },
   { href: "/admin/events", label: "Events", icon: FiCalendar },
@@ -61,7 +82,7 @@ export function PortalNavigation({
   showAuditLogs?: boolean;
 }) {
   const pathname = usePathname();
-  const navigation =
+  const navigation: NavigationItem[] =
     portal === "member"
       ? mobile
         ? memberNavigation.filter(
@@ -78,14 +99,15 @@ export function PortalNavigation({
   return (
     <nav
       aria-label={portal === "member" ? "Member portal" : "Administration"}
-      className={mobile ? "grid grid-cols-5" : "grid gap-1"}
+      className={mobile ? "grid grid-cols-6" : "grid gap-1"}
     >
-      {navigation.map(({ href, label, icon: Icon }) => {
+      {navigation.map(({ href, label, mobileLabel, icon: Icon }) => {
         const active =
           pathname === href ||
           (href !== `/${portal}` && pathname.startsWith(`${href}/`));
         return (
-          <Link
+          <FeedNavigationLink
+            portal={portal}
             aria-current={active ? "page" : undefined}
             className={
               mobile
@@ -99,8 +121,8 @@ export function PortalNavigation({
               aria-hidden="true"
               className={mobile ? "text-xl" : "text-lg"}
             />
-            {label}
-          </Link>
+            {mobile ? (mobileLabel ?? label) : label}
+          </FeedNavigationLink>
         );
       })}
     </nav>

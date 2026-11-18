@@ -8,5 +8,7 @@ import { MembersService } from './members.service';
   imports: [AuthModule],
   controllers: [MembersController],
   providers: [MembersRepository, MembersService],
+  // Reused for leadership checks (e.g. who may publish feed posts).
+  exports: [MembersRepository],
 })
 export class MembersModule {}

@@ -1740,7 +1740,148 @@ An audit log entry is required.
 
 ---
 
-# 16. Authorization Matrix
+# 16. Announcements API
+
+Church announcements and events that do **not** track attendance (no check-in, geofence, or points). Each post is an `EVENT` or an `ANNOUNCEMENT` with a title, optional theme, short description, location, start/end time, and an optional flyer image.
+
+**Read:** every signed-in user of the church.
+**Post:** `SUPER_ADMIN`, `ADMIN`, `PASTOR`, and `DEPARTMENT_LEADER` with a current, unrevoked leadership assignment.
+
+`EVENT` posts appear on each portal's **Church events** page; `ANNOUNCEMENT` posts appear in the **church feed** (section 16.6).
+**Edit / archive:** admins and pastors for any post; department leaders for their own posts only.
+
+Posts are never deleted; archiving hides them and is audited. Create, update, and archive each write an audit log (`ANNOUNCEMENT_CREATED`, `ANNOUNCEMENT_UPDATED`, `ANNOUNCEMENT_ARCHIVED`). Writes share the `announcementWrite` rate limit (30 requests per 15 minutes).
+
+## 16.1 List Announcements
+
+```http
+GET /announcements?scope=upcoming&kind=EVENT&page=1&limit=12
+```
+
+- `scope=upcoming` (default): posts that have not finished yet (`coalesce(endsAt, startsAt) >= now`) plus undated announcements. Soonest first, undated last.
+- `scope=past`: dated posts that have finished, most recent first.
+- `kind`: optional `EVENT` or `ANNOUNCEMENT`. `limit` is at most 50.
+
+The response includes `canPublish` for the viewer, and each item includes `canManage`, `authorName`, and `flyerUrl`.
+
+## 16.2 Get Announcement
+
+```http
+GET /announcements/:announcementId
+```
+
+## 16.3 Create Announcement
+
+```http
+POST /announcements
+```
+
+```json
+{
+  "kind": "EVENT",
+  "title": "Youth Night",
+  "theme": "Rooted in Christ",
+  "description": "An evening of worship and fellowship.",
+  "locationName": "Main auditorium",
+  "onlineUrl": "https://youtube.com/live/abc",
+  "startsAt": "2026-12-05T18:00:00.000Z",
+  "endsAt": "2026-12-05T21:00:00.000Z",
+  "flyerUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/acms/announcement-flyers/flyer-<uuid>.webp",
+  "flyerPublicId": "acms/announcement-flyers/flyer-<uuid>"
+}
+```
+
+Rules:
+
+- Events require `startsAt` and an `endsAt` strictly after it, so calendar exports have a real duration. Announcements may omit both; their `endsAt` requires `startsAt` and must not be before it.
+- `onlineUrl` (events, optional): an `https://` livestream or meeting link, at most 500 characters.
+- The event stores the church timezone (`timeZone`, initially `Africa/Accra`) when it is created.
+- `flyerUrl` and `flyerPublicId` go together. The URL must belong to the configured Cloudinary account, the public ID must be in `acms/announcement-flyers/`, and the URL must contain the public ID. The web app uploads the image (signed, server-side) only after confirming the user may post.
+
+## 16.4 Update Announcement
+
+```http
+PATCH /announcements/:announcementId
+```
+
+Partial update. Omitted fields are unchanged; `null` clears an optional field (theme, description, location, online link, times, flyer). `kind` and `title` cannot be cleared. The merged result is validated with the same rules as create. Every update increases `revision`. Cancelled events cannot be edited (`400`).
+
+## 16.5 Archive Announcement
+
+```http
+POST /announcements/:announcementId/archive
+```
+
+## 16.5.1 Cancel Event
+
+```http
+POST /announcements/:announcementId/cancel
+```
+
+```json
+{ "reason": "Bad weather" }
+```
+
+**Who:** the event's publisher (department leaders need a current assignment), or `SUPER_ADMIN`, `ADMIN`, `PASTOR`.
+
+- Events only; announcements return `400`. Cancelling twice returns `400`.
+- `reason` is optional, at most 300 characters, and shown to members.
+- Sets `cancelledAt`, `cancellationReason`, increases `revision`, and writes an `EVENT_CANCELLED` audit log.
+- The event stays listed and clearly marked until it is archived. Its `googleCalendarUrl` becomes `null`.
+
+## 16.5.2 Event Calendar Export
+
+```http
+GET /announcements/:announcementId/calendar.ics
+```
+
+**Who:** every signed-in user of the church. Rate-limited (30 requests per 5 minutes).
+
+Returns a `text/calendar` attachment named like `youth-night-2026-12-05.ics`:
+
+- `UID` is stable (`<id>@arrows-acms`) and `SEQUENCE` is the event `revision`, so clients that support it update an earlier import.
+- Times are written in UTC (`…Z`). The church timezone appears in `X-WR-TIMEZONE` and in the description (for example "6:00 pm – 9:00 pm GMT (Africa/Accra)").
+- `STATUS` is `CONFIRMED` or `CANCELLED`; a cancelled title starts with "CANCELLED:".
+- Only shareable event details are included: no author, member data, or tokens. The description says the file is a copy and that changes appear in ACMS.
+- Older events saved without an end time export with a one-hour duration.
+
+Event responses (list, get, create, update, cancel) also include `googleCalendarUrl`: an "Add to Google Calendar" template link with the same details, or `null` for announcements and cancelled events.
+
+Neither export registers the member for anything or creates attendance, absence, reminder, score, or leaderboard records.
+
+## 16.6 Church Feed
+
+The feed lists live `ANNOUNCEMENT` posts with reactions and comments. Posts are created, edited, and archived through the endpoints above; `/feed` covers reading and interaction. Archived posts, hidden comments, and deleted comments return `404`, including by direct URL.
+
+**Read, react, comment, report:** every signed-in user of the church.
+**Moderate (pin, close comments, hide, dismiss reports):** `SUPER_ADMIN`, `ADMIN`, `PASTOR`.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/feed?page=1&limit=10` | Pinned first, then newest. `limit` ≤ 30. Returns `canPublish` and `canModerate`. |
+| `GET` | `/feed/:postId` | One post, with `canModerate`. |
+| `PUT` | `/feed/:postId/reaction` | Body `{ "reaction": "LIKE" \| "AMEN" \| "LOVE" }`. One reaction per member; repeating or changing it is safe. |
+| `DELETE` | `/feed/:postId/reaction` | Removes the viewer's reaction. |
+| `GET` | `/feed/:postId/comments?page=1&limit=30` | Visible comments, oldest first. `limit` ≤ 50. Each has `isOwn` and `editedAt`; author user IDs are not returned. |
+| `POST` | `/feed/:postId/comments` | Body `{ "body": "..." }`, 1–1000 characters. Rejected when comments are closed. |
+| `PATCH` | `/feed/:postId/comments/:commentId` | Author only; sets `editedAt`. Rejected when comments are closed. |
+| `DELETE` | `/feed/:postId/comments/:commentId` | Author only. Soft delete (`deleted_at`). |
+| `POST` | `/feed/:postId/comments/:commentId/report` | Body `{ "reason": "..." }`, 3–300 characters. One report per member per comment; members cannot report their own comments. |
+| `PUT` | `/feed/:postId/pinned` | Moderators. Body `{ "pinned": true }`. Pinning notifies every other active member once per post (`FEED_PINNED_NOTICE`). |
+| `PUT` | `/feed/:postId/comments-closed` | Moderators. Body `{ "closed": true }`. |
+| `GET` | `/feed/moderation/reports` | Moderators. Comments with open reports, most reported first. |
+| `POST` | `/feed/moderation/comments/:commentId/hide` | Moderators. Body `{ "reason": "..." }`. Hides the comment and marks its open reports `HIDDEN`. |
+| `POST` | `/feed/moderation/comments/:commentId/dismiss-reports` | Moderators. Keeps the comment and marks its open reports `DISMISSED`. |
+
+Audit entries: `FEED_POST_PINNED`, `FEED_POST_UNPINNED`, `FEED_COMMENTS_CLOSED`, `FEED_COMMENTS_OPENED`, `FEED_COMMENT_HIDDEN` (with the reason), `FEED_COMMENT_REPORTS_DISMISSED`.
+
+Notifications are grouped so members are not flooded: a post author receives at most one `FEED_COMMENT` notice per post per hour, never for their own comments, and nobody is notified about other people's comments. Notice links use `/feed/:postId`, which the web app routes to the reader's portal.
+
+Rate limits: reactions and comment writes share `feedInteraction` (60 per 5 minutes); reports use `feedReport` (10 per hour).
+
+---
+
+# 17. Authorization Matrix
 
 | Endpoint Group | Member | Department Leader | Attendance Officer | Admin | Super Admin |
 |---|:---:|:---:|:---:|:---:|:---:|
@@ -1764,7 +1905,7 @@ An audit log entry is required.
 
 ---
 
-# 17. Validation Rules
+# 18. Validation Rules
 
 ## Registration
 
@@ -1797,7 +1938,7 @@ An audit log entry is required.
 
 ---
 
-# 18. Idempotency and Concurrency
+# 19. Idempotency and Concurrency
 
 ## Attendance
 
@@ -1835,7 +1976,7 @@ Cancellation shall lock the event row and update the event, attendance points, p
 
 ---
 
-# 19. Rate Limiting
+# 20. Rate Limiting
 
 Recommended limits:
 
@@ -1854,7 +1995,7 @@ Final limits may be adjusted after testing.
 
 ---
 
-# 20. Swagger/OpenAPI
+# 21. Swagger/OpenAPI
 
 The NestJS backend shall expose interactive API documentation.
 
@@ -1878,7 +2019,7 @@ Production Swagger access may be restricted.
 
 ---
 
-# 21. API Versioning
+# 22. API Versioning
 
 The first API version shall use:
 
@@ -1892,7 +2033,7 @@ Non-breaking fields may be added without creating a new API version.
 
 ---
 
-# 22. Open API Decisions
+# 23. Open API Decisions
 
 - Whether access tokens use headers or secure cookies.
 - Whether pending users receive limited access tokens.
@@ -1903,7 +2044,7 @@ Non-breaking fields may be added without creating a new API version.
 
 ---
 
-# 23. Next Deliverables
+# 24. Next Deliverables
 
 The next planning documents should be:
 

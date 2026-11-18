@@ -51,6 +51,8 @@ export function pushTitle(type: string) {
         ACCOUNT_APPROVED: 'Your account is approved',
         DEPARTMENT_CHANGED: 'Department assignment changed',
         LEADERSHIP_CHANGED: 'Leadership assignment changed',
+        FEED_PINNED_NOTICE: 'Important church notice',
+        FEED_COMMENT: 'New comments on your post',
       } as Record<string, string>
     )[type] ?? 'New church update'
   );

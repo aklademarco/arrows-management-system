@@ -11,7 +11,7 @@
 
 ## 1. Purpose
 
-This document defines the technical architecture for Version 1 of the Arrows Church Management System.
+This document defines the technical architecture for Version 1 of the Arrows Church Management System, with the phase two comments and reactions extension specified in section 27.
 
 The architecture is designed to support:
 
@@ -1266,6 +1266,16 @@ Do not introduce microservices simply because the application grows in features.
 
 **Reason:** Multi-tenancy would add complexity before the core product is validated.
 
+### Decision 9: Application-Owned Comments and Reactions
+
+Phase two comments and reactions shall use the existing NestJS API, PostgreSQL,
+and Drizzle ORM. ACMS shall own their data, authorization, and moderation rules.
+No external feed service or additional database is required. See section 27.
+
+**Trade-off:** This reuses member identity and access controls and avoids a
+separate feed-service subscription, but ACMS must implement and maintain
+moderation, concurrency safeguards, notification delivery, and interaction UI.
+
 ---
 
 ## 24. Architecture Constraints
@@ -1317,3 +1327,152 @@ docs/ROADMAP.md
 ```
 
 It should convert the architecture and requirements into milestones, tasks, and delivery phases.
+
+---
+
+## 27. Phase Two — Comments and Reactions
+
+### 27.1 Scope and Module Ownership
+
+These are implementation requirements for the church feed, not a statement that
+the feature is already complete. Related phase two scope is documented in
+`docs/PHASE_TWO_PLAN.md`.
+
+- Extend the existing Announcements Module and announcement records; do not
+  introduce a second post model or connect interactions to attendance records.
+- Keep controllers thin, business rules in focused services, and Drizzle queries
+  in repositories. Reuse authentication, department scope, audit, and notification
+  infrastructure rather than duplicating their rules.
+- Support flat text comments and post-level reactions: `LIKE`, `AMEN`, and `LOVE`.
+  Nested replies, comment reactions, and comment attachments are outside the
+  initial implementation. The reaction set can be revised before implementation.
+- Provide one shared interaction component across the member, leader, pastor,
+  and administrator announcement views.
+- Initially enable interaction on `ANNOUNCEMENT` posts. Interaction on
+  informational `EVENT` records requires a separate scope decision.
+
+### 27.2 Permissions and Visibility
+
+- Only authenticated, active, approved accounts may read or interact with posts
+  they are authorized to view. Enforce church and any future audience scope in
+  every query, including direct comment, reaction, and report lookups.
+- Admins, pastors, and department leaders may publish posts. Department-leader
+  privileges require the live role, active assignment, and membership checks in
+  section 10. Ordinary members may comment and react.
+- Authors may edit or soft-delete their own visible comments. Department leaders
+  manage their own posts; they do not gain authority to moderate others' comments.
+- `SUPER_ADMIN`, `ADMIN`, and `PASTOR` may hide comments, resolve reports, and
+  open/close commenting on posts within their church. Record moderation reasons.
+- Moderation-hidden comments cannot be edited back into visibility by their
+  authors. Only an authorized moderator may restore a hidden comment, after
+  checking that it has not been author-deleted.
+- Closed comments remain readable but reject new comments and edits; authors
+  may still remove their own comments. Reactions remain independent of comment
+  closure. Archived posts reject interaction writes and disappear from normal
+  reads, counts, and notification previews.
+- Inaccessible identifiers return the same not-found response as missing records.
+  Restrict hidden content and reporter identities to authorized moderation views.
+  Recheck access when delivering notifications and when opening their targets.
+
+### 27.3 Persistence and Constraints
+
+Use UUID primary keys, foreign keys, server timestamps, and reviewed SQL
+migrations. Extend `apps/api/src/database/schema.ts`, the current schema source,
+and document the final design in `docs/ERD.md` and `docs/database.dbml`.
+
+| Record | Required data and constraints |
+| --- | --- |
+| Announcement extension | Pin state/order, comments-closed state, and actor/time metadata for these changes |
+| Comment | Church, announcement, author, plain-text body, created/updated/edited times, author-deletion metadata, and moderator-hiding actor/time/reason |
+| Reaction | Church, announcement, member account, reaction type, created/updated times; unique `(announcement_id, user_id)` |
+| Comment report | Church, comment, reporter, reason, open/resolved state, resolution actor/time/action; one open report per reporter and comment |
+
+- Enforce same-church parent/actor relationships in the service and with
+  appropriate composite foreign keys or equivalent database constraints.
+- Soft-delete comments without destroying their retained content or moderation
+  history. Do not cascade-delete important records when posts or accounts are
+  archived. Preserve audit records for moderation, edits, and deletions without
+  copying raw comment bodies into operational logs.
+- Reaction removal may delete its current-state association; reactions are not
+  financial or attendance history. Important post/comment records remain retained.
+- Index comments by announcement, creation time, and ID; reactions by announcement
+  and type; open reports by church, state, and creation time. Include visibility
+  predicates or indexes where query plans justify them.
+- Start with database-derived visible-comment and per-type reaction counts.
+  Use grouped queries for paginated feeds rather than one count query per post.
+  Treat displayed counts as summaries, never as authorization evidence.
+
+### 27.4 API Contract and Concurrency
+
+All routes use `/api/v1`, existing response conventions, validated UUIDs, and
+backend authorization. The following paths are the planned contract; document
+the final DTOs, limits, error codes, and responses in `docs/API.md`.
+
+| Method and path | Behavior |
+| --- | --- |
+| `GET /announcements/:id/comments` | Cursor-paginated visible comments, ordered by creation time and ID |
+| `POST /announcements/:id/comments` | Add a validated comment; return authoritative saved data |
+| `PATCH /announcements/:id/comments/:commentId` | Edit one's own eligible comment; set edited metadata |
+| `DELETE /announcements/:id/comments/:commentId` | Idempotently soft-delete one's own comment |
+| `PUT /announcements/:id/reaction` | Set or replace one's own reaction atomically |
+| `DELETE /announcements/:id/reaction` | Idempotently remove one's own reaction |
+| `POST /announcements/:id/comments/:commentId/reports` | Report a visible comment; deduplicate an already-open report |
+
+- Feed/detail responses include visible comment counts, per-type reaction counts,
+  the viewer's reaction, comment-closure state, and permitted UI actions. Do not
+  expose all reacting member identities by default.
+- Provide separate authorized moderation operations for report listing/resolution,
+  hiding/restoring comments, comment closure, and pinning. A generic member-edit
+  DTO must not accept moderation or ownership fields.
+- Derive church and acting-user IDs from the authenticated context. Validate
+  nested IDs together so a comment from another post cannot be mutated.
+- Trim comment text, reject empty bodies, and enforce an initial 2,000-character
+  server-side limit. Validate reaction values and bounded report reasons.
+- Use a database upsert and unique constraint for reactions. Retrying the same
+  set/remove request must not duplicate reactions or notifications.
+- Support an idempotency key for comment creation, scoped to actor and operation;
+  persist the request identity/result and reject reuse with different content.
+- Serialize interaction writes with archive, hide, and comment-closure changes
+  using a consistent row-lock order and transaction-time eligibility checks.
+  Prevent stale edits from restoring deleted/hidden comments; reject conflicting
+  edits using an expected version or equivalent concurrency check.
+
+### 27.5 Notifications, Security, and Frontend Behavior
+
+- Publish comment notifications through the existing durable notification workflow.
+  Persist the interaction and notification intent atomically; delivery failures
+  must not lose the intent or cause the client to duplicate a saved comment.
+- Notify the post author about new comments, excluding self-notifications. Group
+  activity to limit noise. Reaction notifications are optional later scope; never
+  broadcast every interaction to the whole church.
+- Rate-limit comments, reaction mutations, and reports by authenticated user, with
+  request-level abuse protection. Choose documented limits before release.
+- Render comments as escaped text; do not accept executable HTML. Apply existing
+  cookie/origin protections and parameterized queries. Exclude comment bodies,
+  report details, tokens, and private member data from diagnostic logs.
+- Render the initial feed and comment page on the server where practical. Use
+  client components for forms and reaction controls, with loading, error, empty,
+  retry, and accessible keyboard/screen-reader states.
+- Show “edited” markers, bounded comment pagination, reaction counts, the member's
+  selected reaction, and clear reporting/moderation actions where authorized.
+- Optimistic changes must roll back on failure and reconcile with server results.
+  Use refresh/refetch initially; WebSockets and an external realtime service are
+  not prerequisites. If live updates are later introduced, preserve the same
+  backend authorization and authoritative REST mutation rules.
+
+### 27.6 Verification and Release Gate
+
+- Unit-test ownership, role/assignment checks, visibility, comment closure,
+  validation, reaction replacement, and notification recipient rules.
+- Run API/PostgreSQL integration tests for cross-church and nested-ID access,
+  revoked leaders with valid tokens, unique constraints under concurrent writes,
+  comment retries, stale edits, archive/closure races, report deduplication,
+  hidden/deleted counts, and notification retry/idempotency behavior.
+- Verify members can comment and change/remove reactions; leaders can publish
+  and manage their posts; moderators can process reports; and ordinary members
+  cannot access moderation tools or retained hidden content.
+- Manually verify Android Chrome, iPhone Safari, keyboard navigation, screen-reader
+  labels, failed submissions, slow connections, and pagination.
+- Review query plans and feed query counts against representative church data.
+  Verify migration deployment and existing authentication/attendance flows before
+  releasing through a controlled rollout.

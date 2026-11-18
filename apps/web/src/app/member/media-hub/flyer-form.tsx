@@ -4,21 +4,7 @@ import { useState, useTransition } from "react";
 import { FiImage, FiSend } from "react-icons/fi";
 import { sendPublicityFlyer } from "./actions";
 import { useFormDraft } from "@/hooks/use-form-draft";
-
-async function prepareImage(file: File) {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
-    throw new Error("Choose a JPEG, PNG, or WebP flyer.");
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("This browser cannot process the flyer.");
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return canvas.toDataURL("image/webp", 0.86);
-}
+import { prepareImage } from "@/lib/prepare-image";
 
 export function FlyerForm() {
   const [file, setFile] = useState<File | null>(null);
