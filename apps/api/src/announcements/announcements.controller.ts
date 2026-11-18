@@ -7,9 +7,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
 import { AuthenticatedUser } from '../auth/authenticated-user.decorator';
 import {
   AuthenticatedGuard,
@@ -20,6 +22,7 @@ import { AnnouncementsService } from './announcements.service';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { ListAnnouncementsDto } from './dto/list-announcements.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
+import { CancelEventDto } from './dto/cancel-event.dto';
 
 @Controller('announcements')
 @UseGuards(AuthenticatedGuard)
@@ -50,6 +53,22 @@ export class AnnouncementsController {
     };
   }
 
+  /** A downloadable calendar copy of one event (Apple, Outlook, etc.). */
+  @Get(':announcementId/calendar.ics')
+  @Throttle({ default: RATE_LIMITS.calendarExport })
+  async calendar(
+    @Param('announcementId', ParseUUIDPipe) id: string,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
+    @Res() response: Response,
+  ) {
+    const file = await this.service.eventCalendarFile(id, viewer);
+    response
+      .type('text/calendar; charset=utf-8')
+      .attachment(file.filename)
+      .setHeader('Cache-Control', 'no-store')
+      .send(file.content);
+  }
+
   @Post()
   @Throttle({ default: RATE_LIMITS.announcementWrite })
   async create(
@@ -74,6 +93,20 @@ export class AnnouncementsController {
       success: true,
       message: 'Announcement updated.',
       data: await this.service.update(id, body, viewer),
+    };
+  }
+
+  @Post(':announcementId/cancel')
+  @Throttle({ default: RATE_LIMITS.announcementWrite })
+  async cancel(
+    @Param('announcementId', ParseUUIDPipe) id: string,
+    @Body() body: CancelEventDto,
+    @AuthenticatedUser() viewer: AuthenticatedPrincipal,
+  ) {
+    return {
+      success: true,
+      message: 'Event cancelled.',
+      data: await this.service.cancelEvent(id, body, viewer),
     };
   }
 

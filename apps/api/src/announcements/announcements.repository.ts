@@ -12,7 +12,12 @@ import {
   sql,
 } from 'drizzle-orm';
 import { DATABASE, type Database } from '../database/database.module';
-import { announcements, auditLogs, memberProfiles } from '../database/schema';
+import {
+  announcements,
+  auditLogs,
+  churches,
+  memberProfiles,
+} from '../database/schema';
 import type { ListAnnouncementsDto } from './dto/list-announcements.dto';
 
 export type AnnouncementValues = {
@@ -21,6 +26,7 @@ export type AnnouncementValues = {
   theme: string | null;
   description: string | null;
   locationName: string | null;
+  onlineUrl: string | null;
   startsAt: Date | null;
   endsAt: Date | null;
   flyerUrl: string | null;
@@ -91,10 +97,17 @@ export class AnnouncementsRepository {
     values: AnnouncementValues;
   }) {
     const id = await this.database.transaction(async (transaction) => {
+      // Events keep the church timezone they were published in.
+      const [church] = await transaction
+        .select({ timeZone: churches.timezone })
+        .from(churches)
+        .where(eq(churches.id, input.churchId))
+        .limit(1);
       const [created] = await transaction
         .insert(announcements)
         .values({
           ...input.values,
+          ...(church ? { timeZone: church.timeZone } : {}),
           churchId: input.churchId,
           createdBy: input.actorUserId,
           updatedBy: input.actorUserId,
@@ -125,6 +138,8 @@ export class AnnouncementsRepository {
         .update(announcements)
         .set({
           ...input.values,
+          // Calendar clients use this as SEQUENCE to apply updated imports.
+          revision: sql`${announcements.revision} + 1`,
           updatedBy: input.actorUserId,
           updatedAt: new Date(),
         })
@@ -133,6 +148,7 @@ export class AnnouncementsRepository {
             eq(announcements.id, input.id),
             eq(announcements.churchId, input.churchId),
             isNull(announcements.archivedAt),
+            isNull(announcements.cancelledAt),
           ),
         )
         .returning({ id: announcements.id });
@@ -181,6 +197,47 @@ export class AnnouncementsRepository {
     });
   }
 
+  async cancelEvent(input: {
+    id: string;
+    churchId: string;
+    actorUserId: string;
+    reason: string | null;
+  }) {
+    await this.database.transaction(async (transaction) => {
+      const now = new Date();
+      const [cancelled] = await transaction
+        .update(announcements)
+        .set({
+          cancelledAt: now,
+          cancelledBy: input.actorUserId,
+          cancellationReason: input.reason,
+          revision: sql`${announcements.revision} + 1`,
+          updatedBy: input.actorUserId,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(announcements.id, input.id),
+            eq(announcements.churchId, input.churchId),
+            eq(announcements.kind, 'EVENT'),
+            isNull(announcements.archivedAt),
+            isNull(announcements.cancelledAt),
+          ),
+        )
+        .returning({ id: announcements.id, title: announcements.title });
+      if (!cancelled) throw new NotFoundException('Event not found.');
+      await transaction.insert(auditLogs).values({
+        churchId: input.churchId,
+        actorUserId: input.actorUserId,
+        action: 'EVENT_CANCELLED',
+        entityType: 'ANNOUNCEMENT',
+        entityId: input.id,
+        metadata: { title: cancelled.title, reason: input.reason },
+      });
+    });
+    return this.findById(input.id, input.churchId);
+  }
+
   private selectAnnouncements() {
     return this.database
       .select({
@@ -190,10 +247,15 @@ export class AnnouncementsRepository {
         theme: announcements.theme,
         description: announcements.description,
         locationName: announcements.locationName,
+        onlineUrl: announcements.onlineUrl,
         startsAt: announcements.startsAt,
         endsAt: announcements.endsAt,
+        timeZone: announcements.timeZone,
         flyerUrl: announcements.flyerUrl,
         flyerPublicId: announcements.flyerPublicId,
+        cancelledAt: announcements.cancelledAt,
+        cancellationReason: announcements.cancellationReason,
+        revision: announcements.revision,
         createdBy: announcements.createdBy,
         authorName: sql<
           string | null

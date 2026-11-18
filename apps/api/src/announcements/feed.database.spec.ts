@@ -54,6 +54,7 @@ describeDatabase('Church feed with PostgreSQL', () => {
         theme: null,
         description: 'Now on Friday.',
         locationName: null,
+        onlineUrl: null,
         startsAt: null,
         endsAt: null,
         flyerUrl: null,

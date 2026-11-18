@@ -51,6 +51,11 @@ export const RATE_LIMITS = {
     ttl: minutes(15),
   },
 
+  calendarExport: {
+    limit: 30,
+    ttl: minutes(5),
+  },
+
   feedInteraction: {
     limit: 60,
     ttl: minutes(5),

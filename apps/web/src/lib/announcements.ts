@@ -9,12 +9,18 @@ export type Announcement = {
   theme: string | null;
   description: string | null;
   locationName: string | null;
+  onlineUrl: string | null;
   startsAt: string | null;
   endsAt: string | null;
+  timeZone: string;
   flyerUrl: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
   authorName: string | null;
   createdAt: string;
   canManage: boolean;
+  /** Set by the API for scheduled events; null once cancelled. */
+  googleCalendarUrl: string | null;
 };
 
 export type AnnouncementPage = {
@@ -131,4 +137,25 @@ export function announcementDateBadge(startsAt: string | null) {
       .map((part) => [part.type, part.value]),
   );
   return { day: parts.day, month: parts.month };
+}
+
+/** An event's own page inside a portal. */
+export function eventPath(portal: AnnouncementPortal, id: string) {
+  return `${ANNOUNCEMENT_PORTALS[portal].basePath}/${id}`;
+}
+
+/** Route that downloads an event's .ics file through the portal session. */
+export function eventCalendarPath(portal: AnnouncementPortal, id: string) {
+  return `${eventPath(portal, id)}/calendar`;
+}
+
+/** "Ghana time (GMT)": names the zone every event time is shown in. */
+export function timeZoneLabel(timeZone: string, at: string | null) {
+  const zoneName =
+    new Intl.DateTimeFormat("en-GB", { timeZone, timeZoneName: "short" })
+      .formatToParts(at ? new Date(at) : new Date())
+      .find((part) => part.type === "timeZoneName")?.value ?? timeZone;
+  return timeZone === CHURCH_TIME_ZONE
+    ? `Ghana time (${zoneName})`
+    : `${timeZone} (${zoneName})`;
 }

@@ -43,6 +43,12 @@ export class UpdateAnnouncementDto {
   @MaxLength(200)
   locationName?: string | null;
 
+  /** Livestream or meeting link for events. HTTPS only. */
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(500)
+  onlineUrl?: string | null;
+
   @IsOptional()
   @IsDateString()
   startsAt?: string | null;

@@ -36,6 +36,12 @@ export class CreateAnnouncementDto {
   locationName?: string | null;
 
   /** Required for events, optional for announcements. */
+  /** Livestream or meeting link for events. HTTPS only. */
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(500)
+  onlineUrl?: string | null;
+
   @IsOptional()
   @IsDateString()
   startsAt?: string | null;

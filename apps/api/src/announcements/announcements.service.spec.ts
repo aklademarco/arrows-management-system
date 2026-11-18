@@ -28,10 +28,15 @@ const stored = {
   theme: 'Rooted',
   description: 'An evening of worship.',
   locationName: 'Main auditorium',
+  onlineUrl: null,
   startsAt: new Date('2026-12-05T18:00:00Z'),
-  endsAt: null,
+  endsAt: new Date('2026-12-05T21:00:00Z'),
+  timeZone: 'Africa/Accra',
   flyerUrl: null,
   flyerPublicId: null,
+  cancelledAt: null,
+  cancellationReason: null,
+  revision: 0,
   createdBy: 'leader-id',
   authorName: 'Ama Mensah',
   createdAt: new Date('2026-11-01T10:00:00Z'),
@@ -44,6 +49,7 @@ function createDto(overrides: Partial<CreateAnnouncementDto> = {}) {
     title: '  Youth Night  ',
     theme: '',
     startsAt: '2026-12-05T18:00:00.000Z',
+    endsAt: '2026-12-05T21:00:00.000Z',
     ...overrides,
   });
 }
@@ -167,7 +173,11 @@ describe('AnnouncementsService', () => {
       ).rejects.toThrow('Events need a start date and time.');
       await expect(
         service.create(
-          createDto({ kind: 'ANNOUNCEMENT', startsAt: undefined }),
+          createDto({
+            kind: 'ANNOUNCEMENT',
+            startsAt: undefined,
+            endsAt: undefined,
+          }),
           admin,
         ),
       ).resolves.toBeDefined();
@@ -180,7 +190,52 @@ describe('AnnouncementsService', () => {
           createDto({ endsAt: '2026-12-05T17:00:00.000Z' }),
           admin,
         ),
-      ).rejects.toThrow('The end must be after the start.');
+      ).rejects.toThrow('Events need an end time after the start time.');
+    });
+
+    it('rejects an event without an end time', async () => {
+      const { service } = setup();
+      await expect(
+        service.create(createDto({ endsAt: null }), admin),
+      ).rejects.toThrow('Events need an end time after the start time.');
+    });
+
+    it('rejects an event that ends when it starts', async () => {
+      const { service } = setup();
+      await expect(
+        service.create(
+          createDto({ endsAt: '2026-12-05T18:00:00.000Z' }),
+          admin,
+        ),
+      ).rejects.toThrow('Events need an end time after the start time.');
+    });
+
+    it('still lets an announcement have no end time', async () => {
+      const { service, repository } = setup();
+      await service.create(
+        createDto({ kind: 'ANNOUNCEMENT', startsAt: null, endsAt: null }),
+        admin,
+      );
+      expect(repository.create).toHaveBeenCalled();
+    });
+
+    it('saves a trimmed online link', async () => {
+      const { service, repository } = setup();
+      await service.create(
+        createDto({ onlineUrl: '  https://youtube.com/live/abc  ' }),
+        admin,
+      );
+      expect(firstCall(repository.create).values.onlineUrl).toBe(
+        'https://youtube.com/live/abc',
+      );
+    });
+
+    it('returns a Google Calendar link for a scheduled event', async () => {
+      const { service } = setup();
+      const created = await service.create(createDto(), admin);
+      expect(created.googleCalendarUrl).toContain(
+        'dates=20261205T180000Z%2F20261205T210000Z',
+      );
     });
 
     it('accepts a flyer from the church flyer folder', async () => {
@@ -320,6 +375,123 @@ describe('AnnouncementsService', () => {
         'You can only change announcements you posted.',
       );
       expect(repository.archive).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cancelEvent', () => {
+    it('lets the publisher cancel their own event with a reason', async () => {
+      const cancelled = {
+        ...stored,
+        cancelledAt: new Date('2026-11-20T09:00:00Z'),
+        cancellationReason: 'Heavy rain',
+        revision: 1,
+      };
+      const cancelEvent = jest.fn().mockResolvedValue(cancelled);
+      const { service } = setup({ cancelEvent });
+
+      const result = await service.cancelEvent(
+        'announcement-id',
+        { reason: '  Heavy rain  ' },
+        leader,
+      );
+
+      expect(cancelEvent).toHaveBeenCalledWith({
+        id: 'announcement-id',
+        churchId: 'church-id',
+        actorUserId: 'leader-id',
+        reason: 'Heavy rain',
+      });
+      // Cancelled events are not offered for calendar export.
+      expect(result.googleCalendarUrl).toBeNull();
+    });
+
+    it("stops a leader cancelling someone else's event", async () => {
+      const cancelEvent = jest.fn();
+      const { service } = setup({
+        cancelEvent,
+        findById: jest
+          .fn()
+          .mockResolvedValue({ ...stored, createdBy: 'someone-else' }),
+      });
+      await expect(
+        service.cancelEvent('announcement-id', {}, leader),
+      ).rejects.toThrow('You can only change announcements you posted.');
+      expect(cancelEvent).not.toHaveBeenCalled();
+    });
+
+    it('stops a member cancelling', async () => {
+      const { service } = setup();
+      await expect(
+        service.cancelEvent('announcement-id', {}, member),
+      ).rejects.toThrow('You can only change announcements you posted.');
+    });
+
+    it('refuses to cancel an announcement', async () => {
+      const { service } = setup({
+        findById: jest
+          .fn()
+          .mockResolvedValue({ ...stored, kind: 'ANNOUNCEMENT' }),
+      });
+      await expect(
+        service.cancelEvent('announcement-id', {}, admin),
+      ).rejects.toThrow('Only events can be cancelled.');
+    });
+
+    it('refuses to cancel twice', async () => {
+      const { service } = setup({
+        findById: jest
+          .fn()
+          .mockResolvedValue({ ...stored, cancelledAt: new Date() }),
+      });
+      await expect(
+        service.cancelEvent('announcement-id', {}, admin),
+      ).rejects.toThrow('already cancelled');
+    });
+
+    it('refuses edits to a cancelled event', async () => {
+      const update = jest.fn();
+      const { service } = setup({
+        update,
+        findById: jest
+          .fn()
+          .mockResolvedValue({ ...stored, cancelledAt: new Date() }),
+      });
+      await expect(
+        service.update(
+          'announcement-id',
+          Object.assign(new UpdateAnnouncementDto(), { title: 'New' }),
+          admin,
+        ),
+      ).rejects.toThrow('Cancelled events cannot be edited.');
+      expect(update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('eventCalendarFile', () => {
+    it('lets any member download an event as .ics', async () => {
+      const { service } = setup();
+      const file = await service.eventCalendarFile('announcement-id', member);
+      expect(file.filename).toBe('youth-night-2026-12-05.ics');
+      expect(file.content).toContain('UID:announcement-id@arrows-acms');
+      expect(file.content).toContain('DTSTART:20261205T180000Z');
+    });
+
+    it('does not export the author or other member data', async () => {
+      const { service } = setup();
+      const file = await service.eventCalendarFile('announcement-id', member);
+      expect(file.content).not.toContain('Ama Mensah');
+      expect(file.content).not.toContain('leader-id');
+    });
+
+    it('refuses to export an announcement', async () => {
+      const { service } = setup({
+        findById: jest
+          .fn()
+          .mockResolvedValue({ ...stored, kind: 'ANNOUNCEMENT' }),
+      });
+      await expect(
+        service.eventCalendarFile('announcement-id', member),
+      ).rejects.toThrow('Event not found.');
     });
   });
 });

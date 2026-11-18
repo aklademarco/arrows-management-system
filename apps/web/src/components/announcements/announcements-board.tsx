@@ -172,7 +172,12 @@ export function AnnouncementsBoard({
           className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
         >
           {page.items.map((item) => (
-            <AnnouncementCard item={item} key={item.id} manage={manage} />
+            <AnnouncementCard
+              detailHref={`${basePath}/${item.id}`}
+              item={item}
+              key={item.id}
+              manage={manage}
+            />
           ))}
         </section>
       )}

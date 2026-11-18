@@ -771,7 +771,11 @@ Church events and feed posts that do not track attendance. `kind` is `EVENT` (Ch
 | `church_id` | FK `churches` |
 | `kind` | `announcement_kind`: `EVENT`, `ANNOUNCEMENT` |
 | `title`, `theme`, `description`, `location_name` | Text; only `title` is required |
-| `starts_at`, `ends_at` | Required for events; `ends_at >= starts_at` |
+| `starts_at`, `ends_at` | Required for events; `ends_at >= starts_at`. The API also requires new or edited events to end after they start (not a table constraint, so older events stay archivable) |
+| `online_url` | Optional `https://` link for livestreamed or online events (max 500) |
+| `time_zone` | Church timezone captured at creation; default `Africa/Accra` |
+| `cancelled_at`, `cancelled_by`, `cancellation_reason` | Event cancellation; only `EVENT` rows may be cancelled. Cancelled events stay visible, clearly marked |
+| `revision` | Starts at 0; increases on every edit and on cancellation. Used as the calendar `SEQUENCE` |
 | `flyer_url`, `flyer_public_id` | Cloudinary image; set together or not at all |
 | `pinned_at`, `pinned_by` | Moderator pin; set together |
 | `comments_closed_at`, `comments_closed_by` | Moderator lock; set together |

@@ -3,9 +3,11 @@ import Link from "next/link";
 import {
   FiBell,
   FiCalendar,
+  FiChevronRight,
   FiEdit2,
   FiMapPin,
   FiMaximize2,
+  FiVideo,
 } from "react-icons/fi";
 
 import {
@@ -19,12 +21,19 @@ import { ArchiveAnnouncementButton } from "./archive-announcement-button";
 
 type AnnouncementCardProps = {
   item: Announcement;
+  /** The event's own page. */
+  detailHref: string;
   /** Set when the viewer is in a portal that can manage posts. */
   manage?: { portal: PublishingPortal; basePath: string };
 };
 
-export function AnnouncementCard({ item, manage }: AnnouncementCardProps) {
+export function AnnouncementCard({
+  item,
+  detailHref,
+  manage,
+}: AnnouncementCardProps) {
   const isEvent = item.kind === "EVENT";
+  const cancelled = Boolean(item.cancelledAt);
   const when = formatAnnouncementWhen(item);
   const badge = announcementDateBadge(item.startsAt);
 
@@ -41,7 +50,7 @@ export function AnnouncementCard({ item, manage }: AnnouncementCardProps) {
           >
             <Image
               alt={`Flyer for ${item.title}`}
-              className="object-contain"
+              className={`object-contain ${cancelled ? "opacity-50 grayscale" : ""}`}
               fill
               sizes="(min-width: 1280px) 400px, (min-width: 768px) 50vw, 100vw"
               src={item.flyerUrl}
@@ -75,13 +84,23 @@ export function AnnouncementCard({ item, manage }: AnnouncementCardProps) {
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div>
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${isEvent ? "bg-purple-50 text-purple-700" : "bg-sky-50 text-sky-700"}`}
+          {cancelled ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-red-700">
+              Cancelled
+            </span>
+          ) : (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${isEvent ? "bg-purple-50 text-purple-700" : "bg-sky-50 text-sky-700"}`}
+            >
+              {isEvent ? "Event" : "Announcement"}
+            </span>
+          )}
+          <h3
+            className={`mt-2 text-base font-semibold leading-snug ${cancelled ? "text-slate-500 line-through" : "text-slate-900"}`}
           >
-            {isEvent ? "Event" : "Announcement"}
-          </span>
-          <h3 className="mt-2 text-base font-semibold leading-snug text-slate-900">
-            {item.title}
+            <Link className="hover:underline" href={detailHref}>
+              {item.title}
+            </Link>
           </h3>
           {item.theme ? (
             <p className="mt-1 text-sm text-slate-600">
@@ -91,7 +110,7 @@ export function AnnouncementCard({ item, manage }: AnnouncementCardProps) {
           ) : null}
         </div>
 
-        {when || item.locationName ? (
+        {when || item.locationName || item.onlineUrl ? (
           <ul className="grid gap-1.5 text-[13px] text-slate-600">
             {when ? (
               <li className="flex items-start gap-2">
@@ -105,7 +124,19 @@ export function AnnouncementCard({ item, manage }: AnnouncementCardProps) {
                 <span>{item.locationName}</span>
               </li>
             ) : null}
+            {item.onlineUrl ? (
+              <li className="flex items-start gap-2">
+                <FiVideo aria-hidden className="mt-0.5 shrink-0 text-slate-400" />
+                <span>Online</span>
+              </li>
+            ) : null}
           </ul>
+        ) : null}
+
+        {cancelled && item.cancellationReason ? (
+          <p className="text-[13px] font-medium text-red-700">
+            Cancelled: {item.cancellationReason}
+          </p>
         ) : null}
 
         {item.description ? (
@@ -118,7 +149,14 @@ export function AnnouncementCard({ item, manage }: AnnouncementCardProps) {
           <p className="text-xs text-slate-500">
             {item.authorName ? `Posted by ${item.authorName}` : "Church office"}
           </p>
-          {manage && item.canManage ? (
+          <Link
+            className="inline-flex min-h-9 items-center gap-1 text-xs font-semibold text-black hover:underline"
+            href={detailHref}
+          >
+            {cancelled ? "Details" : "Details & add to calendar"}
+            <FiChevronRight aria-hidden />
+          </Link>
+          {manage && item.canManage && !cancelled ? (
             <div className="flex items-center gap-1.5">
               <Link
                 aria-label={`Edit ${item.title}`}

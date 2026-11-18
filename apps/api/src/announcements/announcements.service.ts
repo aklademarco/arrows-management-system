@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import type { AuthenticatedPrincipal } from '../auth/authenticated.guard';
 import {
@@ -11,6 +12,12 @@ import {
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
 import { ListAnnouncementsDto } from './dto/list-announcements.dto';
 import { UpdateAnnouncementDto } from './dto/update-announcement.dto';
+import { CancelEventDto } from './dto/cancel-event.dto';
+import {
+  buildEventIcs,
+  eventIcsFilename,
+  googleCalendarUrl,
+} from './event-calendar';
 import {
   PublisherAccessService,
   type PublisherAccess,
@@ -21,6 +28,10 @@ export const ANNOUNCEMENT_FLYER_FOLDER = 'acms/announcement-flyers';
 type StoredAnnouncement = AnnouncementValues & {
   id: string;
   createdBy: string;
+  timeZone: string;
+  cancelledAt: Date | null;
+  revision: number;
+  updatedAt: Date;
 };
 
 /** Trims text; blank text becomes null. Undefined stays undefined. */
@@ -76,6 +87,7 @@ export class AnnouncementsService {
       theme: cleanText(body.theme) ?? null,
       description: cleanText(body.description) ?? null,
       locationName: cleanText(body.locationName) ?? null,
+      onlineUrl: cleanText(body.onlineUrl) ?? null,
       startsAt: toDate(body.startsAt) ?? null,
       endsAt: toDate(body.endsAt) ?? null,
       flyerUrl: body.flyerUrl ?? null,
@@ -99,6 +111,11 @@ export class AnnouncementsService {
     }
     const existing = await this.repository.findById(id, viewer.churchId);
     const access = await this.assertCanManage(existing, viewer);
+    if (existing.cancelledAt) {
+      throw new BadRequestException(
+        'Cancelled events cannot be edited. Publish a new event instead.',
+      );
+    }
 
     const previous = this.valuesOf(existing);
     const pick = <K extends keyof AnnouncementValues>(
@@ -116,6 +133,7 @@ export class AnnouncementsService {
       theme: pick('theme', cleanText(body.theme)),
       description: pick('description', cleanText(body.description)),
       locationName: pick('locationName', cleanText(body.locationName)),
+      onlineUrl: pick('onlineUrl', cleanText(body.onlineUrl)),
       startsAt: pick('startsAt', toDate(body.startsAt)),
       endsAt: pick('endsAt', toDate(body.endsAt)),
       flyerUrl: pick('flyerUrl', body.flyerUrl),
@@ -141,6 +159,45 @@ export class AnnouncementsService {
     });
   }
 
+  /**
+   * Marks an event as cancelled. It stays visible, clearly marked, so members
+   * who saw it learn about the change; archive removes it from view.
+   */
+  async cancelEvent(
+    id: string,
+    body: CancelEventDto,
+    viewer: AuthenticatedPrincipal,
+  ) {
+    const existing = await this.repository.findById(id, viewer.churchId);
+    const access = await this.assertCanManage(existing, viewer);
+    if (existing.kind !== 'EVENT') {
+      throw new BadRequestException('Only events can be cancelled.');
+    }
+    if (existing.cancelledAt) {
+      throw new BadRequestException('This event is already cancelled.');
+    }
+    const cancelled = await this.repository.cancelEvent({
+      id,
+      churchId: viewer.churchId,
+      actorUserId: viewer.id,
+      reason: cleanText(body.reason) ?? null,
+    });
+    return this.present(cancelled, viewer, access);
+  }
+
+  /** An .ics copy of one event. Reading it has no attendance side effects. */
+  async eventCalendarFile(id: string, viewer: AuthenticatedPrincipal) {
+    const event = await this.repository.findById(id, viewer.churchId);
+    if (event.kind !== 'EVENT' || !event.startsAt) {
+      throw new NotFoundException('Event not found.');
+    }
+    const calendarEvent = { ...event, startsAt: event.startsAt };
+    return {
+      filename: eventIcsFilename(calendarEvent),
+      content: buildEventIcs(calendarEvent),
+    };
+  }
+
   private async assertCanManage(
     item: { createdBy: string },
     viewer: AuthenticatedPrincipal,
@@ -154,12 +211,20 @@ export class AnnouncementsService {
     return access;
   }
 
-  private present<T extends { createdBy: string }>(
+  private present<T extends StoredAnnouncement>(
     item: T,
     viewer: AuthenticatedPrincipal,
     access: PublisherAccess,
   ) {
-    return { ...item, canManage: this.access.canManage(item, viewer, access) };
+    const exportable =
+      item.kind === 'EVENT' && item.startsAt && !item.cancelledAt;
+    return {
+      ...item,
+      canManage: this.access.canManage(item, viewer, access),
+      googleCalendarUrl: exportable
+        ? googleCalendarUrl({ ...item, startsAt: item.startsAt! })
+        : null,
+    };
   }
 
   private valuesOf(item: StoredAnnouncement): AnnouncementValues {
@@ -169,6 +234,7 @@ export class AnnouncementsService {
       theme: item.theme,
       description: item.description,
       locationName: item.locationName,
+      onlineUrl: item.onlineUrl,
       startsAt: item.startsAt,
       endsAt: item.endsAt,
       flyerUrl: item.flyerUrl,
@@ -182,6 +248,15 @@ export class AnnouncementsService {
     }
     if (values.kind === 'EVENT' && !values.startsAt) {
       throw new BadRequestException('Events need a start date and time.');
+    }
+    // Calendar exports need a real duration.
+    if (
+      values.kind === 'EVENT' &&
+      (!values.endsAt || (values.startsAt && values.endsAt <= values.startsAt))
+    ) {
+      throw new BadRequestException(
+        'Events need an end time after the start time.',
+      );
     }
     if (values.endsAt && !values.startsAt) {
       throw new BadRequestException('Add a start date before an end date.');

@@ -1783,6 +1783,7 @@ POST /announcements
   "theme": "Rooted in Christ",
   "description": "An evening of worship and fellowship.",
   "locationName": "Main auditorium",
+  "onlineUrl": "https://youtube.com/live/abc",
   "startsAt": "2026-12-05T18:00:00.000Z",
   "endsAt": "2026-12-05T21:00:00.000Z",
   "flyerUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/acms/announcement-flyers/flyer-<uuid>.webp",
@@ -1792,8 +1793,9 @@ POST /announcements
 
 Rules:
 
-- Events require `startsAt`; announcements may omit it.
-- `endsAt` requires `startsAt` and must not be before it.
+- Events require `startsAt` and an `endsAt` strictly after it, so calendar exports have a real duration. Announcements may omit both; their `endsAt` requires `startsAt` and must not be before it.
+- `onlineUrl` (events, optional): an `https://` livestream or meeting link, at most 500 characters.
+- The event stores the church timezone (`timeZone`, initially `Africa/Accra`) when it is created.
 - `flyerUrl` and `flyerPublicId` go together. The URL must belong to the configured Cloudinary account, the public ID must be in `acms/announcement-flyers/`, and the URL must contain the public ID. The web app uploads the image (signed, server-side) only after confirming the user may post.
 
 ## 16.4 Update Announcement
@@ -1802,13 +1804,50 @@ Rules:
 PATCH /announcements/:announcementId
 ```
 
-Partial update. Omitted fields are unchanged; `null` clears an optional field (theme, description, location, times, flyer). `kind` and `title` cannot be cleared. The merged result is validated with the same rules as create.
+Partial update. Omitted fields are unchanged; `null` clears an optional field (theme, description, location, online link, times, flyer). `kind` and `title` cannot be cleared. The merged result is validated with the same rules as create. Every update increases `revision`. Cancelled events cannot be edited (`400`).
 
 ## 16.5 Archive Announcement
 
 ```http
 POST /announcements/:announcementId/archive
 ```
+
+## 16.5.1 Cancel Event
+
+```http
+POST /announcements/:announcementId/cancel
+```
+
+```json
+{ "reason": "Bad weather" }
+```
+
+**Who:** the event's publisher (department leaders need a current assignment), or `SUPER_ADMIN`, `ADMIN`, `PASTOR`.
+
+- Events only; announcements return `400`. Cancelling twice returns `400`.
+- `reason` is optional, at most 300 characters, and shown to members.
+- Sets `cancelledAt`, `cancellationReason`, increases `revision`, and writes an `EVENT_CANCELLED` audit log.
+- The event stays listed and clearly marked until it is archived. Its `googleCalendarUrl` becomes `null`.
+
+## 16.5.2 Event Calendar Export
+
+```http
+GET /announcements/:announcementId/calendar.ics
+```
+
+**Who:** every signed-in user of the church. Rate-limited (30 requests per 5 minutes).
+
+Returns a `text/calendar` attachment named like `youth-night-2026-12-05.ics`:
+
+- `UID` is stable (`<id>@arrows-acms`) and `SEQUENCE` is the event `revision`, so clients that support it update an earlier import.
+- Times are written in UTC (`…Z`). The church timezone appears in `X-WR-TIMEZONE` and in the description (for example "6:00 pm – 9:00 pm GMT (Africa/Accra)").
+- `STATUS` is `CONFIRMED` or `CANCELLED`; a cancelled title starts with "CANCELLED:".
+- Only shareable event details are included: no author, member data, or tokens. The description says the file is a copy and that changes appear in ACMS.
+- Older events saved without an end time export with a one-hour duration.
+
+Event responses (list, get, create, update, cancel) also include `googleCalendarUrl`: an "Add to Google Calendar" template link with the same details, or `null` for announcements and cancelled events.
+
+Neither export registers the member for anything or creates attendance, absence, reminder, score, or leaderboard records.
 
 ## 16.6 Church Feed
 

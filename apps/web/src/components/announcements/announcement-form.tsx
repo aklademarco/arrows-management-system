@@ -98,6 +98,7 @@ export function AnnouncementForm({
             theme: text("theme"),
             description: text("description"),
             locationName: text("locationName"),
+            onlineUrl: text("onlineUrl"),
             startsAt: text("startsAt"),
             endsAt: text("endsAt"),
             flyer,
@@ -122,7 +123,7 @@ export function AnnouncementForm({
           <p className="mt-0.5 text-sm text-slate-500">
             {kind === "ANNOUNCEMENT"
               ? "Members see this in the church feed and can react and comment."
-              : "Members see this under church events. No attendance is taken."}
+              : "Members see this under church events and can add it to their calendar. No attendance is taken."}
           </p>
         </div>
         <Link
@@ -204,12 +205,16 @@ export function AnnouncementForm({
           </label>
           <label className={labelClass}>
             <span>
-              Ends <span className="font-normal text-slate-400">(optional)</span>
+              Ends{" "}
+              {isEvent ? null : (
+                <span className="font-normal text-slate-400">(optional)</span>
+              )}
             </span>
             <input
               className={inputClass}
               defaultValue={isoToChurchWallTime(initial?.endsAt ?? null)}
               name="endsAt"
+              required={isEvent}
               type="datetime-local"
             />
           </label>
@@ -226,6 +231,27 @@ export function AnnouncementForm({
               placeholder="Main auditorium"
             />
           </label>
+          {isEvent ? (
+            <label className={`${labelClass} sm:col-span-2`}>
+              <span>
+                Online link{" "}
+                <span className="font-normal text-slate-400">
+                  (optional, for livestreams or meetings)
+                </span>
+              </span>
+              <input
+                className={inputClass}
+                defaultValue={initial?.onlineUrl ?? ""}
+                inputMode="url"
+                maxLength={500}
+                name="onlineUrl"
+                pattern="https://.*"
+                placeholder="https://youtube.com/live/…"
+                title="Use a link that starts with https://"
+                type="url"
+              />
+            </label>
+          ) : null}
           <label className={`${labelClass} sm:col-span-2`}>
             <span className="flex justify-between">
               <span>

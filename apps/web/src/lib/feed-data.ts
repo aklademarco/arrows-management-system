@@ -28,7 +28,7 @@ export type FeedFeedback = { kind: "success" | "error"; message: string };
  * Reads the feed API with a portal's session. Missing, hidden, archived, or
  * forbidden content all render as "not found" so nothing leaks by URL.
  */
-async function feedFetch<T>(
+export async function feedFetch<T>(
   portal: AnnouncementPortal,
   path: string,
 ): Promise<T> {

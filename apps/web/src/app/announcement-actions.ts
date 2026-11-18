@@ -8,11 +8,14 @@ import { z } from "zod";
 import {
   ANNOUNCEMENT_PORTALS,
   PUBLISHING_PORTALS,
+  eventPath,
   type PublishingPortal,
 } from "@/lib/announcements";
 import { churchWallTimeToIso } from "@/lib/church-time";
 import { uploadImageToCloudinary } from "@/lib/cloudinary-upload";
 import { feedBasePath, feedListPath } from "@/lib/feed";
+
+import type { FeedActionState } from "./feed-actions";
 
 const FLYER_FOLDER = "acms/announcement-flyers";
 
@@ -49,6 +52,17 @@ const saveSchema = z.object({
   theme: optionalText(180),
   description: optionalText(2000),
   locationName: optionalText(200),
+  // Events only; feed posts never send it.
+  onlineUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .refine(
+      (value) => !value || /^https:\/\/\S+$/i.test(value),
+      "The online link must start with https://",
+    )
+    .transform((value) => value || null),
   startsAt: optionalWallTime,
   endsAt: optionalWallTime,
   flyer: z.discriminatedUnion("action", [
@@ -153,6 +167,7 @@ export async function saveAnnouncement(
     theme: data.theme,
     description: data.description,
     locationName: data.locationName,
+    onlineUrl: data.kind === "EVENT" ? data.onlineUrl : null,
     startsAt: data.startsAt,
     endsAt: data.endsAt,
     ...flyer,
@@ -213,4 +228,56 @@ export async function archiveAnnouncement(formData: FormData) {
   }
   revalidateBoards();
   backToBoard(portal, destination, "success", "Post archived.");
+}
+
+const cancelSchema = z.object({
+  portal: z.enum(PUBLISHING_PORTALS),
+  id: z.uuid(),
+  reason: z.string().trim().max(300).optional(),
+});
+
+/**
+ * Cancels an event. It stays visible to members, clearly marked, until it is
+ * archived. Used with the tap-a-reason sheet.
+ */
+export async function cancelEvent(
+  _previous: FeedActionState,
+  formData: FormData,
+): Promise<FeedActionState> {
+  const parsed = cancelSchema.safeParse({
+    portal: formData.get("portal"),
+    id: formData.get("id"),
+    reason: formData.get("reason") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { status: "error", message: "Choose a reason and try again.", at: Date.now() };
+  }
+  const { portal, id, reason } = parsed.data;
+  const token = await sessionToken(portal);
+
+  const response = await fetch(`${apiUrl()}/announcements/${id}/cancel`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(reason ? { reason } : {}),
+    cache: "no-store",
+  });
+  if (response.status === 401) redirect(ANNOUNCEMENT_PORTALS[portal].loginPath);
+  if (!response.ok) {
+    return {
+      status: "error",
+      message: await apiErrorMessage(response, "The event could not be cancelled."),
+      at: Date.now(),
+    };
+  }
+
+  revalidateBoards();
+  for (const viewer of Object.keys(ANNOUNCEMENT_PORTALS) as Array<
+    keyof typeof ANNOUNCEMENT_PORTALS
+  >) {
+    revalidatePath(eventPath(viewer, id));
+  }
+  return { status: "success", message: "Event cancelled.", at: Date.now() };
 }

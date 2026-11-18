@@ -1488,6 +1488,14 @@ export const announcements = pgTable(
     pinnedBy: uuid('pinned_by').references(() => users.id),
     commentsClosedAt: timestamp('comments_closed_at', { withTimezone: true }),
     commentsClosedBy: uuid('comments_closed_by').references(() => users.id),
+    onlineUrl: varchar('online_url', { length: 500 }),
+    timeZone: varchar('time_zone', { length: 60 })
+      .notNull()
+      .default('Africa/Accra'),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    cancelledBy: uuid('cancelled_by').references(() => users.id),
+    cancellationReason: varchar('cancellation_reason', { length: 300 }),
+    revision: integer('revision').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1503,6 +1511,19 @@ export const announcements = pgTable(
       'announcements_pin_consistent',
       sql`(${table.pinnedAt} is null) = (${table.pinnedBy} is null)`,
     ),
+    check(
+      'announcements_cancel_consistent',
+      sql`(${table.cancelledAt} is null and ${table.cancelledBy} is null and ${table.cancellationReason} is null) or (${table.cancelledAt} is not null and ${table.cancelledBy} is not null)`,
+    ),
+    check(
+      'announcements_only_events_cancel',
+      sql`${table.cancelledAt} is null or ${table.kind} = 'EVENT'`,
+    ),
+    check(
+      'announcements_online_url_https',
+      sql`${table.onlineUrl} is null or ${table.onlineUrl} like 'https://%'`,
+    ),
+    check('announcements_revision_not_negative', sql`${table.revision} >= 0`),
     check(
       'announcements_comments_closed_consistent',
       sql`(${table.commentsClosedAt} is null) = (${table.commentsClosedBy} is null)`,

@@ -3,10 +3,15 @@ import { redirect } from "next/navigation";
 
 import {
   archiveAnnouncement,
+  cancelEvent,
   saveAnnouncement,
   type SaveAnnouncementInput,
 } from "../src/app/announcement-actions";
-import { parseAnnouncementView } from "../src/lib/announcements";
+import {
+  parseAnnouncementView,
+  timeZoneLabel,
+} from "../src/lib/announcements";
+import { proxyEventCalendar } from "../src/lib/event-calendar-proxy";
 import {
   churchWallTimeToIso,
   isoToChurchWallTime,
@@ -129,9 +134,32 @@ describe("saveAnnouncement", () => {
       theme: null,
       description: "Worship and fellowship.",
       locationName: null,
+      onlineUrl: null,
       startsAt: "2026-12-05T18:00:00.000Z",
       endsAt: null,
     });
+  });
+
+  it("sends an event's online link", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ success: true }, 201));
+
+    await expect(
+      saveAnnouncement(input({ onlineUrl: " https://youtube.com/live/abc " })),
+    ).rejects.toThrow("Redirect:");
+
+    expect(bodySentTo(fetchMock, `${apiUrl}/announcements`).onlineUrl).toBe(
+      "https://youtube.com/live/abc",
+    );
+  });
+
+  it("rejects an online link that is not https", async () => {
+    const result = await saveAnnouncement(
+      input({ onlineUrl: "http://example.com/live" }),
+    );
+    expect(result).toEqual({
+      error: "The online link must start with https://",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("checks permission before uploading a flyer", async () => {
@@ -261,6 +289,109 @@ describe("archiveAnnouncement", () => {
         method: "POST",
         headers: { Authorization: "Bearer admin-token" },
       }),
+    );
+  });
+});
+
+describe("cancelEvent", () => {
+  const idle = { status: "idle" as const, message: "", at: 0 };
+
+  function cancelForm(reason?: string) {
+    const formData = new FormData();
+    formData.set("portal", "pastor");
+    formData.set("id", announcementId);
+    if (reason) formData.set("reason", reason);
+    return formData;
+  }
+
+  it("cancels through the API with the chosen reason", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ success: true }));
+
+    const result = await cancelEvent(idle, cancelForm("Bad weather"));
+
+    expect(result.status).toBe("success");
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${apiUrl}/announcements/${announcementId}/cancel`,
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ reason: "Bad weather" }),
+        headers: expect.objectContaining({
+          Authorization: "Bearer pastor-token",
+        }),
+      }),
+    );
+  });
+
+  it("shows the API's refusal", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ message: "You can only change announcements you posted." }, 403),
+    );
+
+    const result = await cancelEvent(idle, cancelForm("Bad weather"));
+
+    expect(result).toMatchObject({
+      status: "error",
+      message: "You can only change announcements you posted.",
+    });
+  });
+
+  it("rejects a member portal before calling the API", async () => {
+    const formData = cancelForm("Bad weather");
+    formData.set("portal", "member");
+
+    const result = await cancelEvent(idle, formData);
+
+    expect(result.status).toBe("error");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("proxyEventCalendar", () => {
+  const request = new Request(
+    `https://web.test/pastor/announcements/${announcementId}/calendar`,
+  );
+
+  it("downloads the .ics with the portal session", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n", {
+        status: 200,
+        headers: {
+          "Content-Disposition": 'attachment; filename="youth-night-2026-12-05.ics"',
+        },
+      }),
+    );
+
+    const response = await proxyEventCalendar(request, "pastor", announcementId);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `${apiUrl}/announcements/${announcementId}/calendar.ics`,
+      expect.objectContaining({
+        headers: { Authorization: "Bearer pastor-token" },
+      }),
+    );
+    expect(response.headers.get("content-type")).toContain("text/calendar");
+    expect(response.headers.get("content-disposition")).toContain(
+      "youth-night-2026-12-05.ics",
+    );
+  });
+
+  it("refuses an invalid event id without calling the API", async () => {
+    const response = await proxyEventCalendar(request, "pastor", "not-an-id");
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends a signed-out visitor to log in", async () => {
+    sessionCookies.clear();
+    const response = await proxyEventCalendar(request, "member", announcementId);
+    expect(response.headers.get("location")).toBe("https://web.test/login");
+  });
+});
+
+describe("timeZoneLabel", () => {
+  it("names the church timezone in plain words", () => {
+    expect(timeZoneLabel("Africa/Accra", "2026-12-05T18:00:00.000Z")).toBe(
+      "Ghana time (GMT)",
     );
   });
 });

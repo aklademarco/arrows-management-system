@@ -11,12 +11,15 @@ export function ArchiveAnnouncementButton({
   title,
   portal,
   destination = "events",
+  size = "sm",
 }: {
   id: string;
   title: string;
   portal: PublishingPortal;
   /** Which page to return to afterwards. */
   destination?: "events" | "feed";
+  /** "lg" gives a full-size tap target for pages built for phones. */
+  size?: "sm" | "lg";
 }) {
   return (
     <form
@@ -31,7 +34,7 @@ export function ArchiveAnnouncementButton({
       <input name="destination" type="hidden" value={destination} />
       <AdminActionButton
         aria-label={`Archive ${title}`}
-        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+        className={`inline-flex items-center gap-1.5 border border-slate-200 bg-white font-medium text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 ${size === "lg" ? "min-h-11 rounded-xl px-4 text-sm" : "h-8 rounded-md px-2.5 text-xs"}`}
         pendingLabel="Archiving…"
       >
         <FiArchive aria-hidden />
